@@ -128,7 +128,26 @@ intel_ich2_nvr_handler(intel_ich2_t *dev)
 static void
 intel_ich2_function_disable(intel_ich2_t *dev)
 {
+/* Disable IDE */
+if(dev->pci_conf[0][0xf2] & 2) {
+    ide_pri_disable();
+    ide_sec_disable();
+}
 
+/* Disable USB Hub 1 */
+if(dev->pci_conf[0][0xf2] & 4) {
+    uhci_update_io_mapping(dev->usb_hub[0], dev->pci_conf[2][0x20] & 0xe0, dev->pci_conf[0][0x21], 0);
+}
+
+/* Disable SMBus */
+if(dev->pci_conf[0][0xf2] & 8) { //ICH2 Supports the ability of the SMBus Controller to be active even if it's PCI device is disabled
+    smbus_piix4_remap(dev->smbus, (dev->pci_conf[3][0x21] << 8) | (dev->pci_conf[3][0x20] & 0xf0), dev->pci_conf[0][0xf3] & 1);
+}
+
+/* Disable USB Hub 2 */
+if(dev->pci_conf[0][0xf2] & 0x10) {
+    uhci_update_io_mapping(dev->usb_hub[1], 0, 0, 0);
+}
 }
 
 /* IDE Controller functions */
@@ -236,7 +255,7 @@ intel_ich2_write(int func, int addr, uint8_t val, void *priv)
             break;
         }
     }
-    else if(func == 1) {
+    else if((func == 1) && !(dev->pci_conf[0][0xf2] & 2)) {
         intel_ich2_log("Intel ICH2 IDE: dev->regs[%02x] = %02x\n", addr, val);
         switch(addr)
         {
@@ -264,7 +283,7 @@ intel_ich2_write(int func, int addr, uint8_t val, void *priv)
             break;
         }
     }
-    else if((func == 2) || (func == 4)) {
+    else if(((func == 2) && !(dev->pci_conf[0][0xf2] & 4)) || ((func == 4) && !(dev->pci_conf[0][0xf2] & 0x10))) {
         intel_ich2_log("Intel ICH2 USB Hub %d: dev->regs[%02x] = %02x\n", (func == 4), addr, val);
         switch(addr)
         {
@@ -283,7 +302,7 @@ intel_ich2_write(int func, int addr, uint8_t val, void *priv)
             break;
         }
     }
-    else if(func == 3) {
+    else if((func == 3) && !(dev->pci_conf[0][0xf2] & 8)) {
         intel_ich2_log("Intel ICH2 SMBus: dev->regs[%02x] = %02x\n", addr, val);
         switch(addr)
         {
@@ -319,15 +338,15 @@ intel_ich2_read(int func, int addr, void *priv)
     intel_ich2_log("Intel ICH2 LPC: dev->regs[%02x] (%02x)\n", addr, dev->pci_conf[func][addr]);
     return dev->pci_conf[func][addr];
     }
-    else if(func == 1) {
+    else if((func == 1) && !(dev->pci_conf[0][0xf2] & 2)) {
     intel_ich2_log("Intel ICH2 IDE: dev->regs[%02x] (%02x)\n", addr, dev->pci_conf[func][addr]);
     return dev->pci_conf[func][addr];
     }
-    else if((func == 2) || (func == 4)) {
+    else if(((func == 2) && !(dev->pci_conf[0][0xf2] & 4)) || ((func == 4) && !(dev->pci_conf[0][0xf2] & 0x10))) {
     intel_ich2_log("Intel ICH2 USB Hub %d: dev->regs[%02x] (%02x)\n", (func == 4), addr, dev->pci_conf[func][addr]);
     return dev->pci_conf[func][addr];
     }
-    else if(func == 3) {
+    else if((func == 3) && !(dev->pci_conf[0][0xf2] & 8)) {
     intel_ich2_log("Intel ICH2 SMBus: dev->regs[%02x] (%02x)\n", addr, dev->pci_conf[func][addr]);
     return dev->pci_conf[func][addr];
     }
