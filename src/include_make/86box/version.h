@@ -17,7 +17,7 @@
 #define LSTR(s) _LSTR(s)
 
 /* Version info. */
-#define EMU_NAME	"86Box"
+#define EMU_NAME	"86Box-ICH2"
 #define EMU_NAME_W	LSTR(EMU_NAME)
 
 #define EMU_VERSION	"3.3"

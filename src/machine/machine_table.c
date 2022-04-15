@@ -57,6 +57,7 @@ const machine_type_t machine_types[] = {
     { "Slot 1/Socket 370",		MACHINE_TYPE_SLOT1_370	},
     { "Slot 2",				MACHINE_TYPE_SLOT2	},
     { "Socket 370",			MACHINE_TYPE_SOCKET370	},
+    { "Intel ICH2",			MACHINE_TYPE_ICH2	},
     { "Miscellaneous",			MACHINE_TYPE_MISC    	}
 };
 
@@ -924,6 +925,10 @@ const machine_t machines[] = {
     /* Has a Winbond W83977F Super I/O chip with on-chip KBC with AMIKey-2 KBC
        firmware. */
     { "[i440BX] Microsoft Virtual PC 2007",	"vpc2007",		MACHINE_TYPE_MISC,		CPU_PKG_SLOT1, CPU_BLOCK(CPU_PENTIUM2, CPU_CYRIX3S), 0, 66666667, 0, 0, 0, 0,					MACHINE_PCI | MACHINE_BUS_PS2 | MACHINE_IDE_DUAL,		  		 8192,1048576, 8192, 255,	      machine_at_vpc2007_init, NULL			},
+
+    /* Intel ICH2 */
+    /* Has a NSC PC87366 LPC Super I/O with on-chip AMIKey-2 KBC firmware*/
+    { "[Intel i815EP] Tyan Tomcat i815T",	"s2080",		MACHINE_TYPE_ICH2,		CPU_PKG_SOCKET370, 0, 66666667, 133333333, 1300, 3500, 1.5, 8.0,						MACHINE_AGP | MACHINE_BUS_PS2 | MACHINE_IDE_DUAL,				32768,524288, 32768, 255,	        machine_at_s2080_init, NULL			},
 
     { NULL,					NULL,			MACHINE_TYPE_NONE,		0, 0, 0, 0, 0, 0, 0, 0,												0,										    0,      0,    0,   0,				 NULL, NULL			}
 };
