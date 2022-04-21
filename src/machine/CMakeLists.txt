@@ -32,6 +32,14 @@ if(DESKPRO386)
     target_compile_definitions(mch PRIVATE USE_DESKPRO386)
 endif()
 
+if(AN430TX)
+    target_compile_definitions(mch PRIVATE USE_AN430TX)
+endif()
+
+if(DESKPRO386)
+    target_compile_definitions(mch PRIVATE USE_DESKPRO386)
+endif()
+
 if(LASERXT)
     target_sources(mch PRIVATE m_xt_laserxt.c)
     target_compile_definitions(mch PRIVATE USE_LASERXT)
