@@ -46,8 +46,27 @@ intel_mch_log(const char *fmt, ...)
 typedef struct intel_mch_t
 {
     uint8_t pci_conf[256];
-    smram_t *lsmm_segment;
+    smram_t *lsmm_segment, *h_segment, *usmm_segment;
 } intel_mch_t;
+
+static void
+intel_usmm_segment_recalc(intel_mch_t *dev, uint8_t val)
+{
+    intel_mch_log("Intel MCH: USMM update to status %d\n", val); /* Check the i815EP datasheet for status */
+
+    if(val != 0)
+        smram_enable(dev->h_segment, 0xfeea0000, 0x000a0000, 0x20000, 0, 1);
+    else
+        smram_disable(dev->h_segment);
+
+    if(val >= 2) { /* TOM recalc based on intel_4x0.c by OBattler */
+    uint32_t tom = (mem_size << 10);
+    mem_set_mem_state_smm(tom, 0x100000, MEM_READ_INTERNAL | MEM_WRITE_INTERNAL);
+    uint32_t size = (val != 3) ? 0x100000 : 0x80000;
+    smram_enable(dev->usmm_segment, tom + 0x10000000, tom, size, 0, 1);
+    mem_set_mem_state_smm(tom, size, MEM_READ_EXTANY | MEM_WRITE_EXTANY);
+    } else smram_disable(dev->usmm_segment);
+}
 
 static void
 intel_lsmm_segment_recalc(intel_mch_t *dev, uint8_t val)
@@ -103,8 +122,10 @@ intel_mch_write(int func, int addr, uint8_t val, void *priv)
 
         case 0x52:
         case 0x54:
-            dev->pci_conf[addr] = val & ((addr & 4) ? 0x0f : 0xff);
-            spd_write_drbs_intel_mch(dev->pci_conf);
+            if (!(dev->pci_conf[0x70] & 2)) {
+                dev->pci_conf[addr] = val & ((addr & 4) ? 0x0f : 0xff);
+                spd_write_drbs_intel_mch(dev->pci_conf);
+            }
         break;
 
         case 0x59 ... 0x5f:
@@ -113,7 +134,14 @@ intel_mch_write(int func, int addr, uint8_t val, void *priv)
         break;
 
         case 0x70:
-            dev->pci_conf[addr] = val;
+            if(!(dev->pci_conf[0x70] & 2)) {
+                dev->pci_conf[addr] = val & 0xfe;
+                intel_usmm_segment_recalc(dev, (val >> 4) & 3);
+            }
+            else {
+                dev->pci_conf[addr] = (dev->pci_conf[addr] & 0xfa) | (val & 4);
+            }
+
             intel_lsmm_segment_recalc(dev, (val >> 2) & 3);
         break;
 
@@ -177,6 +205,7 @@ intel_mch_reset(void *priv)
 
 
     intel_lsmm_segment_recalc(dev, 0); /* Reset LSMM SMRAM to defaults */
+    intel_usmm_segment_recalc(dev, 0); /* Reset USMM SMRAM to defaults */
 
 }
 
@@ -187,6 +216,8 @@ intel_mch_close(void *priv)
     intel_mch_t *dev = (intel_mch_t *)priv;
 
     smram_del(dev->lsmm_segment);
+    smram_del(dev->h_segment);
+    smram_del(dev->usmm_segment);
     free(dev);
 }
 
@@ -207,8 +238,10 @@ intel_mch_init(const device_t *info)
     cpu_cache_ext_enabled = 1;
     cpu_update_waitstates();
 
-    /* LSMM SMRAM Segment */
+    /* SMRAM Segments */
     dev->lsmm_segment = smram_add();
+    dev->h_segment = smram_add();
+    dev->usmm_segment = smram_add();
 
     intel_mch_reset(dev);
     return dev;

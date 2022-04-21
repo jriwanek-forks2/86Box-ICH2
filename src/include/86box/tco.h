@@ -9,7 +9,6 @@
 #ifndef TCO_H
 # define TCO_H
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -18,6 +17,7 @@ typedef struct
 {
     uint8_t regs[17];
     uint16_t tco_irq;
+    pc_timer_t *tco_timer;
 } tco_t;
 
 extern const device_t   tco_device;
@@ -29,6 +29,5 @@ extern uint8_t tco_read(uint16_t addr, tco_t *dev);
 #ifdef __cplusplus
 }
 #endif
-
 
 #endif

@@ -206,6 +206,18 @@ intel_ich2_write(int func, int addr, uint8_t val, void *priv)
         intel_ich2_log("Intel ICH2 LPC: dev->regs[%02x] = %02x\n", addr, val);
         switch(addr)
         {
+            case 0x04:
+                dev->pci_conf[func][addr] = (val & 0x40) | 0x0f;
+            break;
+
+            case 0x05:
+                dev->pci_conf[func][addr] = val & 0x01;
+            break;
+
+            case 0x07:
+                dev->pci_conf[func][addr] &= val & 0xf9;
+            break;
+
             case 0x40 ... 0x41:
                 dev->pci_conf[func][addr] = val & ((addr & 1) ? 0xff : (0x80 | 1));
                 intel_ich2_acpi_setup(dev);
@@ -224,12 +236,41 @@ intel_ich2_write(int func, int addr, uint8_t val, void *priv)
 
             case 0x54:
                 dev->pci_conf[func][addr] = val & 0x0f;
+                intel_ich2_tco_interrupt(dev);
+            break;
+
+            case 0x58 ... 0x59:
+                dev->pci_conf[func][addr] = val & ((addr & 1) ? 0xff : (0xc0 | 1));
+            break;
+
+            case 0x5c:
+                dev->pci_conf[func][addr] = val & 0x10;
             break;
 
             case 0x60 ... 0x63:
             case 0x68 ... 0x6b:
                 dev->pci_conf[func][addr] = val & 0x8f;
                 intel_ich2_pirq_update(0, addr, val);
+            break;
+
+            case 0x64:
+                dev->pci_conf[func][addr] = val;
+            break;
+
+            case 0x88:
+                dev->pci_conf[func][addr] = val & 6;
+            break;
+
+            case 0x8a:
+                dev->pci_conf[func][addr] &= val & 6;
+            break;
+
+            case 0x90:
+                dev->pci_conf[func][addr] = val;
+            break;
+
+            case 0x91:
+                dev->pci_conf[func][addr] = val & 0xfc;
             break;
 
             case 0xd0:
@@ -240,18 +281,74 @@ intel_ich2_write(int func, int addr, uint8_t val, void *priv)
                 dev->pci_conf[func][addr] = val & 0x38; /* Brute force APIC support as disabled */
             break;
 
+            case 0xd3:
+                dev->pci_conf[func][addr] = val & 0x03;
+            break;
+
+            case 0xd4:
+                dev->pci_conf[func][addr] = val & 0x02;
+            break;
+
+            case 0xd5:
+                dev->pci_conf[func][addr] = val & 0x3f;
+            break;
+
             case 0xd8:
                 dev->pci_conf[func][addr] = val & 0x1c;
                 intel_ich2_nvr_handler(dev);
             break;
 
+            case 0xe0:
+                dev->pci_conf[func][addr] = val & 0x77;
+            break;
+
+            case 0xe1:
+                dev->pci_conf[func][addr] = val & 0x13;
+            break;
+
+            case 0xe2:
+                dev->pci_conf[func][addr] = val & 0x3b;
+            break;
+
+            case 0xe3:
+                dev->pci_conf[func][addr] = val;
+            break;
+
+            case 0xe4:
+                dev->pci_conf[func][addr] = val & 0x81;
+            break;
+
+            case 0xe5 ... 0xe6:
+                dev->pci_conf[func][addr] = val;
+            break;
+
+            case 0xe7:
+                dev->pci_conf[func][addr] = val & 0x3f;
+            break;
+
+            case 0xe8 ... 0xeb:
+                dev->pci_conf[func][addr] = val;
+            break;
+
+            case 0xec:
+                dev->pci_conf[func][addr] = val & 0xf1;
+            break;
+
+            case 0xed:
+                dev->pci_conf[func][addr] = val;
+            break;
+
+            case 0xee ... 0xef:
+                dev->pci_conf[func][addr] = val;
+            break;
+
+            case 0xf0:
+                dev->pci_conf[func][addr] = val & 0x0f;
+            break;
+
             case 0xf2 ... 0xf3:
                 dev->pci_conf[func][addr] = val & ((addr & 1) ? 0x01 : 0xfe);
                 intel_ich2_function_disable(dev);
-            break;
-
-            default:
-                dev->pci_conf[func][addr] = val;
             break;
         }
     }

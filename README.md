@@ -14,8 +14,9 @@ The ICH2 is a southbridge released by Intel in the early 2000's. It came incorpo
 The general chipset is still very early in development and not complete. Yet more to come
 
 <h2>FAQ</h2>
+
 * What about Pentium III if we target the i8xx series?
-    - The Pentium III IPC is way too higher than the IPC of the Pentium II. Already the 86Box dynarec is way too slow even for a Pentium at some cases. 86Box-ICH2 doesn't target Pentium III emulation at all.
+    - The Pentium III IPC is way higher than the IPC of the Pentium II. Already the 86Box dynarec is way too slow even for a Pentium at some cases. 86Box-ICH2 doesn't target Pentium III emulation at all.
 
 * What about a PR on official 86Box
     - Not gonna happen.
