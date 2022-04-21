@@ -12,8 +12,11 @@ The ICH2 is a southbridge released by Intel in the early 2000's. It came incorpo
 The general chipset is still very early in development and not complete. Yet more to come.
 
 Northbridge we emulate: Intel i815EP
+
 Super I/O we emulate: National Semiconductor NSC366(PC87366)
+
 Motherboards: Tyan S2080, Biostar M6TSS
+
 BIOS: AMIBIOS 7 Home BIOS Fork(Tyan S2080), Award 6.00PG(Biostar M6TSS)
 
 Emulation details
