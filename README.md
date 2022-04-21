@@ -9,9 +9,24 @@
 The ICH2 is a southbridge released by Intel in the early 2000's. It came incorporated with many peripherals like USB, Audio & IDE. The ICH series in general also got rid of the ISA bus replacing it with the not so different LPC bus.
 
 <h2>Emulation details</h2>
-86Box-ICH2 only includes the Tyan S2080 motherboard. A basic workstation board lacking difficult to implement features like Audio & VGA. It comes also by par with an Intel i815E(P) MCH Bridge & a NSC 366 Super I/O. The motherboard also supports 512MB maximum & Pentium III or Mendocino Celeron CPU support.
-
 The general chipset is still very early in development and not complete. Yet more to come
+
+Emulation details
+|Chipset Portion|Status|Notes                                                            |
+|ICH2 Hub       |✅   |Uses the standard 86Box PCI Bridge code with slight modifications.|
+|ICH2 LPC       |⚠️   |IRQ Delivery issues & GPIO is unimplemented                       |
+|ICH2 IDE       |✅   |None                                                              |
+|ICH2 SMBus     |⚠️   |Requires modding the PIIX4 standard code. Not done yet.           |
+|ICH2 USB       |❌   |86Box doesn't emulate USB.                                        |
+|ICH2 AC'97     |❌   |AC'97 WILL NOT be emulated anytime                                |
+|ICH2 DMA       |⚠️   |Needs more research                                               |
+|ICH2 Peripherals|✅  |None                                                              |
+
+|Super I/O Portion|Status|Notes                           |
+|NSC366 FDC       |✅    |None                           |
+|NSC366 UART Serial|✅   |None                           |
+|NSC366 LPT        |✅   |86Box doesn't emulate LPT modes|
+|NSC366 HWM        |❌   |Most portions are unimplemented|
 
 <h2>FAQ</h2>
 
