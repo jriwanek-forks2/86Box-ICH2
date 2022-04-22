@@ -647,7 +647,7 @@ intel_ich2_init(const device_t *info)
     device_add(&intel_ich2_hub_device);
 
     /* SMBus */
-    dev->smbus = device_add(&piix4_smbus_device);
+    dev->smbus = device_add(&intel_ich2_smbus_device);
 
     /* SFF Compatible IDE Drives */
     dev->ide_drive[0] = device_add_inst(&sff8038i_device, 1);

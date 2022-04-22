@@ -28,7 +28,7 @@
 #include <86box/i2c.h>
 #include <86box/smbus.h>
 
-
+#define ENABLE_SMBUS_PIIX4_LOG 1
 #ifdef ENABLE_SMBUS_PIIX4_LOG
 int smbus_piix4_do_log = ENABLE_SMBUS_PIIX4_LOG;
 
@@ -107,7 +107,7 @@ smbus_piix4_write(uint16_t addr, uint8_t val, void *priv)
     dev->next_stat = 0x00;
     switch (addr - dev->io_base) {
 	case 0x00:
-		for (smbus_addr = 0x02; smbus_addr <= 0x10; smbus_addr <<= 1) { /* handle clearable bits */
+		for (smbus_addr = 0x02; smbus_addr <= ((dev->local == SMBUS_INTEL_ICH2) ? 0x40 : 0x10); smbus_addr <<= 1) { /* handle clearable bits */
 			if (val & smbus_addr)
 				dev->stat &= ~smbus_addr;
 		}
@@ -213,22 +213,49 @@ smbus_piix4_write(uint16_t addr, uint8_t val, void *priv)
 					/* fall-through */
 
 				case 0xd: /* I2C block R/W */
-					i2c_write(i2c_smbus, smbus_addr, dev->cmd);
-					timer_bytes++;
+					if (dev->local == SMBUS_INTEL_ICH2) {
+                        if (!dev->byte_rw) {
+                            i2c_write(i2c_smbus, smbus_addr, dev->cmd);
+                            if(read)
+							    dev->data0 = i2c_read(i2c_smbus, smbus_addr); // For byte reads, the count is recieved and stored at the DATA0 register
+                            else
+                                i2c_write(i2c_smbus, smbus_addr, dev->data0);
 
-					if (read) {
-						/* block read [data0] (I2C) or [first byte] (SMBus) bytes */
-						if (cmd == 0x5)
-							dev->data0 = i2c_read(i2c_smbus, smbus_addr);
-						for (i = 0; i < dev->data0; i++)
-							dev->data[i & SMBUS_PIIX4_BLOCK_DATA_MASK] = i2c_read(i2c_smbus, smbus_addr);
-					} else {
-						if (cmd == 0x5) /* send length [data0] as first byte on SMBus */
-							i2c_write(i2c_smbus, smbus_addr, dev->data0);
-						/* block write [data0] bytes */
-						for (i = 0; i < dev->data0; i++) {
-							if (!i2c_write(i2c_smbus, smbus_addr, dev->data[i & SMBUS_PIIX4_BLOCK_DATA_MASK]))
-								break;
+							dev->byte_rw = 1;
+						}
+
+						if (read) {
+							dev->block_data_byte = i2c_read(i2c_smbus, smbus_addr);
+							dev->stat |= 0x80;
+                            if(dev->ctl & 0x20) /* Finish the Transfer */
+                                dev->byte_rw = 0;
+						}
+                        else {
+                            i2c_write(i2c_smbus, smbus_addr, dev->cmd);
+                            if (((dev->byte_rw >> 4) & 0xff) < dev->data0) {
+                                i2c_write(i2c_smbus, smbus_addr, dev->block_data_byte);
+                                dev->stat |= 0x80;
+                                dev->byte_rw += 0x10000;
+                            }
+                            else dev->byte_rw = 0;
+                        }
+					}
+					else {
+						if (read) {
+							timer_bytes++;
+							/* block read [data0] (I2C) or [first byte] (SMBus) bytes */
+							if (cmd == 0x5)
+								dev->data0 = i2c_read(i2c_smbus, smbus_addr);
+							for (i = 0; i < dev->data0; i++)
+								dev->data[i & SMBUS_PIIX4_BLOCK_DATA_MASK] = i2c_read(i2c_smbus, smbus_addr);
+						} else {
+							if (cmd == 0x5) /* send length [data0] as first byte on SMBus */
+								i2c_write(i2c_smbus, smbus_addr, dev->data0);
+							/* block write [data0] bytes */
+							for (i = 0; i < dev->data0; i++) {
+								if (!i2c_write(i2c_smbus, smbus_addr, dev->data[i & SMBUS_PIIX4_BLOCK_DATA_MASK]))
+									break;
+							}
 						}
 					}
 					timer_bytes += i;
@@ -283,7 +310,11 @@ unknown_protocol:
 			}
 
 			/* Finish transfer. */
-			i2c_stop(i2c_smbus, smbus_addr);
+            if(dev->local == SMBUS_INTEL_ICH2) // ICH2 SMBus specific. Transfer on Byte command doesn't stop till their specific points.
+                if(!dev->byte_rw)
+			        i2c_stop(i2c_smbus, smbus_addr);
+            else
+                i2c_stop(i2c_smbus, smbus_addr);
 		}
 		break;
 
@@ -304,9 +335,13 @@ unknown_protocol:
 		break;
 
 	case 0x07:
-		dev->data[dev->index++] = val;
-		if (dev->index >= SMBUS_PIIX4_BLOCK_DATA_SIZE)
-			dev->index = 0;
+        if (dev->local == SMBUS_INTEL_ICH2)
+            dev->block_data_byte = val;
+        else {
+		    dev->data[dev->index++] = val;
+		    if (dev->index >= SMBUS_PIIX4_BLOCK_DATA_SIZE)
+			    dev->index = 0;
+        }
 		break;
     }
 
@@ -362,7 +397,20 @@ smbus_piix4_init(const device_t *info)
     dev->local = info->local;
     /* We save the I2C bus handle on dev but use i2c_smbus for all operations because
        dev and therefore dev->i2c will be invalidated if a device triggers a hard reset. */
-    i2c_smbus = dev->i2c = i2c_addbus((dev->local == SMBUS_VIA) ? "smbus_vt82c686b" : "smbus_piix4");
+    switch(dev->local)
+    {
+        case SMBUS_PIIX4:
+            i2c_smbus = dev->i2c = i2c_addbus("smbus_piix4");
+        break;
+
+        case SMBUS_INTEL_ICH2:
+            i2c_smbus = dev->i2c = i2c_addbus("smbus_intel_ich2");
+        break;
+
+        case SMBUS_VIA:
+            i2c_smbus = dev->i2c = i2c_addbus("smbus_vt82c686b");
+        break;
+    }
 
     timer_add(&dev->response_timer, smbus_piix4_response, dev, 0);
 
@@ -389,6 +437,20 @@ const device_t piix4_smbus_device = {
     .internal_name = "piix4_smbus",
     .flags = DEVICE_AT,
     .local = SMBUS_PIIX4,
+    .init = smbus_piix4_init,
+    .close = smbus_piix4_close,
+    .reset = NULL,
+    { .available = NULL },
+    .speed_changed = NULL,
+    .force_redraw = NULL,
+    .config = NULL
+};
+
+const device_t intel_ich2_smbus_device = {
+    .name = "Intel ICH2 SMBus Host Controller",
+    .internal_name = "intel_ich2_smbus",
+    .flags = DEVICE_AT,
+    .local = SMBUS_INTEL_ICH2,
     .init = smbus_piix4_init,
     .close = smbus_piix4_close,
     .reset = NULL,

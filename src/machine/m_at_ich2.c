@@ -21,6 +21,7 @@
 #include <86box/flash.h>
 #include <86box/sio.h>
 #include <86box/spd.h>
+#include <86box/clock.h>
 #include "cpu.h"
 #include <86box/machine.h>
 
@@ -54,6 +55,7 @@ machine_at_m6tss_init(const machine_t *model)
     device_add(&nsc366_device); /* National Semiconductor NSC366 */
     device_add(&sst_flash_49lf004_device); /* SST 4Mbit Firmware Hub */
     spd_register(SPD_TYPE_SDRAM, 0x7, 512);
+    device_add(ics9xxx_get(ICS9250_08));
     return ret;
 }
 

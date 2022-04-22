@@ -25,18 +25,18 @@ Emulation details
 |ICH2 Hub       |✅   |Uses the standard 86Box PCI Bridge code with slight modifications.|
 |ICH2 LPC       |⚠️   |IRQ Delivery issues & GPIO is unimplemented. 86Box lacks APIC.    |
 |ICH2 IDE       |✅   |None                                                              |
-|ICH2 SMBus     |⚠️   |Requires modding the PIIX4 standard code. Not done yet.           |
-|ICH2 USB       |❌   |86Box doesn't emulate USB.                                        |
+|ICH2 SMBus     |⚠️   |Misses IRQ/SMI Triggers.                                          |
+|ICH2 USB       |⚠️   |86Box doesn't emulate USB. Recommended to disable it to save IRQ's|
 |ICH2 AC'97     |❌   |AC'97 WILL NOT be emulated anytime                                |
 |ICH2 DMA       |⚠️   |Needs more research                                               |
 |ICH2 Peripherals|✅  |FWH functionality isn't utilized by any of our boards.            |
 
-|Super I/O Portion|Status|Notes                           |
-|-----------------|------|--------------------------------|
-|NSC366 FDC       |✅    |None                           |
-|NSC366 UART Serial|✅   |None                           |
-|NSC366 LPT        |✅   |86Box doesn't emulate LPT modes|
-|NSC366 HWM        |❌   |Most portions are unimplemented|
+|Super I/O Portion|Status|Notes                             |
+|-----------------|------|----------------------------------|
+|NSC366 FDC       |✅    |None                              |
+|NSC366 UART Serial|✅   |None                              |
+|NSC366 LPT        |✅   |86Box doesn't emulate LPT modes   |
+|NSC366 HWM        |⚠️   |Voltages & Temperatures are broken|
 
 <h2>FAQ</h2>
 
