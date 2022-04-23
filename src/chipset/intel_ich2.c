@@ -106,10 +106,11 @@ switch(val)
 static void
 intel_ich2_pirq_update(int reset, int addr, uint8_t val)
 {
-    int pirq = ((addr >= 0x68) ? (addr - 0x63) : (addr - 0x59)) & 0xff;
+    int pirq = (addr >= 0x68) ? (addr - 0x63) : (addr - 0x5f);
+
     if(((val & 0x80) != 0x80) && !reset) {                                             /* 86Box doesn't have an APIC yet.                          */ 
         intel_ich2_log("Intel ICH2 LPC: Update PIRQ %c to IRQ %d\n", '@' + pirq, val); /* Under normal circumstances on an APIC enabled motherboard*/
-        pci_set_irq_routing(pirq, intel_ich2_pirq_table(val));                         /* this remains disabled and the IRQ is handed by the APIC  */  
+        pci_set_irq_routing(pirq, intel_ich2_pirq_table(val));                         /* this remains disabled and the IRQ are handed by the APIC */  
     }                                                                                  /* itself.                                                  */
     else if(reset)
         for(int i = 1; i <= 8; i++)
@@ -155,22 +156,21 @@ static void
 intel_ich2_ide_setup(intel_ich2_t *dev)
 {
     uint16_t bm_base = (dev->pci_conf[1][0x21] & 0xf0) | (dev->pci_conf[1][0x20] & 0xf0);
-    int bm_enable = ((dev->pci_conf[1][0x04] & 0x05) == 0x05);
 
     ide_pri_disable();
     ide_sec_disable();
 
-    intel_ich2_log("Intel ICH2 IDE: IDE Bus Mastering is %s.\n", bm_enable ? "Enabled" : "Disabled");
-    sff_bus_master_handler(dev->ide_drive[0], bm_enable, bm_base);
-    sff_bus_master_handler(dev->ide_drive[1], bm_enable, bm_base);
+    intel_ich2_log("Intel ICH2 IDE: IDE Bus Master address is 0x%04x.\n", bm_base);
 
     intel_ich2_log("Intel ICH2 IDE: Primary Channel is %s.\n", !!(dev->pci_conf[1][0x41] & 0x80) ? "Enabled" : "Disabled");
+    sff_bus_master_handler(dev->ide_drive[0], !!(dev->pci_conf[1][0x41] & 0x80) && !!(bm_base != 0), bm_base);
     if(dev->pci_conf[1][0x41] & 0x80) {
         ide_pri_enable();
     }
 
     intel_ich2_log("Intel ICH2 IDE: Secondary Channel is %s.\n", !!(dev->pci_conf[1][0x43] & 0x80) ? "Enabled" : "Disabled");
     if(dev->pci_conf[1][0x43] & 0x80) {
+        sff_bus_master_handler(dev->ide_drive[1], !!(dev->pci_conf[1][0x43] & 0x80) && !!(bm_base != 0), bm_base);
         ide_sec_enable();
     }
 }
@@ -413,9 +413,15 @@ intel_ich2_write(int func, int addr, uint8_t val, void *priv)
                 intel_ich2_smbus_setup(dev);
             break;
 
+            case 0x3c:
+                dev->pci_conf[func][addr] = val;
+                smbus_piix4_get_irq(val, dev->smbus);
+            break;
+
             case 0x40:
                 dev->pci_conf[func][addr] = val & 7;
                 intel_ich2_smbus_setup(dev);
+                smbus_piix4_smi_en(!!(val & 2), dev->smbus);
             break;
 
             default:

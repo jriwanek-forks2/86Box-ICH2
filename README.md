@@ -23,9 +23,9 @@ Emulation details
 |Chipset Portion|Status|Notes                                                            |
 |---------------|------|-----------------------------------------------------------------|
 |ICH2 Hub       |✅   |Uses the standard 86Box PCI Bridge code with slight modifications.|
-|ICH2 LPC       |⚠️   |IRQ Delivery issues & GPIO is unimplemented. 86Box lacks APIC.    |
+|ICH2 LPC       |⚠️   |GPIO is unimplemented. ACPI needs more work. 86Box lacks APIC.    |
 |ICH2 IDE       |✅   |None                                                              |
-|ICH2 SMBus     |⚠️   |Misses IRQ/SMI Triggers.                                          |
+|ICH2 SMBus     |✅   |Minimal things require to be implemented.                         |
 |ICH2 USB       |⚠️   |86Box doesn't emulate USB. Recommended to disable it to save IRQ's|
 |ICH2 AC'97     |❌   |AC'97 WILL NOT be emulated anytime                                |
 |ICH2 DMA       |⚠️   |Needs more research                                               |

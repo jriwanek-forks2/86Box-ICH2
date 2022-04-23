@@ -39,7 +39,8 @@ typedef struct {
     double	bit_period;
     uint8_t	stat, next_stat, ctl, cmd, addr,
 		data0, data1,
-		index, data[SMBUS_PIIX4_BLOCK_DATA_SIZE], block_data_byte;
+		index, data[SMBUS_PIIX4_BLOCK_DATA_SIZE], block_data_byte,
+        irq, smi_en;
     pc_timer_t	response_timer;
     void	*i2c;
 } smbus_piix4_t;
@@ -54,7 +55,8 @@ typedef struct {
     void	*i2c;
 } smbus_ali7101_t;
 
-
+extern void smbus_piix4_get_irq(uint8_t irq, smbus_piix4_t *dev);
+extern void smbus_piix4_smi_en(uint8_t smi_en, smbus_piix4_t *dev);
 extern void	smbus_piix4_remap(smbus_piix4_t *dev, uint16_t new_io_base, uint8_t enable);
 extern void	smbus_piix4_setclock(smbus_piix4_t *dev, int clock);
 

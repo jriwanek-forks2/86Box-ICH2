@@ -24,11 +24,11 @@
 #include <86box/86box.h>
 #include <86box/io.h>
 #include <86box/device.h>
+#include <86box/pic.h>
 #include <86box/timer.h>
 #include <86box/i2c.h>
 #include <86box/smbus.h>
 
-#define ENABLE_SMBUS_PIIX4_LOG 1
 #ifdef ENABLE_SMBUS_PIIX4_LOG
 int smbus_piix4_do_log = ENABLE_SMBUS_PIIX4_LOG;
 
@@ -48,6 +48,26 @@ smbus_piix4_log(const char *fmt, ...)
 #define smbus_piix4_log(fmt, ...)
 #endif
 
+void
+smbus_piix4_get_irq(uint8_t irq, smbus_piix4_t *dev)
+{
+    dev->irq = irq;
+}
+
+void
+smbus_piix4_smi_en(uint8_t smi_en, smbus_piix4_t *dev)
+{
+    dev->smi_en = smi_en;
+}
+
+static void
+smbus_piix4_raise_smi(smbus_piix4_t *dev)
+{
+    if(dev->smi_en) // Raise SMI when needed if it's enabled by the Chipset.
+        smi_line = 1;
+    else
+        picint(1 << dev->irq);
+}
 
 static uint8_t
 smbus_piix4_read(uint16_t addr, void *priv)
@@ -227,8 +247,11 @@ smbus_piix4_write(uint16_t addr, uint8_t val, void *priv)
 						if (read) {
 							dev->block_data_byte = i2c_read(i2c_smbus, smbus_addr);
 							dev->stat |= 0x80;
-                            if(dev->ctl & 0x20) /* Finish the Transfer */
+                            smbus_piix4_raise_smi(dev);
+                            if(dev->ctl & 0x20) { /* Finish the Transfer */
                                 dev->byte_rw = 0;
+                                dev->stat |= 2;
+                            }
 						}
                         else {
                             i2c_write(i2c_smbus, smbus_addr, dev->cmd);
