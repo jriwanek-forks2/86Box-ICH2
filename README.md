@@ -14,9 +14,9 @@ The general chipset is still very early in development and not complete. Yet mor
 Northbridge we emulate: Intel i815EP
 
 |Northbridge Portion|Status|Notes                                                            |
-|-------------------|------|-----------------------------------------------------------------|
-|i815EP DRAM Control|✅   |None                                                              |
-|i815EP AGP Bridge  |✅   |Uses the standard 86Box PCI Bridge code with slight modifications.|
+|-----------------|------|-----------------------------------------------------------------|
+|i815EP MCH       |✅   |None                                                              |
+|i815EP AGP Bridge|✅   |Uses the standard 86Box PCI Bridge code with slight modifications.|
 
 Super I/O we emulate: National Semiconductor NSC366(PC87366)
 
@@ -45,7 +45,7 @@ Emulation details
 |ICH2 SMBus     |✅   |Minimal things require to be implemented.                         |
 |ICH2 USB       |⚠️   |86Box doesn't emulate USB. Recommended to disable it to save IRQ's|
 |ICH2 AC'97     |❌   |AC'97 WILL NOT be emulated anytime                                |
-|ICH2 DMA       |⚠️   |Needs more research                                               |
+|ICH2 DMA       |✅   |None                                                              |
 |ICH2 Peripherals|✅  |FWH functionality isn't utilized by any of our boards.            |
 
 <h2>FAQ</h2>

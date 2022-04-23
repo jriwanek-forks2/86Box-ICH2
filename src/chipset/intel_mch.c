@@ -25,7 +25,7 @@
 #include <86box/smram.h>
 #include <86box/spd.h>
 #include <86box/chipset.h>
-#define ENABLE_INTEL_MCH_LOG 1
+
 #ifdef ENABLE_INTEL_MCH_LOG
 int intel_mch_do_log = ENABLE_INTEL_MCH_LOG;
 static void
@@ -116,6 +116,27 @@ intel_mch_write(int func, int addr, uint8_t val, void *priv)
 
     switch(addr)
     {
+        case 0x05:
+            dev->pci_conf[addr] = val & 3;
+        break;
+
+        case 0x07:
+            dev->pci_conf[addr] &= val & 0x70;
+        break;
+
+        case 0x2c ... 0x2f:
+            if(dev->pci_conf[addr] != 0)
+                dev->pci_conf[addr] = val;
+        break;
+ 
+        case 0x13:
+            dev->pci_conf[addr] = val & 0xfe;
+        break;
+
+        case 0x50:
+            dev->pci_conf[addr] = val & 0xdc;
+        break;
+
         case 0x51:
             dev->pci_conf[addr] = val & 2; // Brute force to AGP Mode
         break;
@@ -126,6 +147,14 @@ intel_mch_write(int func, int addr, uint8_t val, void *priv)
                 dev->pci_conf[addr] = val & ((addr & 4) ? 0x0f : 0xff);
                 spd_write_drbs_intel_mch(dev->pci_conf);
             }
+        break;
+
+        case 0x53:
+            dev->pci_conf[addr] = val;
+        break;
+
+        case 0x58:
+            dev->pci_conf[addr] = val & 0x80;
         break;
 
         case 0x59 ... 0x5f:
@@ -145,8 +174,81 @@ intel_mch_write(int func, int addr, uint8_t val, void *priv)
             intel_lsmm_segment_recalc(dev, (val >> 2) & 3);
         break;
 
-        default:
+        case 0x72:
+            dev->pci_conf[addr] = val & 0xfb;
+        break;
+
+        case 0x73:
+            dev->pci_conf[addr] = val & 0xa8;
+        break;
+
+        case 0x92 ... 0x93:
             dev->pci_conf[addr] = val;
+        break;
+
+        case 0x94:
+            dev->pci_conf[addr] = val & 0x3f;
+        break;
+
+        case 0x98:
+            dev->pci_conf[addr] = val & 0x77;
+        break;
+
+        case 0x99:
+            dev->pci_conf[addr] = val & 0x80;
+        break;
+
+        case 0x9a:
+            dev->pci_conf[addr] = val & 0xef;
+        break;
+
+        case 0x9b:
+        case 0x9d:
+            dev->pci_conf[addr] = val & 0x80;
+        break;
+
+        case 0xa4:
+            dev->pci_conf[addr] = val & 7;
+        break;
+
+        case 0xa8:
+            dev->pci_conf[addr] = val & 0x37;
+        break;
+
+        case 0xa9:
+            dev->pci_conf[addr] = val & 3;
+        break;
+
+        case 0xb0:
+            dev->pci_conf[addr] = val & 0x81;
+        break;
+
+        case 0xb4:
+            dev->pci_conf[addr] = val & 8;
+        break;
+
+        case 0xb9:
+            dev->pci_conf[addr] = val & 0xf0;
+        break;
+
+        case 0xba:
+            dev->pci_conf[addr] = val;
+        break;
+
+        case 0xbb:
+            dev->pci_conf[addr] = val & 0x1f;
+        break;
+
+        case 0xbc ... 0xbd:
+            dev->pci_conf[addr] = val & 0xf8;
+        break;
+
+        case 0xbe:
+            dev->pci_conf[addr] = val & 0x28;
+        break;
+
+        case 0xcb:
+            dev->pci_conf[addr] = val & 0x3f;
         break;
     }
 }
