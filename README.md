@@ -13,11 +13,28 @@ The general chipset is still very early in development and not complete. Yet mor
 
 Northbridge we emulate: Intel i815EP
 
+|Northbridge Portion|Status|Notes                                                            |
+|-------------------|------|-----------------------------------------------------------------|
+|i815EP DRAM Control|✅   |None                                                              |
+|i815EP AGP Bridge  |✅   |Uses the standard 86Box PCI Bridge code with slight modifications.|
+
 Super I/O we emulate: National Semiconductor NSC366(PC87366)
 
-Motherboards: Tyan S2080, Biostar M6TSS
+|Super I/O Portion|Status|Notes                             |
+|-----------------|------|----------------------------------|
+|NSC366 FDC        |✅   |None                              |
+|NSC366 UART Serial|✅   |None                              |
+|NSC366 LPT        |✅   |86Box doesn't emulate LPT modes   |
+|NSC366 HWM        |⚠️   |Voltages & Temperatures are broken|
 
-BIOS: AMIBIOS 7 Home BIOS Fork(Tyan S2080), Award 6.00PG(Biostar M6TSS)
+Motherboards: 2 Boards handled
+
+|Motherboards     |BIOS                          |Status|Notes                                                               |
+|-----------------|------------------------------|------|--------------------------------------------------------------------|
+|Tyan Tomcat i815T|AMIBIOS 7 (AMI Home BIOS fork)|✅   |May hang on setup if you press the DEL key a lot.                    |
+|Biostar M6TSS    |AwardBIOS 6.00PG              |⚠️   |CD boot bugs. 86Box related? Cable Detection probably handled by GPIO|
+
+Southbridge we emulate: Intel ICH2 Desktop
 
 Emulation details
 |Chipset Portion|Status|Notes                                                            |
@@ -31,13 +48,6 @@ Emulation details
 |ICH2 DMA       |⚠️   |Needs more research                                               |
 |ICH2 Peripherals|✅  |FWH functionality isn't utilized by any of our boards.            |
 
-|Super I/O Portion|Status|Notes                             |
-|-----------------|------|----------------------------------|
-|NSC366 FDC       |✅    |None                              |
-|NSC366 UART Serial|✅   |None                              |
-|NSC366 LPT        |✅   |86Box doesn't emulate LPT modes   |
-|NSC366 HWM        |⚠️   |Voltages & Temperatures are broken|
-
 <h2>FAQ</h2>
 
 * What about Pentium III if we target the i8xx series?
@@ -49,4 +59,8 @@ Emulation details
 * Other board implementations?
     - The ASUS CUSL2-C is planned but for now, other boards are off the scope.
 
+* Releases, builds, instructions?
+    - This is mostly an experimental fork done by me on leisure time. There's no plan for any release build. If you know how to build 86Box, you can build 86Box-ICH2.
+
 <h2>More things and details are yet to come!</h2>
+<h3>This fork has nothing to do with mainstream 86Box! Do not ask or promote it on their issues panel or elsewhere!</h3>
