@@ -16,13 +16,12 @@
  */
 #ifndef ACPI_H
 # define ACPI_H
-
+#include <86box/tco.h> /* TCO Header */
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <86box/tco.h>
 #define ACPI_TIMER_FREQ	3579545
 #define PM_FREQ		ACPI_TIMER_FREQ
 
@@ -86,7 +85,6 @@ typedef struct
 			extsmi_val, pad0;
     uint64_t		tmr_overflow_time;
 } acpi_regs_t;
-
 
 typedef struct
 {

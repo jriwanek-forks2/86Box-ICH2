@@ -884,8 +884,8 @@ acpi_reg_write_intel_ich2(int size, uint16_t addr, uint8_t val, void *p)
 	case 0x48: case 0x49:
 		/* DEVTRAP_EN—Device Trap Enable Register */
 		dev->regs.devtrap_en = ((dev->regs.devtrap_en & ~(0xff << shift16)) | (val << shift16)) & 0x3c2f;
-//		if (dev->trap_update)
-//			dev->trap_update(dev->trap_priv);
+		if (dev->trap_update)
+			dev->trap_update(dev->trap_priv);
 		break;
     case 0x60 ... 0x70:
         /* TCO Registers */

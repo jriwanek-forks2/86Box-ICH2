@@ -17,7 +17,9 @@
 
 #ifndef EMU_SMBUS_PIIX4_H
 # define EMU_SMBUS_PIIX4_H
-
+#include <86box/apm.h>
+#include <86box/nvr.h>
+#include <86box/acpi.h>
 
 #define SMBUS_PIIX4_BLOCK_DATA_SIZE	32
 #define SMBUS_PIIX4_BLOCK_DATA_MASK	(SMBUS_PIIX4_BLOCK_DATA_SIZE - 1)
@@ -41,7 +43,10 @@ typedef struct {
 		data0, data1,
 		index, data[SMBUS_PIIX4_BLOCK_DATA_SIZE], block_data_byte,
         irq, smi_en;
+
+    acpi_t *acpi;
     pc_timer_t	response_timer;
+
     void	*i2c;
 } smbus_piix4_t;
 
@@ -54,7 +59,7 @@ typedef struct {
     pc_timer_t	response_timer;
     void	*i2c;
 } smbus_ali7101_t;
-
+extern void smbus_piix4_get_acpi(smbus_piix4_t *dev, acpi_t *acpi);
 extern void smbus_piix4_get_irq(uint8_t irq, smbus_piix4_t *dev);
 extern void smbus_piix4_smi_en(uint8_t smi_en, smbus_piix4_t *dev);
 extern void	smbus_piix4_remap(smbus_piix4_t *dev, uint16_t new_io_base, uint8_t enable);

@@ -1028,6 +1028,7 @@ const cpu_family_t cpu_families[] = {
 	.internal_name = "celeron_mendocino",
 	.cpus = (const CPU[]) {
 		{"66",        CPU_PENTIUM2D,  fpus_internal,  66666666, 1.0, 2050,  0x665,  0x665, 0, CPU_SUPPORTS_DYNAREC | CPU_REQUIRES_DYNAREC | CPU_FIXED_MULTIPLIER,  6, 6, 3, 3, 8},  /* out of spec */
+		{"75",        CPU_PENTIUM2D,  fpus_internal,  75555555, 1.0, 2050,  0x665,  0x665, 0, CPU_SUPPORTS_DYNAREC | CPU_REQUIRES_DYNAREC | CPU_FIXED_MULTIPLIER,  8, 8, 4, 4, 12}, /* out of spec */
 		{"100",       CPU_PENTIUM2D,  fpus_internal, 100000000, 1.5, 2050,  0x665,  0x665, 0, CPU_SUPPORTS_DYNAREC | CPU_REQUIRES_DYNAREC | CPU_FIXED_MULTIPLIER,  8, 8, 4, 4, 12}, /* out of spec */
 		{"133",       CPU_PENTIUM2D,  fpus_internal, 133333333, 2.0, 2050,  0x665,  0x665, 0, CPU_SUPPORTS_DYNAREC | CPU_REQUIRES_DYNAREC | CPU_FIXED_MULTIPLIER, 11,11, 5, 5, 16}, /* out of spec */
 		{"166",       CPU_PENTIUM2D,  fpus_internal, 166666666, 2.5, 2050,  0x665,  0x665, 0, CPU_SUPPORTS_DYNAREC | CPU_REQUIRES_DYNAREC | CPU_FIXED_MULTIPLIER, 14,14, 7, 7, 20}, /* out of spec */
@@ -1051,6 +1052,7 @@ const cpu_family_t cpu_families[] = {
 	.internal_name = "c3_samuel",
 	.cpus = (const CPU[]) {
 		{"66",      CPU_CYRIX3S, fpus_internal,  66666666, 1.0, 2050,   0x660, 0x660, 0, CPU_SUPPORTS_DYNAREC | CPU_FIXED_MULTIPLIER,  6,  6,  3,  3,  8}, /* out of multiplier range */
+		{"75",      CPU_CYRIX3S, fpus_internal,  75555555, 1.0, 2050,   0x660, 0x660, 0, CPU_SUPPORTS_DYNAREC | CPU_FIXED_MULTIPLIER,  6,  6,  3,  3,  8}, /* out of multiplier range */
 		{"100",     CPU_CYRIX3S, fpus_internal, 100000000, 1.5, 2050,   0x660, 0x660, 0, CPU_SUPPORTS_DYNAREC | CPU_FIXED_MULTIPLIER,  9,  9,  4,  4, 12}, /* out of multiplier range */
 		{"133",     CPU_CYRIX3S, fpus_internal, 133333333, 2.0, 2050,   0x660, 0x660, 0, CPU_SUPPORTS_DYNAREC | CPU_FIXED_MULTIPLIER, 12, 12,  6,  6, 16}, /* out of multiplier range */
 		{"166",     CPU_CYRIX3S, fpus_internal, 166666666, 2.5, 2050,   0x660, 0x660, 0, CPU_SUPPORTS_DYNAREC | CPU_FIXED_MULTIPLIER, 15, 15,  7,  7, 20}, /* out of multiplier range */

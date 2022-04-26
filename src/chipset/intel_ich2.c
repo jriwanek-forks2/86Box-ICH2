@@ -28,6 +28,7 @@
 #include <86box/hdc.h>
 #include <86box/hdc_ide.h>
 #include <86box/hdc_ide_sff8038i.h>
+#include <86box/intel_ich2_trap.h>
 #include <86box/mem.h>
 #include <86box/pci.h>
 #include <86box/pic.h>
@@ -61,6 +62,7 @@ typedef struct intel_ich2_t
     uint8_t pci_conf[5][256];
 
     acpi_t *acpi;
+    intel_ich2_trap_t *trap_device[10];
     nvr_t *nvr;
     sff8038i_t *ide_drive[2];
     smbus_piix4_t *smbus;
@@ -78,6 +80,146 @@ intel_ich2_acpi_setup(intel_ich2_t *dev)
                                                                                                 /* as we lack it we are restricted with low.   */
     acpi_update_io_mapping(dev->acpi, base, !!(dev->pci_conf[0][0x44] & 0x10));
     acpi_set_irq_line(dev->acpi, acpi_irq);
+}
+
+static void
+intel_ich2_trap_update(void *priv)
+{
+    intel_ich2_t *dev = (intel_ich2_t *) priv;
+    uint16_t temp_addr = 0;
+
+    /* Hard Drives */
+    intel_ich2_device_trap_setup(1, 0x48, 0x01, 0x1f0, 8, 1, dev->trap_device[0]); // HDD's don't have a decode bit
+    intel_ich2_device_trap_setup(1, 0x48, 0x01, 0x3f6, 1, 1, dev->trap_device[0]);
+
+    intel_ich2_device_trap_setup(1, 0x48, 0x02, 0x170, 8, 1, dev->trap_device[1]);
+    intel_ich2_device_trap_setup(1, 0x48, 0x02, 0x376, 1, 1, dev->trap_device[1]);
+
+    /* COM A */
+    switch(dev->pci_conf[0][0xe0] & 7)
+    {
+        case 0:
+            temp_addr = 0x3f8;
+        break;
+
+        case 1:
+            temp_addr = 0x2f8;
+        break;
+
+        case 2:
+            temp_addr = 0x220;
+        break;
+
+        case 3:
+            temp_addr = 0x228;
+        break;
+
+        case 4:
+            temp_addr = 0x238;
+        break;
+
+        case 5:
+            temp_addr = 0x2e8;
+        break;
+
+        case 6:
+            temp_addr = 0x338;
+        break;
+
+        case 7:
+            temp_addr = 0x3e8;
+        break;
+    }
+    intel_ich2_device_trap_setup(!!(dev->pci_conf[0][0xe6] & 1), 0x48, 0x10, temp_addr, 8, 0, dev->trap_device[2]);
+
+    /* COM B */
+    switch((dev->pci_conf[0][0xe0] >> 4) & 7)
+    {
+        case 0:
+            temp_addr = 0x3f8;
+        break;
+
+        case 1:
+            temp_addr = 0x2f8;
+        break;
+
+        case 2:
+            temp_addr = 0x220;
+        break;
+
+        case 3:
+            temp_addr = 0x228;
+        break;
+
+        case 4:
+            temp_addr = 0x238;
+        break;
+
+        case 5:
+            temp_addr = 0x2e8;
+        break;
+
+        case 6:
+            temp_addr = 0x338;
+        break;
+
+        case 7:
+            temp_addr = 0x3e8;
+        break;
+    }
+    intel_ich2_device_trap_setup(!!(dev->pci_conf[0][0xe6] & 2), 0x48, 0x10, temp_addr, 8, 0, dev->trap_device[3]);
+
+    /* LPT */
+    switch(dev->pci_conf[0][0xe1] & 3)
+    {
+        case 0:
+            temp_addr = 0x378;
+        break;
+
+        case 1:
+            temp_addr = 0x278;
+        break;
+
+        case 2:
+            temp_addr = 0x3bc;
+        break;
+    }
+    intel_ich2_device_trap_setup(!!(dev->pci_conf[0][0xe6] & 4), 0x48, 0x10, temp_addr, 8, 0, dev->trap_device[4]);
+
+    /* FDC */
+    temp_addr = (dev->pci_conf[0][0xe1] & 0x10) ? 0x3f0 : 0x370;
+    intel_ich2_device_trap_setup(!!(dev->pci_conf[0][0xe6] & 8), 0x48, 0x10, temp_addr, 8, 0, dev->trap_device[5]);
+
+    /* MSS */
+    switch((dev->pci_conf[0][0xe2] >> 4) & 3)
+    {
+        case 0:
+            temp_addr = 0x530;
+        break;
+
+        case 1:
+            temp_addr = 0x604;
+        break;
+
+        case 2:
+            temp_addr = 0xe80;
+        break;
+
+        case 3:
+            temp_addr = 0xf40;
+        break;
+    }
+    intel_ich2_device_trap_setup(!!(dev->pci_conf[0][0xe6] & 0x40), 0x49, 0x04, 0x170, 8, 0, dev->trap_device[6]);
+
+    /* MIDI */
+    temp_addr = (dev->pci_conf[0][0xe2] & 8) ? 0x300 : 0x330;
+    intel_ich2_device_trap_setup(!!(dev->pci_conf[0][0xe6] & 0x20), 0x49, 0x08, temp_addr, 2, 0, dev->trap_device[7]);
+
+    /* KBC */
+    intel_ich2_device_trap_setup(1, 0x49, 0x10, 0x60, 4, 0, dev->trap_device[8]); // KBC doesn't have a decode bit
+
+    /* Adlib */
+    intel_ich2_device_trap_setup(!!(dev->pci_conf[0][0xe6] & 0x80), 0x49, 0x20, 0x388, 4, 0, dev->trap_device[9]);
 }
 
 static void
@@ -129,6 +271,8 @@ intel_ich2_nvr_handler(intel_ich2_t *dev)
 static void
 intel_ich2_function_disable(intel_ich2_t *dev)
 {
+uint16_t smbus_addr = (dev->pci_conf[3][0x21] << 8) | (dev->pci_conf[3][0x20] & 0xf0); // Hold the SMBus Base Address value
+
 /* Disable IDE */
 if(dev->pci_conf[0][0xf2] & 2) {
     ide_pri_disable();
@@ -142,7 +286,7 @@ if(dev->pci_conf[0][0xf2] & 4) {
 
 /* Disable SMBus */
 if(dev->pci_conf[0][0xf2] & 8) { //ICH2 Supports the ability of the SMBus Controller to be active even if it's PCI device is disabled
-    smbus_piix4_remap(dev->smbus, (dev->pci_conf[3][0x21] << 8) | (dev->pci_conf[3][0x20] & 0xf0), dev->pci_conf[0][0xf3] & 1);
+    smbus_piix4_remap(dev->smbus, smbus_addr, dev->pci_conf[0][0xf3] & 1);
 }
 
 /* Disable USB Hub 2 */
@@ -306,10 +450,12 @@ intel_ich2_write(int func, int addr, uint8_t val, void *priv)
 
             case 0xe1:
                 dev->pci_conf[func][addr] = val & 0x13;
+                intel_ich2_trap_update(dev);
             break;
 
             case 0xe2:
                 dev->pci_conf[func][addr] = val & 0x3b;
+                intel_ich2_trap_update(dev);
             break;
 
             case 0xe3:
@@ -322,6 +468,9 @@ intel_ich2_write(int func, int addr, uint8_t val, void *priv)
 
             case 0xe5 ... 0xe6:
                 dev->pci_conf[func][addr] = val;
+
+                if(addr == 0xe6)
+                    intel_ich2_trap_update(dev);
             break;
 
             case 0xe7:
@@ -631,7 +780,9 @@ static void *
 intel_ich2_init(const device_t *info)
 {
     intel_ich2_t *dev = (intel_ich2_t *)malloc(sizeof(intel_ich2_t));
+    intel_ich2_trap_t *trap = (intel_ich2_trap_t *)malloc(sizeof(intel_ich2_t));
     memset(dev, 0, sizeof(intel_ich2_t));
+    memset(dev, 0, sizeof(intel_ich2_trap_t));
     int slot;
 
     /* Device */
@@ -649,14 +800,15 @@ intel_ich2_init(const device_t *info)
     dev->nvr = device_add(&piix4_nvr_device);
     acpi_set_nvr(dev->acpi, dev->nvr);
 
-    /* PIC */
-    pic_set_pci();
-
     /* Intel ICH2 Hub */
     device_add(&intel_ich2_hub_device);
 
+    /* PIC */
+    pic_set_pci();
+
     /* SMBus */
     dev->smbus = device_add(&intel_ich2_smbus_device);
+    smbus_piix4_get_acpi(dev->smbus, dev->acpi);
 
     /* SFF Compatible IDE Drives */
     dev->ide_drive[0] = device_add_inst(&sff8038i_device, 1);
@@ -667,6 +819,14 @@ intel_ich2_init(const device_t *info)
     /* TCO */
     dev->tco = device_add(&tco_device);
     acpi_set_tco(dev->acpi, dev->tco);
+
+    /* I/O Traps */
+    acpi_set_trap_update(dev->acpi, intel_ich2_trap_update, dev);
+
+    for (int i = 0; i < 10; i++) {
+        dev->trap_device[i] = device_add_inst(&intel_ich2_trap_device, i + 1);
+        intel_ich2_trap_set_acpi(dev->trap_device[i], dev->acpi);
+    }
 
     /* USB */
     dev->usb_hub[0] = device_add_inst(&usb_device, 1);

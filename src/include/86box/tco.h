@@ -30,4 +30,4 @@ extern uint8_t tco_read(uint16_t addr, tco_t *dev);
 }
 #endif
 
-#endif
+#endif /* TCO_H */

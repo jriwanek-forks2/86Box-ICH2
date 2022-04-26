@@ -336,7 +336,8 @@ intel_mch_init(const device_t *info)
     /* AGP Bridge */
     device_add(&intel_mch_agp_device);
 
-    /* L2 Cache */
+    /* L1 & L2 Cache */
+    cpu_cache_int_enabled = 1;
     cpu_cache_ext_enabled = 1;
     cpu_update_waitstates();
 
