@@ -780,9 +780,7 @@ static void *
 intel_ich2_init(const device_t *info)
 {
     intel_ich2_t *dev = (intel_ich2_t *)malloc(sizeof(intel_ich2_t));
-    intel_ich2_trap_t *trap = (intel_ich2_trap_t *)malloc(sizeof(intel_ich2_t));
     memset(dev, 0, sizeof(intel_ich2_t));
-    memset(dev, 0, sizeof(intel_ich2_trap_t));
     int slot;
 
     /* Device */
