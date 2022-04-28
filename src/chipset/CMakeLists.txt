@@ -13,4 +13,4 @@
 #           Copyright 2020,2021 David Hrdlička.
 #
 
-add_library(chipset OBJECT intel_mch.c intel_ich2.c ../ioapic.c)
+add_library(chipset OBJECT intel_815ep.c intel_ich2.c ../ioapic.c)

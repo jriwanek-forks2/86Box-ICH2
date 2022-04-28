@@ -219,29 +219,7 @@ extern void  machine_close(void);
 extern void	machine_common_init(const machine_t *);
 
 /* m_at.c */
-extern void	machine_at_common_init_ex(const machine_t *, int type);
-extern void	machine_at_common_init(const machine_t *);
-extern void	machine_at_init(const machine_t *);
-extern void	machine_at_ps2_init(const machine_t *);
-extern void	machine_at_common_ide_init(const machine_t *);
-extern void	machine_at_ibm_common_ide_init(const machine_t *);
-extern void	machine_at_ide_init(const machine_t *);
-extern void	machine_at_ps2_ide_init(const machine_t *);
-
-extern int	machine_at_ibm_init(const machine_t *);
-
-//IBM AT with custom BIOS
-extern int	machine_at_ibmatami_init(const machine_t *); // IBM AT with AMI BIOS
-extern int	machine_at_ibmatpx_init(const machine_t *); //IBM AT with Phoenix BIOS
-extern int	machine_at_ibmatquadtel_init(const machine_t *); // IBM AT with Quadtel BIOS
-
-extern int	machine_at_ibmxt286_init(const machine_t *);
-
-extern int	machine_at_siemens_init(const machine_t *); //Siemens PCD-2L. N82330 discrete machine. It segfaults in some places
-
-#if defined(DEV_BRANCH) && defined(USE_OPEN_AT)
-extern int	machine_at_openat_init(const machine_t *);
-#endif
+extern void	machine_at_common_init_ex(const machine_t *);
 
 /* m_at_ich2.c */
 extern int	machine_at_m6tss_init(const machine_t *);

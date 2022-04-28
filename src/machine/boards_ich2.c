@@ -25,6 +25,14 @@
 #include "cpu.h"
 #include <86box/machine.h>
 
+/*
+ * Biostar M6TSS
+ * 
+ * North Bridge: Intel 815EP
+ * Super I/O: National Semiconductor NSC366 (PC87366)
+ * BIOS: AwardBIOS 6.00PG
+ * Notes: CD Boot Bugs
+*/
 int
 machine_at_m6tss_init(const machine_t *model)
 {
@@ -36,7 +44,7 @@ machine_at_m6tss_init(const machine_t *model)
     if (bios_only || !ret)
 	return ret;
 
-    machine_at_common_init_ex(model, 2);
+    machine_at_common_init_ex(model);
 
     pci_init(PCI_CONFIG_TYPE_1);
     pci_register_bus_slot(0, 0x00, PCI_CARD_NORTHBRIDGE, 0, 0, 0, 0);
@@ -50,7 +58,7 @@ machine_at_m6tss_init(const machine_t *model)
     pci_register_bus_slot(2, 0x06, PCI_CARD_NORMAL,      4, 1, 2, 3);
     pci_register_bus_slot(2, 0x07, PCI_CARD_NORMAL,      1, 2, 3, 4);
 
-    device_add(&intel_mch_device); /* Intel i815EP MCH */
+    device_add(&intel_815ep_device); /* Intel 815EP MCH */
     device_add(&intel_ich2_device); /* Intel ICH2 */
     device_add(&nsc366_device); /* National Semiconductor NSC366 */
     device_add(&sst_flash_49lf004_device); /* SST 4Mbit Firmware Hub */
@@ -60,6 +68,14 @@ machine_at_m6tss_init(const machine_t *model)
     return ret;
 }
 
+/*
+ * Tyan Tomcat 815T (S2080)
+ * 
+ * North Bridge: Intel 815EP
+ * Super I/O: National Semiconductor NSC366 (PC87366)
+ * BIOS: AMIBIOS 7 (AMI Home BIOS Fork)
+ * Notes: None
+*/
 int
 machine_at_s2080_init(const machine_t *model)
 {
@@ -71,7 +87,7 @@ machine_at_s2080_init(const machine_t *model)
     if (bios_only || !ret)
 	return ret;
 
-    machine_at_common_init_ex(model, 2);
+    machine_at_common_init_ex(model);
 
     pci_init(PCI_CONFIG_TYPE_1);
     pci_register_bus_slot(0, 0x00, PCI_CARD_NORTHBRIDGE, 0, 0, 0, 0);
@@ -86,7 +102,7 @@ machine_at_s2080_init(const machine_t *model)
     pci_register_bus_slot(2, 0x08, PCI_CARD_NORMAL,      6, 7, 8, 2);
     pci_register_bus_slot(2, 0x09, PCI_CARD_NORMAL,      7, 8, 2, 3);
 
-    device_add(&intel_mch_device); /* Intel i815EP MCH */
+    device_add(&intel_815ep_device); /* Intel 815EP MCH */
     device_add(&intel_ich2_device); /* Intel ICH2 */
     device_add(&nsc366_device); /* National Semiconductor NSC366 */
     device_add(&sst_flash_49lf004_device); /* SST 4Mbit Firmware Hub */
