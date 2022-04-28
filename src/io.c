@@ -28,7 +28,6 @@
 #include <86box/io.h>
 #include <86box/timer.h>
 #include "cpu.h"
-#include <86box/m_amstrad.h>
 
 
 #define NPORTS		65536		/* PC/AT supports 64K ports */
@@ -312,13 +311,6 @@ inb(uint16_t port)
 	p = q;
     }
 
-    if (port & 0x80)
-	amstrad_latch = AMSTRAD_NOLATCH;
-    else if (port & 0x4000)
-	amstrad_latch = AMSTRAD_SW10;
-    else
-	amstrad_latch = AMSTRAD_SW9;
-
     if (!found)
 	cycles -= io_delay;
 
@@ -400,13 +392,6 @@ inw(uint16_t port)
 	}
     }
     ret = (ret8[1] << 8) | ret8[0];
-
-    if (port & 0x80)
-	amstrad_latch = AMSTRAD_NOLATCH;
-    else if (port & 0x4000)
-	amstrad_latch = AMSTRAD_SW10;
-    else
-	amstrad_latch = AMSTRAD_SW9;
 
     if (!found)
 	cycles -= io_delay;
@@ -518,13 +503,6 @@ inl(uint16_t port)
 	}
     }
     ret = (ret8[3] << 24) | (ret8[2] << 16) | (ret8[1] << 8) | ret8[0];
-
-    if (port & 0x80)
-	amstrad_latch = AMSTRAD_NOLATCH;
-    else if (port & 0x4000)
-	amstrad_latch = AMSTRAD_SW10;
-    else
-	amstrad_latch = AMSTRAD_SW9;
 
     if (!found)
 	cycles -= io_delay;

@@ -351,6 +351,14 @@ acpi_reg_read_intel_ich2(int size, uint16_t addr, void *p)
 		/* DEVTRAP_EN—Device Trap Enable Register */
 		ret = (dev->regs.devtrap_en >> shift16) & 0xff;
 		break;
+    case 0x4c ... 0x4d:
+        /* BUS_ADDR_TRACK—Bus Address Tracker Register */
+        ret = (dev->regs.bus_addr_track >> shift16) & 0xff;
+        break;
+    case 0x4e:
+        /* BUS_CYC_TRACK—Bus Cycle Tracker Register */
+        ret = dev->regs.bus_cyc_track;
+        break;
     case 0x60 ... 0x70:
         /* TCO Registers */
         ret = tco_read(addr, dev->tco);
@@ -887,6 +895,14 @@ acpi_reg_write_intel_ich2(int size, uint16_t addr, uint8_t val, void *p)
 		if (dev->trap_update)
 			dev->trap_update(dev->trap_priv);
 		break;
+    case 0x4c ... 0x4d:
+        /* BUS_ADDR_TRACK—Bus Address Tracker Register */
+        dev->regs.bus_addr_track = ((dev->regs.bus_addr_track & ~(0xff << shift16)) | (val << shift16)) & 0x097d;
+        break;
+    case 0x4e:
+        /* BUS_CYC_TRACK—Bus Cycle Tracker Register */
+        dev->regs.bus_cyc_track = val;
+        break;
     case 0x60 ... 0x70:
         /* TCO Registers */
         tco_write(addr, val, dev->tco);

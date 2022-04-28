@@ -36,17 +36,16 @@ Motherboards: 2 Boards handled (❓ Board details will come after most parts are
 
 Southbridge we emulate: Intel ICH2 Desktop
 
-Emulation details
-|Chipset Portion|Status|Notes                                                            |
-|---------------|------|-----------------------------------------------------------------|
-|ICH2 Hub       |✅   |Uses the standard 86Box PCI Bridge code with slight modifications.|
-|ICH2 LPC       |⚠️   |GPIO is unimplemented. Traps are obscure.                         |
-|ICH2 IDE       |✅   |None                                                              |
-|ICH2 SMBus     |✅   |None.                                                             |
-|ICH2 USB       |❌   |86Box doesn't emulate USB. Recommended to disable it to save IRQ's|
-|ICH2 AC'97     |❌   |AC'97 WILL NOT be emulated anytime                                |
-|ICH2 DMA       |✅   |None                                                              |
-|ICH2 Peripherals|✅  |FWH functionality isn't utilized by any of our boards.            |
+|Southbridge Portion|Status|Notes                                                            |
+|-------------------|------|-----------------------------------------------------------------|
+|ICH2 Hub           |✅   |Uses the standard 86Box PCI Bridge code with slight modifications.|
+|ICH2 LPC           |✅   |Trap implementation is obscure.                                   |
+|ICH2 IDE           |✅   |None                                                              |
+|ICH2 SMBus         |✅   |None                                                              |
+|ICH2 USB           |❌   |86Box doesn't emulate USB. Recommended to disable it to save IRQ's|
+|ICH2 AC'97         |❌   |AC'97 WILL NOT be emulated anytime                                |
+|ICH2 DMA           |✅   |None                                                              |
+|ICH2 Peripherals   |✅   |FWH functionality isn't utilized by any of our boards.            |
 
 <h2>FAQ</h2>
 

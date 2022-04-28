@@ -47,15 +47,16 @@ machine_at_m6tss_init(const machine_t *model)
     pci_register_bus_slot(2, 0x03, PCI_CARD_NORMAL,      1, 2, 3, 4);
     pci_register_bus_slot(2, 0x04, PCI_CARD_NORMAL,      2, 3, 4, 1);
     pci_register_bus_slot(2, 0x05, PCI_CARD_NORMAL,      3, 4, 1, 2);
-    pci_register_bus_slot(2, 0x0a, PCI_CARD_NORMAL,      4, 1, 2, 3);
+    pci_register_bus_slot(2, 0x06, PCI_CARD_NORMAL,      4, 1, 2, 3);
     pci_register_bus_slot(2, 0x07, PCI_CARD_NORMAL,      1, 2, 3, 4);
 
     device_add(&intel_mch_device); /* Intel i815EP MCH */
     device_add(&intel_ich2_device); /* Intel ICH2 */
     device_add(&nsc366_device); /* National Semiconductor NSC366 */
     device_add(&sst_flash_49lf004_device); /* SST 4Mbit Firmware Hub */
+    device_add(ics9xxx_get(ICS9250_08)); /* ICS Clock Chip */
     spd_register(SPD_TYPE_SDRAM, 0x7, 512);
-    device_add(ics9xxx_get(ICS9250_08));
+
     return ret;
 }
 
@@ -82,13 +83,14 @@ machine_at_s2080_init(const machine_t *model)
     pci_register_bus_slot(2, 0x05, PCI_CARD_NORMAL,      3, 4, 5, 6);
     pci_register_bus_slot(2, 0x06, PCI_CARD_NORMAL,      4, 5, 6, 7);
     pci_register_bus_slot(2, 0x07, PCI_CARD_NORMAL,      5, 6, 7, 8);
-    pci_register_bus_slot(2, 0x0a, PCI_CARD_NORMAL,      6, 7, 8, 2);
+    pci_register_bus_slot(2, 0x08, PCI_CARD_NORMAL,      6, 7, 8, 2);
     pci_register_bus_slot(2, 0x09, PCI_CARD_NORMAL,      7, 8, 2, 3);
 
     device_add(&intel_mch_device); /* Intel i815EP MCH */
     device_add(&intel_ich2_device); /* Intel ICH2 */
     device_add(&nsc366_device); /* National Semiconductor NSC366 */
-    device_add(&sst_flash_49lf004_device); /* SST 4Mbit Firmware Hub*/
+    device_add(&sst_flash_49lf004_device); /* SST 4Mbit Firmware Hub */
     spd_register(SPD_TYPE_SDRAM, 0x7, 512);
+
     return ret;
 }

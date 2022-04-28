@@ -37,8 +37,6 @@
 #include <86box/mem.h>
 #include <86box/device.h>
 #include <86box/machine.h>
-#include <86box/m_xt_xi8088.h>
-#include <86box/m_at_t3100e.h>
 #include <86box/fdd.h>
 #include <86box/fdc.h>
 #include <86box/sound.h>
@@ -879,26 +877,6 @@ add_data_kbd(uint16_t val)
 	return;
     }
 
-    /* Test for T3100E 'Fn' key (Right Alt / Right Ctrl) */
-    if ((dev != NULL) && (kbc_ven == KBC_VEN_TOSHIBA) &&
-	(keyboard_recv(0xb8) || keyboard_recv(0x9d))) switch (val) {
-	case 0x4f: t3100e_notify_set(0x01); break; /* End */
-	case 0x50: t3100e_notify_set(0x02); break; /* Down */
-	case 0x51: t3100e_notify_set(0x03); break; /* PgDn */
-	case 0x52: t3100e_notify_set(0x04); break; /* Ins */
-	case 0x53: t3100e_notify_set(0x05); break; /* Del */
-	case 0x54: t3100e_notify_set(0x06); break; /* SysRQ */
-	case 0x45: t3100e_notify_set(0x07); break; /* NumLock */
-	case 0x46: t3100e_notify_set(0x08); break; /* ScrLock */
-	case 0x47: t3100e_notify_set(0x09); break; /* Home */
-	case 0x48: t3100e_notify_set(0x0a); break; /* Up */
-	case 0x49: t3100e_notify_set(0x0b); break; /* PgUp */
-	case 0x4A: t3100e_notify_set(0x0c); break; /* Keypad -*/
-	case 0x4B: t3100e_notify_set(0x0d); break; /* Left */
-	case 0x4C: t3100e_notify_set(0x0e); break; /* KP 5 */
-	case 0x4D: t3100e_notify_set(0x0f); break; /* Right */
-    }
-
     kbd_log("ATkbd: translate is %s, ", translate ? "on" : "off");
     switch(val) {
 	case FAKE_LSHIFT_ON:
@@ -1644,111 +1622,6 @@ write64_quadtel(void *priv, uint8_t val)
     return write64_generic(dev, val);
 }
 
-
-static uint8_t
-write60_toshiba(void *priv, uint8_t val)
-{
-    atkbd_t *dev = (atkbd_t *)priv;
-
-    switch(dev->command) {
-	case 0xb6:	/* T3100e - set color/mono switch */
-		kbd_log("ATkbc: T3100e - set color/mono switch\n");
-		t3100e_mono_set(val);
-		return 0;
-    }
-
-    return 1;
-}
-
-
-static uint8_t
-write64_toshiba(void *priv, uint8_t val)
-{
-    atkbd_t *dev = (atkbd_t *)priv;
-
-    switch (val) {
-	case 0xaf:
-		kbd_log("ATkbc: bad KBC command AF\n");
-		return 1;
-
-	case 0xb0:	/* T3100e: Turbo on */
-		kbd_log("ATkbc: T3100e: Turbo on\n");
-		t3100e_turbo_set(1);
-		return 0;
-
-	case 0xb1:	/* T3100e: Turbo off */
-		kbd_log("ATkbc: T3100e: Turbo off\n");
-		t3100e_turbo_set(0);
-		return 0;
-
-	case 0xb2:	/* T3100e: Select external display */
-		kbd_log("ATkbc: T3100e: Select external display\n");
-		t3100e_display_set(0x00);
-		return 0;
-
-	case 0xb3:	/* T3100e: Select internal display */
-		kbd_log("ATkbc: T3100e: Select internal display\n");
-		t3100e_display_set(0x01);
-		return 0;
-
-	case 0xb4:	/* T3100e: Get configuration / status */
-		kbd_log("ATkbc: T3100e: Get configuration / status\n");
-		add_data(dev, t3100e_config_get());
-		return 0;
-
-	case 0xb5:	/* T3100e: Get colour / mono byte */
-		kbd_log("ATkbc: T3100e: Get colour / mono byte\n");
-		add_data(dev, t3100e_mono_get());
-		return 0;
-
-	case 0xb6:	/* T3100e: Set colour / mono byte */
-		kbd_log("ATkbc: T3100e: Set colour / mono byte\n");
-		dev->want60 = 1;
-		return 0;
-
-	case 0xb7:	/* T3100e: Emulate PS/2 keyboard */
-	case 0xb8:	/* T3100e: Emulate AT keyboard */
-		dev->flags &= ~KBC_TYPE_MASK;
-		if (val == 0xb7) {
-			kbd_log("ATkbc: T3100e: Emulate PS/2 keyboard\n");
-			dev->flags |= KBC_TYPE_PS2_NOREF;
-		} else {
-			kbd_log("ATkbc: T3100e: Emulate AT keyboard\n");
-			dev->flags |= KBC_TYPE_ISA;
-		}
-		return 0;
-
-	case 0xbb:	/* T3100e: Read 'Fn' key.
-			   Return it for right Ctrl and right Alt; on the real
-			   T3100e, these keystrokes could only be generated
-			   using 'Fn'. */
-		kbd_log("ATkbc: T3100e: Read 'Fn' key\n");
-		if (keyboard_recv(0xb8) ||	/* Right Alt */
-		    keyboard_recv(0x9d))	/* Right Ctrl */
-			add_data(dev, 0x04);
-		else	add_data(dev, 0x00);
-		return 0;
-
-	case 0xbc:	/* T3100e: Reset Fn+Key notification */
-		kbd_log("ATkbc: T3100e: Reset Fn+Key notification\n");
-		t3100e_notify_set(0x00);
-		return 0;
-
-	case 0xc0:	/*Read input port*/
-		kbd_log("ATkbc: read input port\n");
-
-		/* The T3100e returns all bits set except bit 6 which
-		 * is set by t3100e_mono_set() */
-		dev->input_port = (t3100e_mono_get() & 1) ? 0xff : 0xbf;
-		add_data(dev, dev->input_port);
-		return 0;
-
-    }
-
-    return write64_generic(dev, val);
-}
-
-
 static void
 kbd_write(uint16_t port, uint8_t val, void *priv)
 {
@@ -2326,11 +2199,6 @@ kbd_init(const device_t *info)
 	case KBC_VEN_QUADTEL:
 		dev->write60_ven = write60_quadtel;
 		dev->write64_ven = write64_quadtel;
-		break;
-
-	case KBC_VEN_TOSHIBA:
-		dev->write60_ven = write60_toshiba;
-		dev->write64_ven = write64_toshiba;
 		break;
     }
 

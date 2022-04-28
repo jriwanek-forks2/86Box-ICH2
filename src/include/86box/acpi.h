@@ -16,11 +16,12 @@
  */
 #ifndef ACPI_H
 # define ACPI_H
-#include <86box/tco.h> /* TCO Header */
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include <86box/tco.h> /* TCO Header. Needed for Intel ICH chipsets. */
 
 #define ACPI_TIMER_FREQ	3579545
 #define PM_FREQ		ACPI_TIMER_FREQ
@@ -60,14 +61,14 @@ extern "C" {
 
 typedef struct
 {
-    uint8_t		acpitst, auxen, auxsts, plvl2, plvl3,
+    uint8_t		acpitst, auxen, auxsts, bus_cyc_track, plvl2, plvl3,
 			smicmd, gpio_dir,
 			gpio_val, muxcntrl, ali_soft_smi,
 			timer32, smireg,
 			gpireg[3], gporeg[4],
 			extiotrapsts, extiotrapen;
     uint16_t		pmsts, pmen,
-			pmcntrl, devact_sts, 
+			pmcntrl, bus_addr_track, devact_sts, 
             devtrap_en, gpsts, gpsts1,
 			gpen, gpen1, gpscien,
 			gpcntrl, gplvl, gpmux,

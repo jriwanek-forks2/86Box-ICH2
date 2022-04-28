@@ -30,7 +30,6 @@ typedef struct
 
 
 extern const device_t	port_6x_device;
-extern const device_t	port_6x_xi8088_device;
 extern const device_t	port_6x_ps2_device;
 extern const device_t	port_6x_olivetti_device;
 

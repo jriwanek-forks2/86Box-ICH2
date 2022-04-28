@@ -25,7 +25,6 @@
 #include <86box/io.h>
 #include <86box/keyboard.h>
 #include <86box/mem.h>
-#include <86box/m_xt_xi8088.h>
 #include <86box/fdd.h>
 #include <86box/fdc.h>
 #include <86box/sound.h>
@@ -65,8 +64,6 @@ port_6x_write(uint16_t port, uint8_t val, void *priv)
 			was_speaker_enable = 1;
 		pit_ctr_set_gate(&pit->counters[2], val & 1);
 
-		if (dev->flags & PORT_6X_TURBO)
-			xi8088_turbo_set(!!(val & 0x04));
 		break;
     }
 }
@@ -97,7 +94,7 @@ port_6x_read(uint16_t port, void *priv)
 			ret |= 0x20;
 
 		if (dev->flags & PORT_6X_TURBO)
-			ret = (ret & 0xfb) | (xi8088_turbo_get() ? 0x04 : 0x00);
+			ret = ret & 0xfb;
 		break;
 	case 2:
 		if (dev->flags & PORT_6X_SWA) {
@@ -178,20 +175,6 @@ const device_t port_6x_device = {
     .internal_name = "port_6x",
     .flags = 0,
     .local = 0,
-    .init = port_6x_init,
-    .close = port_6x_close,
-    .reset = NULL,
-    { .available = NULL },
-    .speed_changed = NULL,
-    .force_redraw = NULL,
-    .config = NULL
-};
-
-const device_t port_6x_xi8088_device = {
-    .name = "Port 6x Registers (Xi8088)",
-    .internal_name = "port_6x_xi8088",
-    .flags = 0,
-    .local = PORT_6X_TURBO | PORT_6X_EXT_REF | PORT_6X_MIRROR,
     .init = port_6x_init,
     .close = port_6x_close,
     .reset = NULL,

@@ -6,8 +6,8 @@
  * Copyright 2022 Tiseno100.
  */
 
-#ifndef TCO_H
-# define TCO_H
+#ifndef EMU_TCO_H
+# define EMU_TCO_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,4 +30,4 @@ extern uint8_t tco_read(uint16_t addr, tco_t *dev);
 }
 #endif
 
-#endif /* TCO_H */
+#endif /* EMU_TCO_H */

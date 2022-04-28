@@ -1,5 +1,5 @@
 /*
- * Intel ICH2 Trap Handler.
+ * Intel ICH2 Trap Handler
  *
  * Authors:	Tiseno100,
  *

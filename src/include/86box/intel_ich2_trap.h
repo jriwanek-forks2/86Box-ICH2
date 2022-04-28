@@ -1,5 +1,5 @@
 /*
- * Intel ICH2 Trap Header.
+ * Intel ICH2 Trap Header
  *
  * Authors:	Tiseno100,
  *
@@ -16,7 +16,6 @@ extern "C" {
 typedef struct intel_ich2_trap_t
 {
     acpi_t  *acpi;
-    struct intel_ich2_t *dev;
     void *trap;
 } intel_ich2_trap_t;
 
