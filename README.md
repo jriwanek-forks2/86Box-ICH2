@@ -31,8 +31,8 @@ Motherboards: 2 Boards handled (❓ Board details will come after most parts are
 
 |Motherboards     |BIOS                          |Status|Notes                       |
 |-----------------|------------------------------|------|----------------------------|
-|Tyan Tomcat i815T|AMIBIOS 7 (AMI Home BIOS fork)|❓   |None for now.               |
-|Biostar M6TSS    |AwardBIOS 6.00PG              |❓   |CD boot bugs. 86Box related?|
+|Tyan Tomcat i815T|AMIBIOS 7 (AMI Home BIOS fork)|❓   |None                        |
+|Biostar M6TSL    |AwardBIOS 6.00PG              |❓   |No integrated ESS Solo & GPU|
 
 Southbridge we emulate: Intel ICH2 Desktop
 

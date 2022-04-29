@@ -45,7 +45,7 @@ const machine_filter_t machine_chipsets[] = {
 
 const machine_t machines[] = {
 
-    { "[Intel i815EP] Biostar M6TSS",                  "m6tss",            MACHINE_TYPE_ICH2,       MACHINE_CHIPSET_INTEL_I815EP,        machine_at_m6tss_init,            0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET370,                 CPU_BLOCK_NONE,        			      66666667, 133333333, 1300, 3500, 1.5, 8.0, MACHINE_PS2_NOISA,   MACHINE_IDE_DUAL, 32768, 524288, 32768, 255, NULL, NULL },
+    { "[Intel i815EP] Biostar M6TSL",                  "m6tsl",            MACHINE_TYPE_ICH2,       MACHINE_CHIPSET_INTEL_I815EP,        machine_at_m6tsl_init,            0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET370,                 CPU_BLOCK_NONE,        			      66666667, 133333333, 1300, 3500, 1.5, 8.0, MACHINE_PS2_NOISA,   MACHINE_IDE_DUAL, 32768, 524288, 32768, 255, NULL, NULL },
     { "[Intel i815EP] Tyan Tomcat i815T",              "s2080",            MACHINE_TYPE_ICH2,       MACHINE_CHIPSET_INTEL_I815EP,        machine_at_s2080_init,            0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET370,                 CPU_BLOCK_NONE,        			      66666667, 133333333, 1300, 3500, 1.5, 8.0, MACHINE_PS2_NOISA,   MACHINE_IDE_DUAL, 32768, 524288, 32768, 255, NULL, NULL },
     { NULL,                                            NULL,               MACHINE_TYPE_NONE,       MACHINE_CHIPSET_NONE,                NULL,                             0, 0, MACHINE_AVAILABLE, 0 , 0,                                 CPU_BLOCK_NONE,                              0, 0, 0, 0, 0, 0, MACHINE_BUS_NONE,  MACHINE_FLAGS_NONE, 0, 0, 0, 0, NULL, NULL }
 

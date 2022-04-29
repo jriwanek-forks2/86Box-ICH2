@@ -52,7 +52,7 @@ typedef struct intel_815ep_t
 static void
 intel_usmm_segment_recalc(intel_815ep_t *dev, uint8_t val)
 {
-    intel_815ep_log("Intel MCH: USMM update to status %d\n", val); /* Check the 815EP datasheet for status */
+    intel_815ep_log("Intel 815EP MCH: USMM update to status %d\n", val); /* Check the 815EP datasheet for status */
 
     smram_disable(dev->h_segment);
     smram_disable(dev->usmm_segment);
@@ -72,7 +72,7 @@ intel_usmm_segment_recalc(intel_815ep_t *dev, uint8_t val)
 static void
 intel_lsmm_segment_recalc(intel_815ep_t *dev, uint8_t val)
 {
-    intel_815ep_log("Intel MCH: LSMM update to status %d\n", val); /* Check the 815EP datasheet for status */
+    intel_815ep_log("Intel 815EP MCH: LSMM update to status %d\n", val); /* Check the 815EP datasheet for status */
 
     smram_disable(dev->lsmm_segment);
 
@@ -215,7 +215,7 @@ intel_815ep_write(int func, int addr, uint8_t val, void *priv)
         break;
 
         case 0xa9:
-            dev->pci_conf[addr] = val & 3;
+            dev->pci_conf[addr] = (val & 2) | 1;
         break;
 
         case 0xb0:
@@ -300,6 +300,8 @@ intel_815ep_reset(void *priv)
     dev->pci_conf[0xa4] = 0x07;
     dev->pci_conf[0xa5] = 0x02;
     dev->pci_conf[0xa7] = 0x1f;
+
+    dev->pci_conf[0xa9] = 0x01; /* Hack: Brute Force AGP Enabled */
 
     for(int i = 0x58; i <= 0x5f; i++)  /* Reset PAM to defaults */
         intel_pam_recalc(i, 0);

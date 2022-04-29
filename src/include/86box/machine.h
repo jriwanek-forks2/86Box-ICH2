@@ -222,7 +222,7 @@ extern void	machine_common_init(const machine_t *);
 extern void	machine_at_common_init_ex(const machine_t *);
 
 /* m_at_ich2.c */
-extern int	machine_at_m6tss_init(const machine_t *);
+extern int	machine_at_m6tsl_init(const machine_t *);
 extern int	machine_at_s2080_init(const machine_t *);
 
 #endif	/*EMU_MACHINE_H*/

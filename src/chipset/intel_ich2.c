@@ -735,7 +735,9 @@ intel_ich2_reset(void *priv)
     dev->pci_conf[1][0x20] = 0x01;
 
     dev->pci_conf[1][0x54] = 0xff; /* Hack: Fake Cable Conductor & UltraDMA details */
-    dev->pci_conf[1][0x55] = 0xf0;
+
+    if(cpu_busspeed >= 100000000)  /* Go UltraDMA 100 if CPU is up for it. Not that it actually matters */
+        dev->pci_conf[1][0x55] = 0xf0;
 
     sff_bus_master_reset(dev->ide_drive[0], 0); /* Setup the IDE */
     sff_bus_master_reset(dev->ide_drive[1], 8);
