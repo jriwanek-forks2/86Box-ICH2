@@ -259,7 +259,11 @@ intel_815ep_read(int func, int addr, void *priv)
     intel_815ep_t *dev = (intel_815ep_t *)priv;
 
     intel_815ep_log("Intel 815EP MCH: dev->regs[%02x] (%02x)\n", addr, dev->pci_conf[addr]);
-    return dev->pci_conf[addr];
+
+    if(addr == 0x51) // Bit 2 is Write Only. It cannot be read.
+        return dev->pci_conf[addr] & 3;
+    else
+        return dev->pci_conf[addr];
 }
 
 

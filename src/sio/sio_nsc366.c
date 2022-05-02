@@ -49,7 +49,6 @@ typedef struct
     int siofc_lock;
 } nsc366_t;
 
-#define ENABLE_NSC366_LOG 1
 #ifdef ENABLE_NSC366_LOG
 int nsc366_do_log = ENABLE_NSC366_LOG;
 
