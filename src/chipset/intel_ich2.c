@@ -33,7 +33,6 @@
 #include <86box/mem.h>
 #include <86box/pci.h>
 #include <86box/pic.h>
-#include <86box/port_92.h>
 #include <86box/smbus.h>
 #include <86box/tco.h>
 #include <86box/usb.h>
@@ -821,7 +820,7 @@ static void
 intel_ich2_close(void *priv)
 {
     intel_ich2_t *dev = (intel_ich2_t *)priv;
-
+    pclog("closin");
     free(dev);
 }
 
