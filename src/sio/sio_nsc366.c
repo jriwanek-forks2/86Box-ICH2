@@ -116,6 +116,19 @@ nsc366_uart(int uart, nsc366_t *dev)
 }
 
 static void
+nsc366_fscm_enable(nsc366_t *dev)
+{
+    dev->hwm->fscm_enable = (!!(dev->dev_specific_config[1][9] & 1) << 2) | (!!(dev->dev_specific_config[0][9] & 0x20) << 1) | !!(dev->dev_specific_config[0][9] & 4);
+
+    /*
+     *   Register F1h Bit 0: Fan Monitor 2 Enable
+     *   Register F0h Bit 5: Fan Monitor 1 Enable
+     *   Register F0h Bit 2: Fan Monitor 0 Enable
+     *   Configuration Enables are not really needed
+     */
+}
+
+static void
 nsc366_fscm(nsc366_t *dev)
 {
     uint16_t base = (dev->io_base0[0][9] << 8) | (dev->io_base0[1][9] & 0xf0);
@@ -166,6 +179,7 @@ switch(dev->ldn)
     break;
 
     case 9:
+        nsc366_fscm_enable(dev);
         nsc366_fscm(dev);
     break;
 
@@ -432,6 +446,7 @@ nsc366_reset(void *priv)
     dev->irq[9] = 0x03;
     dev->dma_select0[9] = 0x04;
     dev->dma_select1[9] = 0x04;
+    nsc366_fscm_enable(dev);
     nsc366_fscm(dev);
 
     /* Voltage Level Monitor */
