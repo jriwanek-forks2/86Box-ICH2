@@ -820,7 +820,6 @@ static void
 intel_ich2_close(void *priv)
 {
     intel_ich2_t *dev = (intel_ich2_t *)priv;
-    pclog("closin");
     free(dev);
 }
 
