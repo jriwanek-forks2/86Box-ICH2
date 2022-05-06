@@ -18,6 +18,7 @@
 #ifndef EMU_CHIPSET_H
 # define EMU_CHIPSET_H
 
+extern const device_t   sis_471_device;
 extern const device_t	intel_815ep_device;
 extern const device_t   intel_ich2_device;
 

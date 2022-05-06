@@ -191,7 +191,7 @@ intel_ich2_trap_update(void *priv)
     temp_addr = (dev->pci_conf[0][0xe1] & 0x10) ? 0x3f0 : 0x370;
     intel_ich2_device_trap_setup(!!(dev->pci_conf[0][0xe6] & 8), 0x48, 0x10, temp_addr, 8, 0, dev->trap_device[5]);
 
-    /* MSS */
+    /* MSS (Note: There's no clear explaination about the SB Trap so only the MSS Trap is implementated) */
     switch((dev->pci_conf[0][0xe2] >> 4) & 3)
     {
         case 0:
