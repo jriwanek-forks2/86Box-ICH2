@@ -38,8 +38,6 @@ typedef struct
 
 #ifdef ENABLE_SIS_471_LOG
 int sis_471_do_log = ENABLE_SIS_471_LOG;
-
-
 static void
 sis_471_log(const char *fmt, ...)
 {
@@ -60,12 +58,14 @@ sis_471_cache(sis_471_t *dev)
 {
     if(dev->regs[0x01] & 0x80) {
         sis_471_log("SiS 471 Cache: Cache was Enabled\n");
+        cpu_cache_int_enabled = 1;
         cpu_cache_ext_enabled = 1;
         dev->regs[0x01] &= 0x70; /* Setup Hacked Size */
         dev->regs[0x01] |= 0x40;
     }
     else {
         sis_471_log("SiS 471 Cache: Cache was Disabled\n");
+        cpu_cache_int_enabled = 0;
         cpu_cache_ext_enabled = 0;
     }
 
@@ -90,10 +90,13 @@ sis_471_shadow(sis_471_t *dev)
 }
 
 static void
-sis_471_port_92(sis_471_t *dev)
+sis_471_port_92_feature(sis_471_t *dev)
 {
-    sis_471_log("SiS 471 Port 92: Features GATEA20 %s and FASTRESET %s\n", !!(dev->regs[0x07] & 0x10) ? "Enabled" : "Disabled", !!(dev->regs[0x07] & 2) ? "Enabled" : "Disabled");
+    int period = (dev->regs[0x07] & 8) ? 6 : 2;
+
+    sis_471_log("SiS 471 Port 92: Features GATEA20 %s and FASTRESET %s with Period %dus\n", !!(dev->regs[0x07] & 0x10) ? "Enabled" : "Disabled", !!(dev->regs[0x07] & 2) ? "Enabled" : "Disabled", period);
     port_92_set_features(dev->port_92, !!(dev->regs[0x07] & 0x10), !!(dev->regs[0x07] & 2));
+    port_92_set_period(dev->port_92, period * TIMER_USEC);
 }
 
 static void
@@ -105,7 +108,7 @@ sis_471_dram_populate(sis_471_t *dev)
     switch(size)
     {
         default:
-            sis_471_log("SiS 471 DRAM: Illegal size. Change size. Not populating\n");
+            pclog("SiS 471 DRAM: Illegal size! Change memory size. Not populating\n");
         break;
 
         case 8:
@@ -157,11 +160,11 @@ sis_471_dram_populate(sis_471_t *dev)
 static void
 sis_471_relocation(sis_471_t *dev)
 {
-    int mem_size_kb = mem_size << 10;
+    int mem_size_kb = mem_size >> 10;
 
-    if((mem_size_kb >= 1) && (mem_size_kb <= 8) && !!(dev->regs[0x0b] & 2)) { /* It also can relocate D0000-EFFFF but it's not implemented due to 86Box limitations */
+    if((mem_size_kb >= 1) && (mem_size_kb <= 8) && !!(dev->regs[0x0b] & 2) && (((dev->regs[0x02] >> 2) & 0x0f) == 0)) { /* It also can relocate D0000-EFFFF(Additional 128KB) but it's not implemented due to 86Box limitations */
         sis_471_log("SiS 471 Relocate: 256KB from the A0000-BFFFF section were relocated\n")
-        mem_remap_top(256);
+        mem_remap_top(128);
     }
 }
 
@@ -261,7 +264,7 @@ sis_471_sw_smi_trigger(uint16_t addr, uint8_t val, void *priv)
                 smi_line = 1;
                 sis_471_log("SiS 471 SMI Trap: Provoking an SMI\n");
             }
-            else { /* Go by IRQ */
+            else if(!dev->clear_smi) { /* Go by IRQ */
                 picint(1 << pin);
                 sis_471_log("SiS 471 SMI Trap: Provoking an IRQ at line %d\n", pin);
             }
@@ -304,9 +307,13 @@ sis_471_write(uint16_t addr, uint8_t val, void *priv)
     else {
         dev->index -= 0x50; /* Register minus 0x50 */
 
+        /* Note: You can write normally on the reserved registers so we don't really bother masking them. We only do sanity control for RO & RWC Registers. */
+
         if(dev->index == 0x19) /* Status Registers */
             dev->regs[dev->index] &= val;
-        else if(dev->index < 39) /* Writable Registers with sanity check */
+        else if(dev->index == 0x26)
+            dev->regs[dev->index] = val | 1; /* There's a read only register here that defines if the Keyboard Interface is enabled. We always say one there. */
+        else if(dev->index < 39) /* Rest of Writable Registers with sanity check */
             dev->regs[dev->index] = val;
 
         switch(dev->index)
@@ -320,7 +327,7 @@ sis_471_write(uint16_t addr, uint8_t val, void *priv)
             break;
 
             case 0x07: /* GATEA20/FAST Handler */
-                sis_471_port_92(dev);
+                sis_471_port_92_feature(dev);
             break;
 
             case 0x09: /* DRAM Population Handler */
@@ -345,7 +352,7 @@ sis_471_write(uint16_t addr, uint8_t val, void *priv)
             break;
 
             case 0x1b: /* SMI Clear Handler */
-                dev->clear_smi = 0;
+                dev->clear_smi = 0; /* Clears the flag so another SMI/IRQ request can be provoked */
             break;
 
             case 0x22: /* Port 92h Enable/Disable Handler */
@@ -368,8 +375,12 @@ sis_471_read(uint16_t addr, void *priv)
     else {
         dev->index -= 0x50;
 
-        if(dev->index < 39)
-            return dev->regs[dev->index];
+        if(dev->index < 39) {
+            if(dev->index == 0x1c) /* Reads to this register return the NMI Mask Index port value at 70h */
+                return inb(0x70);
+            else    
+                return dev->regs[dev->index];
+        }
         else
             return 0xff;
 
@@ -385,12 +396,12 @@ sis_471_reset(void *priv)
 
     dev->clear_smi = 0;
     dev->regs[0x11] = 0x09;
+    dev->regs[0x26] = 0x01;
 
     /* Execute & configure all handlers */
     sis_471_cache(dev);
     sis_471_shadow(dev);
-    sis_471_port_92(dev);
-    sis_471_dram_populate(dev);
+    sis_471_port_92_feature(dev);
     sis_471_dram_populate(dev);
     sis_471_relocation(dev);
     sis_471_bus_speed(dev);
