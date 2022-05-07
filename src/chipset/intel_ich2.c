@@ -309,28 +309,24 @@ if(dev->pci_conf[0][0xf2] & 0x10) {
 static void
 intel_ich2_ide_setup(intel_ich2_t *dev)
 {
+    uint16_t bm_base = (dev->pci_conf[1][0x21] << 8) | (dev->pci_conf[1][0x20] & 0xf0); /* Get the Bus Master Address */
+
     ide_pri_disable();
     ide_sec_disable();
+    sff_bus_master_handler(dev->ide_drive[0], !!(dev->pci_conf[1][0x04] & 1) && !!(dev->pci_conf[1][0x41] & 0x80), bm_base);
+    sff_bus_master_handler(dev->ide_drive[1], !!(dev->pci_conf[1][0x04] & 1) && !!(dev->pci_conf[1][0x43] & 0x80), bm_base + 8);
 
-    intel_ich2_log("Intel ICH2 IDE: Primary Channel is %s.\n", !!(dev->pci_conf[1][0x41] & 0x80) ? "Enabled" : "Disabled");
+    intel_ich2_log("Intel ICH2 IDE: Primary Channel is %s with Bus Master Address 0x%x.\n", !!(dev->pci_conf[1][0x41] & 0x80) ? "Enabled" : "Disabled", bm_base);
     if(dev->pci_conf[1][0x41] & 0x80) {
         ide_pri_enable();
     }
 
-    intel_ich2_log("Intel ICH2 IDE: Secondary Channel is %s.\n", !!(dev->pci_conf[1][0x43] & 0x80) ? "Enabled" : "Disabled");
+    intel_ich2_log("Intel ICH2 IDE: Secondary Channel is %s with Bus Master Address 0x%x.\n", !!(dev->pci_conf[1][0x43] & 0x80) ? "Enabled" : "Disabled", bm_base);
     if(dev->pci_conf[1][0x43] & 0x80) {
         ide_sec_enable();
     }
 }
 
-static void
-intel_ich2_bus_master_setup(intel_ich2_t *dev)
-{
-    uint16_t bm_base = ((dev->pci_conf[1][0x21] & 0xf0) << 8) | (dev->pci_conf[1][0x20] & 0xf0);
-    intel_ich2_log("Intel ICH2 IDE: IDE Bus Master address is 0x%04x.\n", bm_base);
-    sff_bus_master_handler(dev->ide_drive[0], dev->pci_conf[1][0x04] & 1, bm_base);
-    sff_bus_master_handler(dev->ide_drive[1], dev->pci_conf[1][0x04] & 1, bm_base + 8);
-}
 /* USB Controller functions */
 static void
 intel_ich2_usb_setup(int func, intel_ich2_t* dev)
@@ -522,7 +518,6 @@ intel_ich2_write(int func, int addr, uint8_t val, void *priv)
             case 0x04:
                 dev->pci_conf[func][addr] = val & 5;
                 intel_ich2_ide_setup(dev);
-                intel_ich2_bus_master_setup(dev);
             break;
 
             case 0x07:
@@ -531,7 +526,7 @@ intel_ich2_write(int func, int addr, uint8_t val, void *priv)
 
             case 0x20 ... 0x21:
                 dev->pci_conf[func][addr] = val & ((addr & 1) ? 0xff : (0xf0 | 1));
-                intel_ich2_bus_master_setup(dev);
+                intel_ich2_ide_setup(dev);
             break;
 
             case 0x2c ... 0x2f:
@@ -541,7 +536,9 @@ intel_ich2_write(int func, int addr, uint8_t val, void *priv)
 
             case 0x40 ... 0x43:
                 dev->pci_conf[func][addr] = val & ((addr & 1) ? 0xf3 : 0xff);
-                intel_ich2_ide_setup(dev);
+
+                if((addr == 0x41) || (addr == 0x43))
+                    intel_ich2_ide_setup(dev);
             break;
 
             case 0x44:
