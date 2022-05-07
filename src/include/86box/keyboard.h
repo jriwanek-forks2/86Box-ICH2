@@ -51,8 +51,6 @@ extern int	keyboard_scan;
 extern void	(*keyboard_send)(uint16_t val);
 extern void	kbd_adddata_process(uint16_t val, void (*adddata)(uint16_t val));
 
-extern const scancode	scancode_xt[512];
-
 extern uint8_t	keyboard_set3_flags[512];
 extern uint8_t	keyboard_set3_all_repeat;
 extern uint8_t	keyboard_set3_all_break;
@@ -60,17 +58,6 @@ extern int	mouse_queue_start, mouse_queue_end;
 extern int	mouse_scan;
 
 #ifdef EMU_DEVICE_H
-extern const device_t	keyboard_pc_device;
-extern const device_t	keyboard_pc82_device;
-extern const device_t	keyboard_xt_device;
-extern const device_t	keyboard_xt86_device;
-extern const device_t	keyboard_xt_compaq_device;
-extern const device_t	keyboard_tandy_device;
-#if defined(DEV_BRANCH) && defined(USE_LASERXT)
-extern const device_t	keyboard_xt_lxt3_device;
-#endif
-extern const device_t	keyboard_xt_olivetti_device;
-extern const device_t	keyboard_xt_zenith_device;
 extern const device_t	keyboard_at_device;
 extern const device_t	keyboard_at_ami_device;
 extern const device_t	keyboard_at_toshiba_device;

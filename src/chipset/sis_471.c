@@ -258,13 +258,13 @@ sis_471_sw_smi_trigger(uint16_t addr, uint8_t val, void *priv)
 
     sis_471_log("SiS 471 SMI Trap: Trap was triggered\n");
 
-    if(dev->regs[0x0b] & 0x80) {
-        if(!!(dev->regs[0x18] & 2) && !dev->clear_smi) { /* Go by SMI */
+    if((dev->regs[0x0b] & 0x80) && !dev->clear_smi) {
+        if(dev->regs[0x18] & 2) { /* Go by SMI */
             if(dev->regs[0x0b] & 0x10) {
                 smi_line = 1;
                 sis_471_log("SiS 471 SMI Trap: Provoking an SMI\n");
             }
-            else if(!dev->clear_smi) { /* Go by IRQ */
+            else { /* Go by IRQ */
                 picint(1 << pin);
                 sis_471_log("SiS 471 SMI Trap: Provoking an IRQ at line %d\n", pin);
             }
