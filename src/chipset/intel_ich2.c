@@ -317,13 +317,13 @@ intel_ich2_ide_setup(intel_ich2_t *dev)
     sff_bus_master_handler(dev->ide_drive[1], 0, bm_base);
 
     if(dev->pci_conf[1][0x41] & 0x80) {
-        intel_ich2_log("Intel ICH2 IDE: Primary Channel is %s with Bus Master Address 0x%x.\n", !!(dev->pci_conf[1][0x41] & 0x80) ? "Enabled" : "Disabled", bm_base);
+        intel_ich2_log("Intel ICH2 IDE: Primary Channel is enabled with Bus Master Address 0x%x.\n", bm_base);
         ide_pri_enable();
         sff_bus_master_handler(dev->ide_drive[0], 1, bm_base);
     }
 
     if(dev->pci_conf[1][0x43] & 0x80) {
-        intel_ich2_log("Intel ICH2 IDE: Secondary Channel is %s with Bus Master Address 0x%x.\n", !!(dev->pci_conf[1][0x43] & 0x80) ? "Enabled" : "Disabled", bm_base + 8);
+        intel_ich2_log("Intel ICH2 IDE: Secondary Channel is enabled with Bus Master Address 0x%x.\n", bm_base + 8);
         ide_sec_enable();
         sff_bus_master_handler(dev->ide_drive[1], 1, bm_base + 8);
     }
