@@ -63,8 +63,8 @@ machine_at_m6tsl_init(const machine_t *model)
     device_add(&intel_ich2_device); /* Intel ICH2 */
     device_add(&nsc366_device); /* National Semiconductor NSC366 */
     device_add(&sst_flash_49lf004_device); /* SST 4Mbit Firmware Hub */
+    intel_815ep_spd_init(); /* SPD */
     device_add(ics9xxx_get(ICS9250_08)); /* ICS Clock Chip */
-    spd_register(SPD_TYPE_SDRAM, 0x7, 512);
 
     return ret;
 }
@@ -107,7 +107,7 @@ machine_at_s2080_init(const machine_t *model)
     device_add(&intel_ich2_device); /* Intel ICH2 */
     device_add(&nsc366_device); /* National Semiconductor NSC366 */
     device_add(&sst_flash_49lf004_device); /* SST 4Mbit Firmware Hub */
-    spd_register(SPD_TYPE_SDRAM, 0x7, 512);
+    intel_815ep_spd_init(); /* SPD */
 
     return ret;
 }

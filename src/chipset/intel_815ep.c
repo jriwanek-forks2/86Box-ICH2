@@ -140,14 +140,6 @@ intel_815ep_write(int func, int addr, uint8_t val, void *priv)
             dev->pci_conf[addr] = val & 2; // Brute force to AGP Mode
         break;
 
-        case 0x52:
-        case 0x54:
-            if (!(dev->pci_conf[0x70] & 2)) {
-                dev->pci_conf[addr] = val & ((addr & 4) ? 0x0f : 0xff);
-                spd_write_drbs_intel_815ep(dev->pci_conf);
-            }
-        break;
-
         case 0x53:
             dev->pci_conf[addr] = val;
         break;
@@ -262,6 +254,8 @@ intel_815ep_read(int func, int addr, void *priv)
 
     if(addr == 0x51) // Bit 2 is Write Only. It cannot be read.
         return dev->pci_conf[addr] & 3;
+    else if(addr == 0x52)
+        return intel_815ep_get_banking();
     else
         return dev->pci_conf[addr];
 }
