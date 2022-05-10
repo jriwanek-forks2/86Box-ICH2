@@ -259,6 +259,7 @@ nsc366_write(uint16_t addr, uint8_t val, void *priv)
                     dev->sio_config[dev->index - 0x20] = val & 0xf3;
                 break;
             }
+        break;
         
         /* Logical Devices */
         case 0x30:

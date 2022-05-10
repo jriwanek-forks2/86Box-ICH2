@@ -26,50 +26,6 @@
 #include <86box/machine.h>
 
 /*
- * Biostar M6TSL
- * 
- * North Bridge: Intel 815E
- * Super I/O: National Semiconductor NSC366 (PC87366)
- * BIOS: AwardBIOS 6.00PG
- * Notes: No integrated ESS Solo & GPU
-*/
-int
-machine_at_m6tsl_init(const machine_t *model)
-{
-    int ret;
-
-    ret = bios_load_linear("roms/machines/m6tsl/tsl0425b.bin",
-			   0x00080000, 524288, 0);
-
-    if (bios_only || !ret)
-	return ret;
-
-    machine_at_common_init_ex(model);
-
-    pci_init(PCI_CONFIG_TYPE_1);
-    pci_register_bus_slot(0, 0x00, PCI_CARD_NORTHBRIDGE, 0, 0, 0, 0);
-    pci_register_bus_slot(0, 0x01, PCI_CARD_AGPBRIDGE,   1, 2, 3, 4);
-    pci_register_bus_slot(0, 0x1e, PCI_CARD_BRIDGE,      0, 0, 0, 0);
-    pci_register_bus_slot(0, 0x1f, PCI_CARD_SOUTHBRIDGE, 1, 2, 8, 4);
-    pci_register_bus_slot(1, 0x01, PCI_CARD_AGP,         1, 2, 3, 4);
-    pci_register_bus_slot(2, 0x03, PCI_CARD_NORMAL,      1, 2, 3, 4);
-    pci_register_bus_slot(2, 0x04, PCI_CARD_NORMAL,      2, 3, 4, 1);
-    pci_register_bus_slot(2, 0x05, PCI_CARD_NORMAL,      3, 4, 1, 2);
-    pci_register_bus_slot(2, 0x06, PCI_CARD_NORMAL,      4, 1, 2, 3);
-    pci_register_bus_slot(2, 0x07, PCI_CARD_NORMAL,      1, 2, 3, 4);
-    pci_register_bus_slot(2, 0x08, PCI_CARD_NORMAL,      2, 3, 4, 1);
-
-    device_add(&intel_815ep_device); /* Intel 815EP MCH (This board has normally an i815E but this doesn't matter on our implementation) */
-    device_add(&intel_ich2_device); /* Intel ICH2 */
-    device_add(&nsc366_device); /* National Semiconductor NSC366 */
-    device_add(&sst_flash_49lf004_device); /* SST 4Mbit Firmware Hub */
-    intel_815ep_spd_init(); /* SPD */
-    device_add(ics9xxx_get(ICS9250_08)); /* ICS Clock Chip */
-
-    return ret;
-}
-
-/*
  * Tyan Tomcat 815T (S2080)
  * 
  * North Bridge: Intel 815EP
