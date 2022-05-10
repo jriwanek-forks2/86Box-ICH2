@@ -208,10 +208,10 @@ nsc366_write(uint16_t addr, uint8_t val, void *priv)
         break;
 
         /* Super I/O Configuration */
-        case 0x20:
+        case 0x20 ... 0x2d:
             switch(dev->index - 0x20)
             {
-                case 0x21:
+                case 0x01:
                     if(!dev->siofc_lock)
                         if(val & 0x80) {
                             dev->sio_config[dev->index - 0x20] = val | 0x80;
@@ -221,41 +221,41 @@ nsc366_write(uint16_t addr, uint8_t val, void *priv)
                             dev->sio_config[dev->index - 0x20] = val;
                 break;
 
-                case 0x22:
+                case 0x02:
                     if(!dev->siofc_lock)
                         dev->sio_config[dev->index - 0x20] = val;
                 break;
 
-                case 0x23:
+                case 0x03:
                     if(!dev->siofc_lock)
                         dev->sio_config[dev->index - 0x20] = val & 0xf7;
                 break;
 
-                case 0x24:
+                case 0x04:
                     if(!dev->siofc_lock)
                         dev->sio_config[dev->index - 0x20] = val;
                 break;
 
-                case 0x25:
+                case 0x05:
                     if(!dev->siofc_lock)
                         dev->sio_config[dev->index - 0x20] = val & 0xf3;
                 break;
 
-                case 0x28:
+                case 0x08:
                     dev->sio_config[dev->index - 0x20] = val & 0xf3;
                 break;
 
-                case 0x2a:
+                case 0x0a:
                     if(!dev->siofc_lock)
                         dev->sio_config[dev->index - 0x20] = val;
                 break;
 
-                case 0x2b:
+                case 0x0b:
                     if(!dev->siofc_lock)
                         dev->sio_config[dev->index - 0x20] = val & 0x4f; // Force Case Intrusion to always off
                 break;
 
-                case 0x2c ... 0x2d:
+                case 0x0c ... 0x0d:
                     dev->sio_config[dev->index - 0x20] = val & 0xf3;
                 break;
             }
