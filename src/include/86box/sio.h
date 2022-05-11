@@ -15,6 +15,9 @@
 #ifndef EMU_SIO_H
 # define EMU_SIO_H
 
+/* ITE IT8702 */
+extern const device_t   it8702_device;
+
 /* National Semiconductor NSC366 (PC87366) */
 extern const device_t   nsc366_device;
 extern const device_t   nsc366_4f_device;

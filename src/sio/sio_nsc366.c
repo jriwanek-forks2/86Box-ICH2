@@ -51,8 +51,6 @@ typedef struct
 
 #ifdef ENABLE_NSC366_LOG
 int nsc366_do_log = ENABLE_NSC366_LOG;
-
-
 void
 nsc366_log(const char *fmt, ...)
 {
@@ -192,6 +190,7 @@ switch(dev->ldn)
     break;
 }
 }
+
 
 static void
 nsc366_write(uint16_t addr, uint8_t val, void *priv)

@@ -228,6 +228,7 @@ extern int  machine_at_vi15g_init(const machine_t *);
 extern int  machine_at_486sv2g_init(const machine_t *);
 
 /* boards_ich2.c */
+extern int	machine_at_cusl2c_init(const machine_t *);
 extern int	machine_at_s2080_init(const machine_t *);
 
 #endif	/*EMU_MACHINE_H*/

@@ -223,7 +223,7 @@ sis_471_smram(sis_471_t *dev)
 
         case 1:
             proper = 0xe0000;
-            remapped = 0xa0000;
+            remapped = 0xb0000;
             size = 0x10000;
         break;
 

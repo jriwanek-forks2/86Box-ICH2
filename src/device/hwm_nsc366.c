@@ -383,13 +383,24 @@ nsc366_hwm_init(const device_t *info)
             3000  /* FAN 2 */
         },
         {
-            30,   /* Temperature 0 */
+            30,   /* Temperatures which are broken */
             30,
             30,
             30
         },
         {
-            0,    /* Voltage 0 */
+            0,    /* Voltages which are broken */
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
         }
     };
     hwm_values = defaults;
