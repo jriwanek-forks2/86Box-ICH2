@@ -7,6 +7,7 @@
  */
 
 // NOTE: We don't really utilize fans because our emulated board doesn't use them.
+// NOTE 2: LPT & Serial are aligned on a different way due to CUSL2-C not using them properly.
 
 #include <stdarg.h>
 #include <stdint.h>
@@ -108,32 +109,29 @@ it8702_fdc(it8702_t *dev)
 static void
 it8702_uart(int uart, it8702_t *dev)
 {
-    uint16_t base = ((dev->b_addr[0][1 + uart] & 0x0f) << 8) | (dev->b_addr[1][1 + uart] & 0xf8);
-    int irq = dev->irq[1 + uart];
+    uint16_t base = ((dev->b_addr[0][2 + uart] & 0x0f) << 8) | (dev->b_addr[1][2 + uart] & 0xf8);
+    int irq = dev->irq[2 + uart];
     serial_remove(dev->uart[uart]);
 
-    if(dev->enable[1 + uart])
+    if(dev->enable[2 + uart])
     {
         it8702_log("IT8702 Serial %c: Enabled with Base: 0x%x IRQ: %d\n", 'A' + uart, base, irq);
         serial_setup(dev->uart[uart], base, irq);
-        serial_set_clock_src(dev->uart[uart], 24444444 / ((dev->d_spec[0][1 + uart] >> 1) ? 12 : 13));
+        serial_set_clock_src(dev->uart[uart], 24444444 / ((dev->d_spec[0][2 + uart] >> 1) ? 12 : 13));
     }
 }
 
 static void
 it8702_lpt(it8702_t *dev)
 {
-    uint16_t base = ((dev->b_addr[0][3] & 0x0f) << 8) | (dev->b_addr[1][3] & 0xf8);
-    uint16_t base2 = ((dev->b_addr[2][3] & 0x0f) << 8) | (dev->b_addr[3][3] & 0xf8);
-    int irq = dev->irq[3];
+    uint16_t base = ((dev->b_addr[0][1] & 0x0f) << 8) | (dev->b_addr[1][1] & 0xf8);
+    int irq = dev->irq[1];
     lpt1_remove();
     lpt2_remove();
 
-    if(dev->enable[3] & 1) {
+    if(dev->enable[1] & 1) {
         it8702_log("IT8702 LPT1: Enabled with Base: 0x%x IRQ: %d\n", base, irq);
-        it8702_log("IT8702 LPT2: Enabled with Base: 0x%x IRQ: %d\n", base2, irq);
         lpt1_init(base);
-        lpt2_init(base2);
         lpt1_irq(irq);
         lpt2_irq(irq);
     }
@@ -148,13 +146,15 @@ it8702_ldn(it8702_t *dev)
             it8702_fdc(dev);
         break;
 
-        case 1 ... 2:
-            it8702_uart((dev->ldn == 2), dev);
-        break;
-
-        case 3:
+        case 1:
             it8702_lpt(dev);
         break;
+
+        case 2 ... 3:
+            it8702_uart((dev->ldn == 3), dev);
+        break;
+
+
     }
 }
 
@@ -342,31 +342,29 @@ it8702_reset(void *priv)
     fdc_reset(dev->fdc);
     it8702_fdc(dev);
 
-    /* UART Serial A */
-    dev->b_addr[0][1] = 0x02;
-    dev->b_addr[1][1] = 0xf8;
-    dev->irq[1] = 0x04;
-    dev->d_spec[1][1] = 0x50;
-    dev->d_spec[3][1] = 0x7f;
-    it8702_uart(0, dev);
+    /* LPT */
+    dev->b_addr[0][1] = 0x03;
+    dev->b_addr[1][1] = 0x78;
+    dev->irq[1] = 0x07;
+    dev->dma[1] = 0x03;
+    dev->d_spec[0][1] = 0x03;
+    it8702_lpt(dev);
 
-    /* UART Serial B */
+    /* UART Serial A */
     dev->b_addr[0][2] = 0x02;
-    dev->b_addr[1][2] = 0x78;
+    dev->b_addr[1][2] = 0xf8;
     dev->irq[2] = 0x04;
     dev->d_spec[1][2] = 0x50;
     dev->d_spec[3][2] = 0x7f;
-    it8702_uart(1, dev);
+    it8702_uart(0, dev);
 
-    /* LPT */
-    dev->b_addr[0][3] = 0x03;
+    /* UART Serial B */
+    dev->b_addr[0][3] = 0x02;
     dev->b_addr[1][3] = 0x78;
-    dev->b_addr[2][3] = 0x07;
-    dev->b_addr[3][3] = 0x78;
-    dev->irq[3] = 0x07;
-    dev->dma[3] = 0x03;
-    dev->d_spec[0][3] = 0x03;
-    it8702_lpt(dev);
+    dev->irq[3] = 0x04;
+    dev->d_spec[1][3] = 0x50;
+    dev->d_spec[3][3] = 0x7f;
+    it8702_uart(1, dev);
 
     /* FAN Handler */
     dev->b_addr[0][4] = 0x02;

@@ -39,7 +39,7 @@ machine_at_cusl2c_init(const machine_t *model)
 {
     int ret;
 
-    ret = bios_load_linear("roms/machines/cusl2c/cslc1009.awd",
+    ret = bios_load_linear("roms/machines/cusl2c/1014c.001",
 			   0x000c0000, 262144, 0);
 
     if (bios_only || !ret)
@@ -52,8 +52,7 @@ machine_at_cusl2c_init(const machine_t *model)
     pci_register_bus_slot(0, 0x01, PCI_CARD_AGPBRIDGE,   1, 2, 0, 0);
     pci_register_bus_slot(0, 0x1e, PCI_CARD_BRIDGE,      0, 0, 0, 0);
     pci_register_bus_slot(0, 0x1f, PCI_CARD_SOUTHBRIDGE, 1, 2, 8, 4);
-    pci_register_bus_slot(1, 0x07, PCI_CARD_AGP,         1, 2, 0, 0);
-    pci_register_bus_slot(2, 0x09, PCI_CARD_NORMAL,      6, 7, 8, 5);
+    pci_register_bus_slot(1, 0x00, PCI_CARD_AGP,         1, 2, 0, 0);
     pci_register_bus_slot(2, 0x0a, PCI_CARD_NORMAL,      7, 8, 5, 6);
     pci_register_bus_slot(2, 0x0b, PCI_CARD_NORMAL,      8, 5, 6, 7);
     pci_register_bus_slot(2, 0x0c, PCI_CARD_NORMAL,      5, 6, 7, 8);
@@ -64,8 +63,7 @@ machine_at_cusl2c_init(const machine_t *model)
     device_add(&intel_ich2_device); /* Intel ICH2 */
     device_add(&it8702_device); /* ITE IT8702 */
     device_add(&sst_flash_49lf002_device); /* SST 2Mbit Firmware Hub */
-
-    device_add(&as99127f_rev2_device); /* ASUS Hardware Monitor */
+    device_add(&as99127f_device); /* ASUS Hardware Monitor */
     ics9xxx_get(ICS9150_08); /* ICS Clock Chip */
     intel_815ep_spd_init(); /* SPD */
 
