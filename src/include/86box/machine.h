@@ -141,7 +141,6 @@
 
 enum {
     MACHINE_TYPE_NONE = 0,
-    MACHINE_TYPE_AT,
     MACHINE_TYPE_SIS_471,
     MACHINE_TYPE_ICH2,
     MACHINE_TYPE_MAX
@@ -223,9 +222,6 @@ extern void	machine_common_init(const machine_t *);
 
 /* m_at.c */
 extern void	machine_at_common_init_ex(const machine_t *);
-
-/* boards_discrete.c */
-extern int  machine_at_at1990_init(const machine_t *model);
 
 /* boards_sis_471.c */
 extern int  machine_at_vi15g_init(const machine_t *);

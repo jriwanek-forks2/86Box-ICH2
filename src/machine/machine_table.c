@@ -29,7 +29,6 @@
 
 const machine_filter_t machine_types[] = {
     { "None",                      MACHINE_TYPE_NONE       },
-    { "AT",				           MACHINE_TYPE_AT  	   },
     { "SiS 471",				   MACHINE_TYPE_SIS_471	   },
     { "Intel ICH2",				   MACHINE_TYPE_ICH2	   }
 };
@@ -42,9 +41,6 @@ const machine_filter_t machine_chipsets[] = {
 
 
 const machine_t machines[] = {
-
-    /* SiS 471 Based Machines */
-    { "[Intel 82330/82331] 1990 AT Board",             "at1990",        MACHINE_TYPE_AT,            MACHINE_CHIPSET_NONE,                machine_at_at1990_init,           0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET1,                   CPU_BLOCK_NONE,        			            0, 0, 0, 0, 0, 0,                          MACHINE_AT,        MACHINE_FLAGS_NONE,  1024,  16384,  1024, 255, NULL, NULL },
 
     /* SiS 471 Based Machines */
     { "[SiS 471] AOpen Vi15G",                         "vi15g",         MACHINE_TYPE_SIS_471,       MACHINE_CHIPSET_SIS_471,             machine_at_vi15g_init,            0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET3,                   CPU_BLOCK_NONE,        			            20000000, 50000000, 0, 0, 0, 0,            MACHINE_AT,        MACHINE_FLAGS_NONE,  8192, 131072,  8192, 255, NULL, NULL },
