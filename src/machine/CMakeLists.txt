@@ -13,7 +13,7 @@
 #           Copyright 2020,2021 David Hrdlička.
 #
 
-add_library(mch OBJECT machine.c machine_table.c m_at.c boards_ich2.c boards_sis_471.c
+add_library(mch OBJECT machine.c machine_table.c at_base.c boards_discrete.c boards_ich2.c boards_sis_471.c
             m_ps2_mca.c)
 
 if(OPEN_AT)
