@@ -28,9 +28,9 @@
 #include <86box/machine.h>
 
 const machine_filter_t machine_types[] = {
-    { "None",                      MACHINE_TYPE_NONE       },
-    { "SiS 471",				   MACHINE_TYPE_SIS_471	   },
-    { "Intel ICH2",				   MACHINE_TYPE_ICH2	   }
+    { "None",                      MACHINE_TYPE_NONE               },
+    { "SiS 471",				   MACHINE_TYPE_SIS_471	           },
+    { "Intel ICH2",				   MACHINE_TYPE_ICH2	           }
 };
 
 const machine_filter_t machine_chipsets[] = {
@@ -43,7 +43,7 @@ const machine_filter_t machine_chipsets[] = {
 const machine_t machines[] = {
 
     /* SiS 471 Based Machines */
-    { "[SiS 471] AOpen Vi15G",                         "vi15g",         MACHINE_TYPE_SIS_471,       MACHINE_CHIPSET_SIS_471,             machine_at_vi15g_init,            0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET3,                   CPU_BLOCK_NONE,        			            20000000, 50000000, 0, 0, 0, 0,            MACHINE_AT,        MACHINE_FLAGS_NONE,  8192, 131072,  8192, 255, NULL, NULL },
+    { "[SiS 471] AOpen Vi15G",                         "vi15g",         MACHINE_TYPE_SIS_471,       MACHINE_CHIPSET_SIS_471,             machine_at_vi15g_init,            0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET3,                   CPU_BLOCK_NONE,        			            20000000, 50000000, 0, 0, 0, 0,            MACHINE_VLB,       MACHINE_FLAGS_NONE,  8192, 131072,  8192, 255, NULL, NULL },
     { "[SiS 471] ASUS VL/I-486SV2G",                   "486sv2g",       MACHINE_TYPE_SIS_471,       MACHINE_CHIPSET_SIS_471,             machine_at_486sv2g_init,          0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET3,                   CPU_BLOCK_NONE,        			            20000000, 50000000, 0, 0, 0, 0,            MACHINE_PS2_VLB,   MACHINE_FLAGS_NONE,  8192,  65536,  8192, 255, NULL, NULL },
 
     /* Intel 815EP Based Machines */
