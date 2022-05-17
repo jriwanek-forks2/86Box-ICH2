@@ -227,9 +227,6 @@ extern void	machine_at_common_init_ex(const machine_t *);
 extern int  machine_at_vi15g_init(const machine_t *);
 extern int  machine_at_486sv2g_init(const machine_t *);
 
-/* boards_vlsi.c */
-extern int  machine_at_martin_init(const machine_t *);
-
 /* boards_ich2.c */
 extern int	machine_at_cusl2c_init(const machine_t *);
 extern int	machine_at_s2080_init(const machine_t *);
