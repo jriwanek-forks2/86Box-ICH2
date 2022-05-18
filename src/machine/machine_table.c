@@ -28,27 +28,33 @@
 #include <86box/machine.h>
 
 const machine_filter_t machine_types[] = {
-    { "None",                      MACHINE_TYPE_NONE               },
-    { "SiS 471",				   MACHINE_TYPE_SIS_471	           },
+    { "None",                                          MACHINE_TYPE_NONE               },
+    { "SARC 2016A",                                    MACHINE_TYPE_SARC_2016A         },
+    { "SiS 471",				                       MACHINE_TYPE_SIS_471	           },
     { "Intel ICH2",				   MACHINE_TYPE_ICH2	           }
 };
 
 const machine_filter_t machine_chipsets[] = {
-    { "None",                       MACHINE_CHIPSET_NONE                },
-    { "SiS 471",                    MACHINE_CHIPSET_SIS_471             },
-    { "Intel i815EP",               MACHINE_CHIPSET_INTEL_I815EP        }
+    { "None",                                          MACHINE_CHIPSET_NONE            },
+    { "SARC 2016A",                                    MACHINE_CHIPSET_SARC_2016A      },
+    { "SiS 471",                                       MACHINE_CHIPSET_SIS_471         },
+    { "Intel i815EP",                                  MACHINE_CHIPSET_INTEL_I815EP    }
 };
 
 
 const machine_t machines[] = {
 
+    /* SARC 2016A Based Machines */
+    { "CX Technology SXD",              "sxd",           MACHINE_TYPE_SARC_2016A,    MACHINE_CHIPSET_SARC_2016A,          machine_at_sxd_init,              0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_386SX,                     CPU_BLOCK_NONE,        			            16666666, 40000000,  0, 0, 0, 0,           MACHINE_AT,        MACHINE_FLAGS_NONE,  1024,  16384,  1024, 255, NULL, NULL },
+    { "PCChips M396F",                  "m396f",         MACHINE_TYPE_SARC_2016A,    MACHINE_CHIPSET_SARC_2016A,          machine_at_m396f_init,            0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_386SX,                     CPU_BLOCK_NONE,        			            16666666, 40000000,  0, 0, 0, 0,           MACHINE_AT,        MACHINE_FLAGS_NONE,  1024,  16384,  1024, 255, NULL, NULL },
+
     /* SiS 471 Based Machines */
-    { "[SiS 471] AOpen Vi15G",                         "vi15g",         MACHINE_TYPE_SIS_471,       MACHINE_CHIPSET_SIS_471,             machine_at_vi15g_init,            0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET3,                   CPU_BLOCK_NONE,        			            20000000, 50000000, 0, 0, 0, 0,            MACHINE_VLB,       MACHINE_FLAGS_NONE,  8192, 131072,  8192, 255, NULL, NULL },
-    { "[SiS 471] ASUS VL/I-486SV2G",                   "486sv2g",       MACHINE_TYPE_SIS_471,       MACHINE_CHIPSET_SIS_471,             machine_at_486sv2g_init,          0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET3,                   CPU_BLOCK_NONE,        			            20000000, 50000000, 0, 0, 0, 0,            MACHINE_PS2_VLB,   MACHINE_FLAGS_NONE,  8192,  65536,  8192, 255, NULL, NULL },
+    { "AOpen Vi15G",                    "vi15g",         MACHINE_TYPE_SIS_471,       MACHINE_CHIPSET_SIS_471,             machine_at_vi15g_init,            0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET3,                   CPU_BLOCK_NONE,        			            20000000, 50000000,  0, 0, 0, 0,           MACHINE_VLB,       MACHINE_FLAGS_NONE,  8192, 131072,  8192, 255, NULL, NULL },
+    { "ASUS VL/I-486SV2G",              "486sv2g",       MACHINE_TYPE_SIS_471,       MACHINE_CHIPSET_SIS_471,             machine_at_486sv2g_init,          0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET3,                   CPU_BLOCK_NONE,        			            20000000, 50000000,  0, 0, 0, 0,           MACHINE_PS2_VLB,   MACHINE_FLAGS_NONE,  8192,  65536,  8192, 255, NULL, NULL },
 
     /* Intel 815EP Based Machines */
-    { "[Intel i815EP] ASUS CUSL2-C",                   "cusl2c",        MACHINE_TYPE_ICH2,          MACHINE_CHIPSET_INTEL_I815EP,        machine_at_cusl2c_init,           0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET370,                 CPU_BLOCK_NONE,        			            66666667, 133333333, 1300, 3500, 1.5, 8.0, MACHINE_PS2_NOISA,   MACHINE_IDE_DUAL, 32768, 524288, 32768, 255, NULL, NULL },
-    { "[Intel i815EP] Tyan Tomcat i815T",              "s2080",         MACHINE_TYPE_ICH2,          MACHINE_CHIPSET_INTEL_I815EP,        machine_at_s2080_init,            0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET370,                 CPU_BLOCK(CPU_CYRIX3S),        			    66666667, 133333333, 1300, 3500, 1.5, 8.0, MACHINE_PS2_NOISA,   MACHINE_IDE_DUAL, 32768, 524288, 32768, 255, NULL, NULL },
+    { "ASUS CUSL2-C",                   "cusl2c",        MACHINE_TYPE_ICH2,          MACHINE_CHIPSET_INTEL_I815EP,        machine_at_cusl2c_init,           0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET370,                 CPU_BLOCK_NONE,        			            66666667, 133333333, 1300, 3500, 1.5, 8.0, MACHINE_PS2_NOISA, MACHINE_IDE_DUAL,   32768, 524288, 32768, 255, NULL, NULL },
+    { "Tyan Tomcat i815T",              "s2080",         MACHINE_TYPE_ICH2,          MACHINE_CHIPSET_INTEL_I815EP,        machine_at_s2080_init,            0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET370,                 CPU_BLOCK(CPU_CYRIX3S),        			    66666667, 133333333, 1300, 3500, 1.5, 8.0, MACHINE_PS2_NOISA, MACHINE_IDE_DUAL,   32768, 524288, 32768, 255, NULL, NULL },
 
     { NULL,                                            NULL,            MACHINE_TYPE_NONE,          MACHINE_CHIPSET_NONE,                NULL,                             0, 0, MACHINE_AVAILABLE, 0 , 0,                                 CPU_BLOCK_NONE,                              0, 0, 0, 0, 0, 0, MACHINE_BUS_NONE,  MACHINE_FLAGS_NONE, 0, 0, 0, 0, NULL, NULL }
 

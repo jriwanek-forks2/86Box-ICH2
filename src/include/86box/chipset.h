@@ -19,6 +19,9 @@
 # define EMU_CHIPSET_H
 
 
+/* SARC 2016A */
+extern const device_t   sarc_2016a_device;
+
 /* SiS 471 */
 extern const device_t   sis_471_device;
 

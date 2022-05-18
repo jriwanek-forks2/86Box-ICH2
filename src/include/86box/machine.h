@@ -141,6 +141,7 @@
 
 enum {
     MACHINE_TYPE_NONE = 0,
+    MACHINE_TYPE_SARC_2016A,
     MACHINE_TYPE_SIS_471,
     MACHINE_TYPE_ICH2,
     MACHINE_TYPE_MAX
@@ -148,6 +149,7 @@ enum {
 
 enum {
     MACHINE_CHIPSET_NONE = 0,
+    MACHINE_CHIPSET_SARC_2016A,
     MACHINE_CHIPSET_SIS_471,
     MACHINE_CHIPSET_INTEL_I815EP,
     MACHINE_CHIPSET_MAX
@@ -222,6 +224,10 @@ extern void	machine_common_init(const machine_t *);
 
 /* m_at.c */
 extern void	machine_at_common_init_ex(const machine_t *);
+
+/* boards_sarc_2016a.c */
+extern int  machine_at_m396f_init(const machine_t *);
+extern int  machine_at_sxd_init(const machine_t *);
 
 /* boards_sis_471.c */
 extern int  machine_at_vi15g_init(const machine_t *);

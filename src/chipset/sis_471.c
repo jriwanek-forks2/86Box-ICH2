@@ -393,6 +393,8 @@ static void
 sis_471_reset(void *priv)
 {
     sis_471_t *dev = (sis_471_t *) priv;
+    memset(dev->regs, 0, sizeof(dev->regs));
+    dev->index = 0;
 
     dev->clear_smi = 0;
     dev->regs[0x11] = 0x09;
@@ -427,10 +429,13 @@ sis_471_init(const device_t *info)
     sis_471_t *dev = (sis_471_t *) malloc(sizeof(sis_471_t));
     memset(dev, 0, sizeof(sis_471_t));
 
-    io_sethandler(0x0022, 2, sis_471_read, NULL, NULL, sis_471_write, NULL, NULL, dev);
+    /* Device */
+    io_sethandler(0x0022, 2, sis_471_read, NULL, NULL, sis_471_write, NULL, NULL, dev); /* Ports 22h-23h: SiS 471 */
 
+    /* Port 92h */
     dev->port_92 = device_add(&port_92_device);
 
+    /* SMRAM */
     dev->smram = smram_add();
 
     sis_471_reset(dev);
