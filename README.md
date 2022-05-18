@@ -3,7 +3,7 @@
 
 <p align="center"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Intel_ICH2.jpg/240px-Intel_ICH2.jpg"></p>
 
-<p align="center">This is a fork of 86Box that tries to emulate the Intel ICH, more specifically the Intel ICH2</p>
+<p align="center">This is a fork of 86Box that tries to emulate the Intel ICH, more specifically the Intel ICH2 but also a few legacy minor boards</p>
 
 <h2>Whats ICH2</h2>
 The ICH2 is a southbridge released by Intel in the early 2000's. It came incorporated with many peripherals like USB, Audio & IDE. The ICH series in general also got rid of the ISA bus replacing it with the not so different LPC bus.
@@ -27,7 +27,7 @@ Super I/O we emulate: National Semiconductor NSC366(PC87366)
 |NSC366 LPT        |✅   |86Box doesn't emulate LPT modes   |
 |NSC366 HWM        |⚠️   |Voltages & Temperatures are broken|
 
-Motherboards: 3 Motherboards are emulated. 1 ICH2, 2 486. Board shows only the ICH2 ones
+Motherboards: 5 Motherboards are emulated. 1 ICH2, 2 486 & 2 386SX. Board shows only the ICH2 ones
 
 |Motherboards     |BIOS                          |Status|Notes                                                             |
 |-----------------|------------------------------|------|------------------------------------------------------------------|
