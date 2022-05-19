@@ -163,7 +163,7 @@ sis_471_relocation(sis_471_t *dev)
     int mem_size_kb = mem_size >> 10;
 
     if((mem_size_kb >= 1) && (mem_size_kb <= 8) && !!(dev->regs[0x0b] & 2) && (((dev->regs[0x02] >> 2) & 0x0f) == 0)) { /* It also can relocate D0000-EFFFF(Additional 128KB) but it's not implemented due to 86Box limitations */
-        sis_471_log("SiS 471 Relocate: 128KB from the A0000-BFFFF section were relocated\n")
+        sis_471_log("SiS 471 Relocate: 128KB from the A0000-BFFFF section were relocated\n");
         mem_remap_top(128);
     }
 }
@@ -308,7 +308,6 @@ sis_471_write(uint16_t addr, uint8_t val, void *priv)
         dev->index -= 0x50; /* Register minus 0x50 */
 
         /* Note: You can write normally on the reserved registers so we don't really bother masking them. We only do sanity control for RO & RWC Registers. */
-
         if(dev->index == 0x19) /* Status Registers */
             dev->regs[dev->index] &= val;
         else if(dev->index == 0x26)

@@ -29,37 +29,41 @@
     SARC 2016A Configuration Registers:
 
     Register 81h:
-    Bit 0: Enable Shadow
+    Bit 0: Shadow RAM Write Protection(1: Off / 0: On)
+
+    Register 82h:
+    Bit 5: F0000-FFFFF Shadow Enable
+    Bit 4: F0000-FFFFF Shadow Read Enable
 
     Register 83h:
-    Bit 7: C0000-C3FFF Write Enable
-    Bit 6: C4000-C7FFF Write Enable
-    Bit 5: C8000-CBFFF Write Enable
-    Bit 4: CC000-CFFFF Write Enable
-    Bit 3: C0000-C3FFF Read & Write Protect Enable
-    Bit 2: C4000-C7FFF Read & Write Protect Enable
-    Bit 1: C8000-CBFFF Read & Write Protect Enable
-    Bit 0: CC000-CFFFF Read & Write Protect Enable
+    Bit 7: C0000-C3FFF Shadow Enable
+    Bit 6: C4000-C7FFF Shadow Enable
+    Bit 5: C8000-CBFFF Shadow Enable
+    Bit 4: CC000-CFFFF Shadow Enable
+    Bit 3: C0000-C3FFF Shadow Read Enable
+    Bit 2: C4000-C7FFF Shadow Read Enable
+    Bit 1: C8000-CBFFF Shadow Read Enable
+    Bit 0: CC000-CFFFF Shadow Read Enable
 
     Register 84h:
-    Bit 7: D0000-D3FFF Write Enable
-    Bit 6: D4000-D7FFF Write Enable
-    Bit 5: D8000-DBFFF Write Enable
-    Bit 4: DC000-DFFFF Write Enable
-    Bit 3: D0000-D3FFF Read & Write Protect Enable
-    Bit 2: D4000-D7FFF Read & Write Protect Enable
-    Bit 1: D8000-DBFFF Read & Write Protect Enable
-    Bit 0: DC000-DFFFF Read & Write Protect Enable
+    Bit 7: D0000-D3FFF Shadow Enable
+    Bit 6: D4000-D7FFF Shadow Enable
+    Bit 5: D8000-DBFFF Shadow Enable
+    Bit 4: DC000-DFFFF Shadow Enable
+    Bit 3: D0000-D3FFF Shadow Read Enable
+    Bit 2: D4000-D7FFF Shadow Read Enable
+    Bit 1: D8000-DBFFF Shadow Read Enable
+    Bit 0: DC000-DFFFF Shadow Read Enable
 
     Register 83h:
-    Bit 7: E0000-E3FFF Write Enable
-    Bit 6: E4000-E7FFF Write Enable
-    Bit 5: E8000-EBFFF Write Enable
-    Bit 4: EC000-EFFFF Write Enable
-    Bit 3: E0000-E3FFF Read & Write Protect Enable
-    Bit 2: E4000-E7FFF Read & Write Protect Enable
-    Bit 1: E8000-EBFFF Read & Write Protect Enable
-    Bit 0: EC000-EFFFF Read & Write Protect Enable
+    Bit 7: E0000-E3FFF Shadow Enable
+    Bit 6: E4000-E7FFF Shadow Enable
+    Bit 5: E8000-EBFFF Shadow Enable
+    Bit 4: EC000-EFFFF Shadow Enable
+    Bit 3: E0000-E3FFF Shadow Read Enable
+    Bit 2: E4000-E7FFF Shadow Read Enable
+    Bit 1: E8000-EBFFF Shadow Read Enable
+    Bit 0: EC000-EFFFF Shadow Read Enable
 
     Register 87h: DRAM Banking(?)
     Bit 7 - 0: ???
@@ -92,48 +96,57 @@ sarc_2016a_log(const char *fmt, ...)
 
 
 static void
-sarc_2016a_memory_handler(int cur_reg, sarc_2016a_t *dev)
+sarc_2016a_memory_handler(int cur_reg, int reset, sarc_2016a_t *dev)
 {
     uint16_t status;
     uint32_t base;
 
-    if(dev->regs[0x81] & 1) {
-        if(dev->index == 0x02) {
+    if(!reset) {
+        if(dev->index == 0x02) { /* System segment */
+            base = 0xf0000;
             sarc_2016a_log("SARC 2016A Memory: Shadowing system\n");
 
-            if(dev->regs[0x02] & 0x20)
-                status = MEM_WRITE_INTERNAL;
-            else
-                status = MEM_WRITE_EXTANY;
-            
-            if(dev->regs[0x02] & 0x10)
-                status = MEM_READ_INTERNAL | MEM_WRITE_EXTANY;
-            else
-                status |= MEM_READ_EXTANY;
+            if(dev->regs[0x02] & 0x20) {
+                if(dev->regs[0x02] & 0x10)
+                    status = MEM_READ_INTERNAL;
+                else
+                    status = MEM_READ_EXTANY;
 
-            mem_set_mem_state_both(0xf0000, 0x10000, status);
-        }
-        else if(dev->index > 0x02) {
+                if(dev->regs[0x01] & 1)
+                    status |= MEM_WRITE_INTERNAL;
+                else
+                    status |= MEM_WRITE_EXTANY;
+            }
+            else
+                status = MEM_READ_EXTANY | MEM_WRITE_EXTANY;
+
+            mem_set_mem_state_both(base, 0x10000, status);
+            }
+        else if(dev->index > 0x02) { /* Rest of the segments */
             for(int i = 0; i < 4; i++) {
                 base = 0xc0000 + ((dev->index - 3) << 16) + (i << 14);
                 sarc_2016a_log("SARC 2016A Memory: Shadowing 0x%x segment\n", base);
 
-                if(dev->regs[dev->index] & (0x80 >> i))
-                    status = MEM_WRITE_INTERNAL;
-                else
-                    status = MEM_WRITE_EXTANY;
-            
+            if(dev->regs[dev->index] & (0x80 >> i)) {
                 if(dev->regs[dev->index] & (8 >> i))
-                    status = MEM_READ_INTERNAL | MEM_WRITE_EXTANY;
+                    status = MEM_READ_INTERNAL;
                 else
-                    status |= MEM_READ_EXTANY;
+                    status = MEM_READ_EXTANY;
+
+                if(dev->regs[0x01] & 1)
+                    status |= MEM_WRITE_INTERNAL;
+                else
+                    status |= MEM_WRITE_EXTANY;
+            }
+            else
+                status = MEM_READ_EXTANY | MEM_WRITE_EXTANY;
 
                 mem_set_mem_state_both(base, 0x4000, status);
             }
         }
     }
     else {
-        sarc_2016a_log("SARC 2016A Memory: Shadow was disabled\n");
+        sarc_2016a_log("SARC 2016A Memory: Resetting\n");
         mem_set_mem_state_both(0xc0000, 0x40000, MEM_READ_EXTANY | MEM_WRITE_EXTANY);
     }
 }
@@ -152,10 +165,8 @@ sarc_2016a_write(uint16_t addr, uint8_t val, void *priv)
         {
             case 0x01 ... 0x05:
                 dev->regs[dev->index] = val;
-                sarc_2016a_memory_handler(dev->index, dev);
+                sarc_2016a_memory_handler(dev->index, 0, dev);
             break;
-
-            case 0x07:
 
             default:
                 if((dev->index > 0) && (dev->index < 16))
@@ -163,7 +174,7 @@ sarc_2016a_write(uint16_t addr, uint8_t val, void *priv)
             break;                
         }
 
-        dev->index += 0x81; /* Restore the index register to what value it was */
+        dev->index += 0x80; /* Restore the index register to what value it was */
     }
 }
 
@@ -193,7 +204,7 @@ sarc_2016a_reset(void *priv)
     memset(dev->regs, 0, sizeof(dev->regs)); /* Wash out the registers */
     dev->index = 0;
 
-    sarc_2016a_memory_handler(0, dev);
+    sarc_2016a_memory_handler(0, 1, dev);
 }
 
 
