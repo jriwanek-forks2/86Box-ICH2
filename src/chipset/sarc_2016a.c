@@ -6,24 +6,6 @@
  * Copyright 2022 Tiseno100.
  */
 
-
-#include <stdarg.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <wchar.h>
-#define HAVE_STDARG_H
-#include <86box/86box.h>
-#include "cpu.h"
-#include <86box/timer.h>
-#include <86box/io.h>
-#include <86box/device.h>
-
-#include <86box/mem.h>
-#include <86box/port_92.h>
-#include <86box/chipset.h>
-
 /*
 
     SARC 2016A Configuration Registers:
@@ -65,10 +47,46 @@
     Bit 1: E8000-EBFFF Shadow Read Enable
     Bit 0: EC000-EFFFF Shadow Read Enable
 
+    Register 86h:
+
+    Bits 7 6
+         0 0  Burst 1
+         0 1  Burst 2
+         1 0  Burst 3
+         1 1  Burst 4
+
+    Bits 5 4
+         0 0  Rate 1
+         0 1  Rate 2
+         1 0  Rate 4
+         1 1  Rate 8
+
+    Bit 3: DRAM Write Wait State (1: 1WS / 0: 0WS)
+
     Register 87h: DRAM Banking(?)
-    Bit 7 - 0: ???
+    Bit 7: I/O Refresh Disable
+    Bit 6: AT Bus Stepping Disable
+
 
 */
+
+#include <stdarg.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <wchar.h>
+#define HAVE_STDARG_H
+#include <86box/86box.h>
+#include "cpu.h"
+#include <86box/timer.h>
+#include <86box/io.h>
+#include <86box/device.h>
+
+#include <86box/mem.h>
+#include <86box/port_92.h>
+#include <86box/chipset.h>
+
 
 typedef struct
 {
