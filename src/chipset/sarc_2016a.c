@@ -10,6 +10,8 @@
 
     SARC 2016A Configuration Registers:
 
+    Note: The SARC 2016A doesn't handle cache. Cache is handled by the Cyrix chips which is non existent on 86Box.
+
     Register 81h:
     Bit 0: Shadow RAM Write Protection(1: Off / 0: On)
 
@@ -63,7 +65,7 @@
 
     Bit 3: DRAM Write Wait State (1: 1WS / 0: 0WS)
 
-    Register 87h: DRAM Banking(?)
+    Register 87h:
     Bit 7: I/O Refresh Disable
     Bit 6: AT Bus Stepping Disable
 
@@ -201,6 +203,7 @@ static uint8_t
 sarc_2016a_read(uint16_t addr, void *priv)
 {
     sarc_2016a_t *dev = (sarc_2016a_t *) priv;
+    uint8_t ret;
 
     if(!(addr & 1))
         return dev->index;
@@ -208,9 +211,11 @@ sarc_2016a_read(uint16_t addr, void *priv)
         dev->index -= 0x80;
 
         if((dev->index > 0) && (dev->index < 16))
-            return dev->regs[dev->index];
-        else
-            return 0xff;
+            ret = dev->regs[dev->index];
+
+        dev->index += 0x80;
+
+        return ret;
     }
 }
 
