@@ -48,7 +48,7 @@
 typedef struct {
     uint8_t	m, mode, page, stat,
 		stat_rq, command,
-		ps2_mode, arb_level,
+		arb_level,
 		sg_command, sg_status,
 		ptr0, enabled,
 		ext_mode, page_l,
@@ -71,7 +71,6 @@ extern uint8_t	dma_m;
 
 extern void	dma_init(void);
 extern void	dma16_init(void);
-extern void	ps2_dma_init(void);
 extern void	dma_reset(void);
 extern int	dma_mode(int channel);
 

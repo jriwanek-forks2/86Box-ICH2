@@ -21,7 +21,7 @@
 extern "C" {
 #endif
 
-#include <86box/tco.h> /* TCO Header. Needed for Intel ICH chipsets. */
+#include <86box/tco.h> /* TCO Header. Needed for the Intel ICH2 */
 
 #define ACPI_TIMER_FREQ	3579545
 #define PM_FREQ		ACPI_TIMER_FREQ
@@ -110,19 +110,14 @@ typedef struct
 /* Global variables. */
 extern int		acpi_rtc_status;
 
-extern const device_t	acpi_ali_device;
-extern const device_t	acpi_intel_device;
 extern const device_t	acpi_intel_ich2_device;
-extern const device_t	acpi_smc_device;
-extern const device_t	acpi_via_device;
-extern const device_t	acpi_via_596b_device;
+
 
 
 /* Functions */
 extern void		acpi_update_irq(acpi_t *dev);
 extern void		acpi_raise_smi(void *priv, int do_smi);
 extern void		acpi_update_io_mapping(acpi_t *dev, uint32_t base, int chipset_en);
-extern void		acpi_update_aux_io_mapping(acpi_t *dev, uint32_t base, int chipset_en);
 extern void		acpi_init_gporeg(acpi_t *dev, uint8_t val0, uint8_t val1, uint8_t val2, uint8_t val3);
 extern void		acpi_set_timer32(acpi_t *dev, uint8_t timer32);
 extern void		acpi_set_slot(acpi_t *dev, int slot);
@@ -134,8 +129,7 @@ extern void		acpi_set_gpireg2_default(acpi_t *dev, uint8_t gpireg2_default);
 extern void		acpi_set_nvr(acpi_t *dev, nvr_t *nvr);
 extern void		acpi_set_tco(acpi_t *dev, tco_t *tco);
 extern void		acpi_set_trap_update(acpi_t *dev, void (*update)(void *priv), void *priv);
-extern uint8_t		acpi_ali_soft_smi_status_read(acpi_t *dev);
-extern void		acpi_ali_soft_smi_status_write(acpi_t *dev, uint8_t soft_smi);
+
 
 #ifdef __cplusplus
 }

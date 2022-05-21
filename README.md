@@ -31,7 +31,6 @@ Motherboards: 5 Motherboards are emulated. 1 ICH2, 2 486 & 2 386SX. Board shows 
 
 |Motherboards     |BIOS                          |Status|Notes                                                             |
 |-----------------|------------------------------|------|------------------------------------------------------------------|
-|ASUS CUSL2-C     |Award Medallion v6.0          |❌   |Broken in most configurations. ESCD fail. Unknown bugs surrounding.|
 |Tyan Tomcat i815T|AMIBIOS 7 (AMI Home BIOS fork)|✅   |Keyboard may stop working at setup if you spam the DEL key on POST.|
 
 Southbridge we emulate: Intel ICH2 Desktop
