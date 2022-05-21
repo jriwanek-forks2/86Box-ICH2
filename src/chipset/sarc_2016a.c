@@ -203,7 +203,7 @@ static uint8_t
 sarc_2016a_read(uint16_t addr, void *priv)
 {
     sarc_2016a_t *dev = (sarc_2016a_t *) priv;
-    uint8_t ret;
+    uint8_t ret = 0xff;
 
     if(!(addr & 1))
         return dev->index;
