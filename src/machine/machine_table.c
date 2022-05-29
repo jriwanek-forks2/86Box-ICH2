@@ -31,7 +31,7 @@ const machine_filter_t machine_types[] = {
     { "None",                                          MACHINE_TYPE_NONE               },
     { "SARC 2016A",                                    MACHINE_TYPE_SARC_2016A         },
     { "SiS 471",				                       MACHINE_TYPE_SIS_471	           },
-    { "Intel ICH2",				   MACHINE_TYPE_ICH2	           }
+    { "Intel ICH2",				                       MACHINE_TYPE_ICH2	           }
 };
 
 const machine_filter_t machine_chipsets[] = {

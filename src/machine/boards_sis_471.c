@@ -40,7 +40,7 @@ machine_at_vi15g_init(const machine_t *model)
 {
     int ret;
 
-    ret = bios_load_linear("roms/machines/vi15g/VI15G_R23.ROM",
+    ret = bios_load_linear("roms/machines/sis_471/vi15g/VI15G_R23.ROM",
 			   0x000f0000, 65536, 0);
 
     if (bios_only || !ret)
@@ -71,7 +71,7 @@ machine_at_486sv2g_init(const machine_t *model)
 {
     int ret;
 
-    ret = bios_load_linear("roms/machines/486sv2g/SV2G0402.AWD",
+    ret = bios_load_linear("roms/machines/sis_471/486sv2g/SV2G0402.AWD",
 			   0x000f0000, 65536, 0);
 
     if (bios_only || !ret)

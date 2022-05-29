@@ -39,7 +39,7 @@ machine_at_s2080_init(const machine_t *model)
 {
     int ret;
 
-    ret = bios_load_linear("roms/machines/s2080/2080V110.ROM",
+    ret = bios_load_linear("roms/machines/ich2/s2080/2080V110.ROM",
 			   0x00080000, 524288, 0);
 
     if (bios_only || !ret)

@@ -9,45 +9,10 @@
 The ICH2 is a southbridge released by Intel in the early 2000's. It came incorporated with many peripherals like USB, Audio & IDE. The ICH series in general also got rid of the ISA bus replacing it with the not so different LPC bus.
 
 <h2>Emulation details</h2>
-The general chipset is still in general terms stable but lacks a few crucial components and some functionality remains unknown. Yet more to come. Status info below don't represent the work situation accuretly, I learn more as I walkthrough it. Things might be ok but also not ok.
-
-Northbridge we emulate: Intel i815EP
-
-|Northbridge Portion|Status|Notes                                                             |
-|-------------------|------|------------------------------------------------------------------|
-|i815EP MCH         |✅   |None                                                              |
-|i815EP AGP Bridge  |✅   |Uses the standard 86Box PCI Bridge code with slight modifications.|
-
-Super I/O we emulate: National Semiconductor NSC366(PC87366)
-
-|Super I/O Portion|Status|Notes                             |
-|-----------------|------|----------------------------------|
-|NSC366 FDC        |✅   |None                              |
-|NSC366 UART Serial|✅   |None                              |
-|NSC366 LPT        |✅   |86Box doesn't emulate LPT modes   |
-|NSC366 HWM        |⚠️   |Voltages & Temperatures are broken|
-
-Motherboards: 5 Motherboards are emulated. 1 ICH2, 2 486 & 2 386SX. Board shows only the ICH2 ones
-
-|Motherboards     |BIOS                          |Status|Notes                                                             |
-|-----------------|------------------------------|------|------------------------------------------------------------------|
-|Tyan Tomcat i815T|AMIBIOS 7 (AMI Home BIOS fork)|✅   |Keyboard may stop working at setup if you spam the DEL key on POST.|
-
-Southbridge we emulate: Intel ICH2 Desktop
-
-|Southbridge Portion|Status|Notes                                                            |
-|-------------------|------|-----------------------------------------------------------------|
-|ICH2 Hub           |✅   |Uses the standard 86Box PCI Bridge code with slight modifications.|
-|ICH2 LPC           |✅   |Trap implementation is obscure.                                   |
-|ICH2 IDE           |✅   |86Box IDE Bus Mastering is broken on BSD.                         |
-|ICH2 SMBus         |✅   |Works fine overall. Little different from PIIX4.                  |
-|ICH2 USB           |❌   |86Box doesn't emulate USB. Recommended to disable it to save IRQ's|
-|ICH2 AC'97         |❌   |AC'97 WILL NOT be emulated anytime                                |
-|ICH2 DMA           |✅   |None                                                              |
-|ICH2 Peripherals   |✅   |FWH functionality isn't utilized by any of our boards.            |
+The fork emulates an Intel ICH2 desktop board with the basic components it needs. There are a few quirks that haven't been implemented or fixed yet. Additionally there's a SiS 471 & SARC 2016A for some basic 486/386SX needs although mainstream 86Box covers that.
 
 <h2>Issues within development</h2>
-Intel i8xx series in general is way beyond 86Box's scope. 86Box was never meant to go beyond the i486 environment and it can be proven from the crippling performance someone can meet on mid-late i586 or general i686 setups. There were problems encountered within development.
+Intel i8xx series in general is way beyond 86Box's scope. It's already stated by themselves to never target it. If they're greedy they will. 86Box was never meant to go beyond the i486 environment and it can be proven from the crippling performance someone can meet on mid-late i586 or general i686 setups. There were problems encountered within development.
 
 * SMBus craze
     - Caused by the dynarec potentially. Setting the CPU beyond 66Mhz on some boards, it can cause the BIOS to send random commands through the SMBus and generally halt. The current board doesn't have that.
@@ -56,9 +21,9 @@ Intel i8xx series in general is way beyond 86Box's scope. 86Box was never meant 
     - Tons of variety can be found within late machines. Different configurations, Super I/O's, I2C chips and anything that could come to anyones imagination. One discovery was the lack of FWH programming some BIOS do, including the introduced one. FWH pins are undocumented where they talk to so although the functionality can be implemented, the position to where the functionality is triggered upon remains unknown. Also other machines may fail to boot for a number of reasons, not one man can solve them all.
 
 * Crippling recompiler
-    - The 86Box recompiler is a mess. It can't meet sometimes, the intended Pentium speeds and can't do i686 great at all. i8xx being at i686, gets on the same boiler of crippling out. Forget about the C3, the workaround for the lates can't be used, at least on the configurations we got.
+    - The 86Box recompiler is a mess. It can't meet sometimes the intended Pentium speeds and can't do i686 great at all. i8xx being at i686, gets on the same boiler of crippling out.
 
-Generally 86Box-ICH2 was developed as a hobby fork, not with any huge eyes and plans.
+Generally 86Box-ICH2 was developed as a hobby fork, not with any huge views and plans.
 
 <h2>FAQ</h2>
 

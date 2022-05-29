@@ -18,7 +18,6 @@
 #ifndef EMU_CHIPSET_H
 # define EMU_CHIPSET_H
 
-
 /* SARC 2016A */
 extern const device_t   sarc_2016a_device;
 

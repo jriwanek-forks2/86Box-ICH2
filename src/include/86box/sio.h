@@ -15,6 +15,9 @@
 #ifndef EMU_SIO_H
 # define EMU_SIO_H
 
+/* SMC 665(FDC37C665) */
+extern const device_t   smc665_device;
+
 /* National Semiconductor NSC366 (PC87366) */
 extern const device_t   nsc366_device;
 extern const device_t   nsc366_4f_device;

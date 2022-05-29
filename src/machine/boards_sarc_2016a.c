@@ -40,7 +40,7 @@ machine_at_m396f_init(const machine_t *model)
 {
     int ret;
 
-    ret = bios_load_linear("roms/machines/m396f/pcchips-m396f.bin-5f31ab54cf61e537920047.bin",
+    ret = bios_load_linear("roms/machines/sarc_2016a/m396f/pcchips-m396f.bin-5f31ab54cf61e537920047.bin",
 			   0x000f0000, 65536, 0);
 
     if (bios_only || !ret)
@@ -71,7 +71,7 @@ machine_at_sxd_init(const machine_t *model)
 {
     int ret;
 
-    ret = bios_load_linear("roms/machines/sxd/3cyw001-61b008bc17e17833962104.bin",
+    ret = bios_load_linear("roms/machines/sarc_2016a/sxd/3cyw001-61b008bc17e17833962104.bin",
 			   0x000f0000, 65536, 0);
 
     if (bios_only || !ret)
