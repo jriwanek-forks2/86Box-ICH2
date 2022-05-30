@@ -169,6 +169,8 @@ sarc_2016a_memory_handler(int cur_reg, int reset, sarc_2016a_t *dev)
         sarc_2016a_log("SARC 2016A Memory: Resetting\n");
         mem_set_mem_state_both(0xc0000, 0x40000, MEM_READ_EXTANY | MEM_WRITE_EXTANY);
     }
+
+    flushmmucache_nopc();
 }
 
 static void

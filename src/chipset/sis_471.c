@@ -86,7 +86,8 @@ sis_471_shadow(sis_471_t *dev)
 
     for(int i = 0; i < 6; i++)
         mem_set_mem_state_both(0xc0000 + (i * 0x8000), 0x8000, ((dev->regs[2] >> i) & 1) ? shadow_profile : (MEM_READ_EXTANY | MEM_WRITE_EXTANY));
-     
+    
+    flushmmucache_nopc();
 }
 
 static void
@@ -248,6 +249,8 @@ sis_471_smram(sis_471_t *dev)
 
     sis_471_log("SiS 471 SMRAM: Configured at Proper: 0x%x Remap: 0x%x\n", proper, remapped);
     smram_enable(dev->smram, proper, remapped, size, local_access, 1);
+
+    flushmmucache();
 }
 
 static void

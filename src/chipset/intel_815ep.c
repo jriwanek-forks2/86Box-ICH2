@@ -90,6 +90,8 @@ intel_lsmm_segment_recalc(intel_815ep_t *dev, uint8_t val)
         smram_enable(dev->lsmm_segment, 0x000a0000, 0x000a0000, 0x20000, 0, 1);
     break;
     }
+
+    flushmmucache();
 }
 
 static void
@@ -104,6 +106,8 @@ intel_pam_recalc(int addr, uint8_t val)
         mem_set_mem_state_both(region, 0x4000, ((val & 0x01) ? MEM_READ_INTERNAL : MEM_READ_EXTANY) | ((val & 0x02) ? MEM_WRITE_INTERNAL : MEM_WRITE_EXTANY));
         mem_set_mem_state_both(region + 0x4000, 0x4000, ((val & 0x10) ? MEM_READ_INTERNAL : MEM_READ_EXTANY) | ((val & 0x20) ? MEM_WRITE_INTERNAL : MEM_WRITE_EXTANY));
     }
+
+    flushmmucache_nopc();
 }
 
 static void
