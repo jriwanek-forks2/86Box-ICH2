@@ -13,5 +13,5 @@
 #           Copyright 2020,2021 David Hrdlička.
 #
 
-add_library(sio OBJECT sio_nsc366.c)
+add_library(sio OBJECT sio_nsc366.c sio_smc665.c)
 

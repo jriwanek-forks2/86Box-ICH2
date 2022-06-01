@@ -24,6 +24,10 @@ extern const device_t   sarc_2016a_device;
 /* SiS 471 */
 extern const device_t   sis_471_device;
 
+/* Intel PIIX */
+extern const device_t   intel_430fx_device;
+extern const device_t   intel_piix_device;
+
 /* Intel ICH2 */
 extern const device_t	intel_815ep_device;
 extern const device_t   intel_ich2_device;

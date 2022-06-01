@@ -31,6 +31,7 @@ const machine_filter_t machine_types[] = {
     { "None",                                          MACHINE_TYPE_NONE               },
     { "SARC 2016A",                                    MACHINE_TYPE_SARC_2016A         },
     { "SiS 471",				                       MACHINE_TYPE_SIS_471	           },
+    { "Intel PIIX",				                       MACHINE_TYPE_INTEL_PIIX  	   },
     { "Intel ICH2",				                       MACHINE_TYPE_ICH2	           }
 };
 
@@ -38,6 +39,7 @@ const machine_filter_t machine_chipsets[] = {
     { "None",                                          MACHINE_CHIPSET_NONE            },
     { "SARC 2016A",                                    MACHINE_CHIPSET_SARC_2016A      },
     { "SiS 471",                                       MACHINE_CHIPSET_SIS_471         },
+    { "Intel 430FX",                                   MACHINE_CHIPSET_INTEL_430FX     },
     { "Intel i815EP",                                  MACHINE_CHIPSET_INTEL_I815EP    }
 };
 
@@ -51,6 +53,12 @@ const machine_t machines[] = {
     /* SiS 471 Based Machines */
     { "AOpen Vi15G",                    "vi15g",         MACHINE_TYPE_SIS_471,       MACHINE_CHIPSET_SIS_471,             machine_at_vi15g_init,            0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET3,                   CPU_BLOCK_NONE,        			            20000000, 50000000,  0, 0, 0, 0,           MACHINE_VLB,       MACHINE_FLAGS_NONE,  8192, 131072,  8192, 255, NULL, NULL },
     { "ASUS VL/I-486SV2G",              "486sv2g",       MACHINE_TYPE_SIS_471,       MACHINE_CHIPSET_SIS_471,             machine_at_486sv2g_init,          0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET3,                   CPU_BLOCK_NONE,        			            20000000, 50000000,  0, 0, 0, 0,           MACHINE_PS2_VLB,   MACHINE_FLAGS_NONE,  8192,  65536,  8192, 255, NULL, NULL },
+
+    /* Intel PIIX Based Machines */
+    { "ASUS PCI/I-P54TP4",              "p54tp4",        MACHINE_TYPE_INTEL_PIIX,    MACHINE_CHIPSET_INTEL_430FX,         machine_at_p54tp4_init,           0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET5_7,                 CPU_BLOCK_NONE,        			            50000000, 66666666,  3400, 3600, 1.5, 2.0, MACHINE_PS2_PCI,   MACHINE_IDE_DUAL,    4096, 131072,  4096, 255, NULL, NULL },
+    { "AOpen AP5C",                     "ap5c",          MACHINE_TYPE_INTEL_PIIX,    MACHINE_CHIPSET_INTEL_430FX,         machine_at_ap5c_init,             0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET5_7,                 CPU_BLOCK_NONE,        			            50000000, 66666666,  3300, 5000, 1.5, 2.0, MACHINE_PS2_PCI,   MACHINE_IDE_DUAL,    4096, 131072,  4096, 255, NULL, NULL },
+    { "Acer V30",                       "acerv30",       MACHINE_TYPE_INTEL_PIIX,    MACHINE_CHIPSET_INTEL_430FX,         machine_at_acerv30_init,          0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET5_7,                 CPU_BLOCK_NONE,        			            50000000, 66666666,  3300, 5000, 1.5, 2.5, MACHINE_PS2_PCI,   MACHINE_IDE_DUAL,    8192, 131072,  8192, 255, NULL, NULL },
+    { "ALR Evolution V ST/PCI",         "evolutionv",    MACHINE_TYPE_INTEL_PIIX,    MACHINE_CHIPSET_INTEL_430FX,         machine_at_evolutionv_init,       0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET4,                   CPU_BLOCK_NONE,        			            50000000, 66666666,  5000, 5000, 1.0, 1.0, MACHINE_PS2_PCI,   MACHINE_IDE_DUAL,    4096, 131072,  4096, 255, NULL, NULL },
 
     /* Intel 815EP Based Machines */
     { "Tyan Tomcat i815T",              "s2080",         MACHINE_TYPE_ICH2,          MACHINE_CHIPSET_INTEL_I815EP,        machine_at_s2080_init,            0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET370,                 CPU_BLOCK_NONE,        			            66666667, 133333333, 1300, 3500, 1.5, 8.0, MACHINE_PS2_NOISA, MACHINE_IDE_DUAL,   32768, 524288, 32768, 255, NULL, NULL },

@@ -76,7 +76,7 @@ smc665_fdc(smc665_t *dev)
         fdc_update_densel_force(dev->fdc, (dev->regs[5] >> 3) & 3);
         fdc_update_boot_drive(dev->fdc, dev->regs[7] & 3);
         fdc_update_densel_polarity(dev->fdc, (dev->regs[7] >> 2) & 3);
-        fdc_set_swap(dev->fdc, !!(dev->regs[1] & 0x20));
+        //fdc_set_swap(dev->fdc, !!(dev->regs[1] & 0x20));
         fdc_update_enh_mode(dev->fdc, !!(dev->regs[2] & 2));
         smc665_log("SMC 665 FDC: Floppy Drive was enabled\n");
     }

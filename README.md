@@ -9,7 +9,7 @@
 The ICH2 is a southbridge released by Intel in the early 2000's. It came incorporated with many peripherals like USB, Audio & IDE. The ICH series in general also got rid of the ISA bus replacing it with the not so different LPC bus.
 
 <h2>Emulation details</h2>
-The fork emulates an Intel ICH2 desktop board with the basic components it needs. There are a few quirks that haven't been implemented or fixed yet. Additionally there's a SiS 471 & SARC 2016A for some basic 486/386SX needs although mainstream 86Box covers that.
+The fork emulates an Intel ICH2 desktop board with the basic components it needs. There are a few quirks that haven't been implemented or fixed yet. Additionally there's a SiS 471, a SARC 2016A and a Intel 430FX for some basic 386SX to Pentium needs although mainstream 86Box covers that.
 
 <h2>Issues within development</h2>
 Intel i8xx series in general is way beyond 86Box's scope. It's already stated by themselves to never target it. If they're greedy they will. 86Box was never meant to go beyond the i486 environment and it can be proven from the crippling performance someone can meet on mid-late i586 or general i686 setups. There were problems encountered within development.

@@ -143,6 +143,7 @@ enum {
     MACHINE_TYPE_NONE = 0,
     MACHINE_TYPE_SARC_2016A,
     MACHINE_TYPE_SIS_471,
+    MACHINE_TYPE_INTEL_PIIX,
     MACHINE_TYPE_ICH2,
     MACHINE_TYPE_MAX
 };
@@ -151,6 +152,7 @@ enum {
     MACHINE_CHIPSET_NONE = 0,
     MACHINE_CHIPSET_SARC_2016A,
     MACHINE_CHIPSET_SIS_471,
+    MACHINE_CHIPSET_INTEL_430FX,
     MACHINE_CHIPSET_INTEL_I815EP,
     MACHINE_CHIPSET_MAX
 };
@@ -232,6 +234,12 @@ extern int  machine_at_sxd_init(const machine_t *);
 /* boards_sis_471.c */
 extern int  machine_at_vi15g_init(const machine_t *);
 extern int  machine_at_486sv2g_init(const machine_t *);
+
+/* boards_piix.c */
+extern int  machine_at_p54tp4_init(const machine_t *);
+extern int  machine_at_ap5c_init(const machine_t *);
+extern int  machine_at_acerv30_init(const machine_t *);
+extern int  machine_at_evolutionv_init(const machine_t *);
 
 /* boards_ich2.c */
 extern int	machine_at_s2080_init(const machine_t *);

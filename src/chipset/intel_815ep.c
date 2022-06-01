@@ -305,7 +305,7 @@ intel_815ep_reset(void *priv)
 
     dev->pci_conf[0xa9] = 0x01; /* Hack: Brute Force AGP Enabled */
 
-    for(int i = 0x58; i <= 0x5f; i++)  /* Reset PAM to defaults */
+    for(int i = 0x59; i <= 0x5f; i++)  /* Reset PAM to defaults */
         intel_pam_recalc(i, 0);
 
     intel_lsmm_segment_recalc(dev, 0); /* Reset LSMM SMRAM to defaults */

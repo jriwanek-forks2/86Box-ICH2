@@ -68,7 +68,7 @@
     Register 87h:
     Bit 7: I/O Refresh Disable
     Bit 6: AT Bus Stepping Disable
-
+    Bit 1: FAST A20 Trigger (We don't know what it actually does but it's needed by 386 CPU's to use XMS)
 
 */
 
@@ -174,6 +174,21 @@ sarc_2016a_memory_handler(int cur_reg, int reset, sarc_2016a_t *dev)
 }
 
 static void
+sarc_2016a_fast_a20(sarc_2016a_t *dev)
+{
+    int enable = dev->regs[0x07] & 2;
+
+    sarc_2016a_log("SARC 2016A FASTA20: %s\n", enable ? "Enabled" : "Disabled");
+
+    if(enable)
+        mem_a20_alt = 1;
+    else
+        mem_a20_alt = 0;
+
+    mem_a20_recalc();
+}
+
+static void
 sarc_2016a_write(uint16_t addr, uint8_t val, void *priv)
 {
     sarc_2016a_t *dev = (sarc_2016a_t *) priv;
@@ -188,6 +203,11 @@ sarc_2016a_write(uint16_t addr, uint8_t val, void *priv)
             case 0x01 ... 0x05:
                 dev->regs[dev->index] = val;
                 sarc_2016a_memory_handler(dev->index, 0, dev);
+            break;
+
+            case 0x07:
+                dev->regs[dev->index] = val;
+                sarc_2016a_fast_a20(dev);
             break;
 
             default:
@@ -230,6 +250,7 @@ sarc_2016a_reset(void *priv)
     dev->index = 0;
 
     sarc_2016a_memory_handler(0, 1, dev);
+    sarc_2016a_fast_a20(dev);
 }
 
 
