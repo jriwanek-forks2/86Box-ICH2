@@ -39,7 +39,7 @@
     Bit 1: D8000-DBFFF Shadow Read Enable
     Bit 0: DC000-DFFFF Shadow Read Enable
 
-    Register 83h:
+    Register 85h:
     Bit 7: E0000-E3FFF Shadow Enable
     Bit 6: E4000-E7FFF Shadow Enable
     Bit 5: E8000-EBFFF Shadow Enable
@@ -94,7 +94,6 @@ typedef struct
 {
     int index;
     uint8_t regs[17];
-
 } sarc_2016a_t;
 
 #ifdef ENABLE_SARC_2016A_LOG

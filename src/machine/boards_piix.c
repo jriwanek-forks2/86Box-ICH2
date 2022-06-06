@@ -31,20 +31,12 @@
  * 
  * North Bridge: Intel 430FX
  * Super I/O: SMC 665
- * BIOS: Award 4.51PG
+ * BIOS: Award 4.51PG (Also has an unofficial MR BIOS update)
  * Notes: None
 */
 int
-machine_at_p54tp4_init(const machine_t *model)
+machine_at_p54tp4_common(const machine_t *model)
 {
-    int ret;
-
-    ret = bios_load_linear("roms/machines/piix/p54tp4/T15I0302.AWD",
-			   0x000e0000, 131072, 0);
-
-    if (bios_only || !ret)
-	return ret;
-
     machine_at_common_init_ex(model);
 
     pci_init(PCI_CONFIG_TYPE_1);
@@ -61,6 +53,36 @@ machine_at_p54tp4_init(const machine_t *model)
     device_add(&at_nvr_device); /* Standard AT NVR */
     device_add(&keyboard_ps2_ami_pci_device); /* Standard PS/2 AMI KBC */
     device_add(&intel_flash_bxt_device); /* Intel compatible flash */
+}
+
+int
+machine_at_p54tp4_stock_init(const machine_t *model)
+{
+    int ret;
+
+    ret = bios_load_linear("roms/machines/piix/p54tp4/T15I0302.AWD",
+			   0x000e0000, 131072, 0);
+
+    if (bios_only || !ret)
+	return ret;
+
+    machine_at_p54tp4_common(model);
+
+    return ret;
+}
+
+int
+machine_at_p54tp4_mr_init(const machine_t *model)
+{
+    int ret;
+
+    ret = bios_load_linear("roms/machines/piix/p54tp4/MR.BIN",
+			   0x000e0000, 131072, 0);
+
+    if (bios_only || !ret)
+	return ret;
+
+    machine_at_p54tp4_common(model);
 
     return ret;
 }
@@ -125,6 +147,10 @@ machine_at_acerv30_init(const machine_t *model)
     pci_init(PCI_CONFIG_TYPE_1);
     pci_register_bus_slot(0, 0x00, PCI_CARD_NORTHBRIDGE, 0, 0, 0, 0);
     pci_register_bus_slot(0, 0x07, PCI_CARD_SOUTHBRIDGE, 0, 0, 0, 0);
+    pci_register_bus_slot(0, 0x12, PCI_CARD_NORMAL,      1, 2, 3, 4);
+    pci_register_bus_slot(0, 0x11, PCI_CARD_NORMAL,      2, 3, 4, 1);
+    pci_register_bus_slot(0, 0x14, PCI_CARD_NORMAL,      3, 4, 1, 2);
+    pci_register_bus_slot(0, 0x13, PCI_CARD_NORMAL,      4, 1, 2, 3);
 
     device_add(&intel_430fx_device); /* Intel 430FX PCIset */
     device_add(&intel_piix_device); /* Intel PIIX */
@@ -138,19 +164,19 @@ machine_at_acerv30_init(const machine_t *model)
 }
 
 /*
- * ALR Revolution V ST/PCI
+ * Micronics M54Hi
  * 
  * North Bridge: Intel 430FX
  * Super I/O: SMC 665
- * BIOS: Phoenix ??
- * Notes: None
+ * BIOS: Phoenix 4.05
+ * Notes: Comes with an On-board Vibra 16C. You need to enter on CMOS Setup and configure the board else it won't boot further.
 */
 int
-machine_at_evolutionv_init(const machine_t *model)
+machine_at_m54hi_init(const machine_t *model)
 {
     int ret;
 
-    ret = bios_load_linear("roms/machines/piix/evolutionv/9200.BIN",
+    ret = bios_load_linear("roms/machines/piix/m54hi/M54HI_06.ROM",
 			   0x000e0000, 131072, 0);
 
     if (bios_only || !ret)
@@ -158,9 +184,13 @@ machine_at_evolutionv_init(const machine_t *model)
 
     machine_at_common_init_ex(model);
 
-    pci_init(PCI_CONFIG_TYPE_2);
+    pci_init(PCI_CONFIG_TYPE_1);
     pci_register_bus_slot(0, 0x00, PCI_CARD_NORTHBRIDGE, 0, 0, 0, 0);
     pci_register_bus_slot(0, 0x07, PCI_CARD_SOUTHBRIDGE, 0, 0, 0, 0);
+    pci_register_bus_slot(0, 0x14, PCI_CARD_NORMAL,      1, 2, 3, 4);
+    pci_register_bus_slot(0, 0x13, PCI_CARD_NORMAL,      2, 3, 4, 1);
+    pci_register_bus_slot(0, 0x12, PCI_CARD_NORMAL,      3, 4, 1, 2);
+    pci_register_bus_slot(0, 0x11, PCI_CARD_NORMAL,      4, 1, 2, 3);
 
     device_add(&intel_430fx_device); /* Intel 430FX PCIset */
     device_add(&intel_piix_device); /* Intel PIIX */

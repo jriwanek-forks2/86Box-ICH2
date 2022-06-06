@@ -25,7 +25,7 @@
 #include <86box/smram.h>
 #include <86box/spd.h>
 #include <86box/chipset.h>
-#define ENABLE_INTEL_430FX_LOG 1
+
 #ifdef ENABLE_INTEL_430FX_LOG
 int intel_430fx_do_log = ENABLE_INTEL_430FX_LOG;
 static void
@@ -58,7 +58,7 @@ intel_430fx_cache(intel_430fx_t *dev)
     dev->pci_conf[0x52] &= 0x3b;
     cpu_cache_ext_enabled = 0;
 
-    cache_enable = (dev->pci_conf[0x52] & 3) >= 2;
+    cache_enable = (dev->pci_conf[0x52] & 3) == 3;
 
     if(cache_enable) {
         cpu_cache_ext_enabled = 1;
@@ -195,6 +195,7 @@ intel_430fx_read(int func, int addr, void *priv)
 
     intel_430fx_log("Intel 430FX: dev->regs[%02x] (%02x)\n", addr, dev->pci_conf[addr]);
 
+    return dev->pci_conf[addr];
 }
 
 

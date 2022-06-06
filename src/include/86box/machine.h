@@ -236,10 +236,11 @@ extern int  machine_at_vi15g_init(const machine_t *);
 extern int  machine_at_486sv2g_init(const machine_t *);
 
 /* boards_piix.c */
-extern int  machine_at_p54tp4_init(const machine_t *);
+extern int  machine_at_p54tp4_stock_init(const machine_t *);
+extern int  machine_at_p54tp4_mr_init(const machine_t *);
 extern int  machine_at_ap5c_init(const machine_t *);
 extern int  machine_at_acerv30_init(const machine_t *);
-extern int  machine_at_evolutionv_init(const machine_t *);
+extern int  machine_at_m54hi_init(const machine_t *);
 
 /* boards_ich2.c */
 extern int	machine_at_s2080_init(const machine_t *);

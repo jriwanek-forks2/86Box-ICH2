@@ -73,11 +73,6 @@ smc665_fdc(smc665_t *dev)
 
     if(dev->regs[0] & 0x10) {
         fdc_set_base(dev->fdc, fdc_base);
-        fdc_update_densel_force(dev->fdc, (dev->regs[5] >> 3) & 3);
-        fdc_update_boot_drive(dev->fdc, dev->regs[7] & 3);
-        fdc_update_densel_polarity(dev->fdc, (dev->regs[7] >> 2) & 3);
-        //fdc_set_swap(dev->fdc, !!(dev->regs[1] & 0x20));
-        fdc_update_enh_mode(dev->fdc, !!(dev->regs[2] & 2));
         smc665_log("SMC 665 FDC: Floppy Drive was enabled\n");
     }
 }
@@ -179,6 +174,15 @@ smc665_uart(int uart, smc665_t *dev)
     }
 }
 
+static void
+smc665_fdc_feature(smc665_t *dev)
+{
+    fdc_update_densel_force(dev->fdc, (dev->regs[5] >> 3) & 3);
+    fdc_update_boot_drive(dev->fdc, dev->regs[7] & 3);
+    fdc_update_densel_polarity(dev->fdc, (dev->regs[7] >> 2) & 3);
+    fdc_set_swap(dev->fdc, !!(dev->regs[1] & 0x20));
+    fdc_update_enh_mode(dev->fdc, !!(dev->regs[2] & 2));
+}
 
 static void
 smc665_write(uint16_t addr, uint8_t val, void *priv)
@@ -191,6 +195,7 @@ smc665_write(uint16_t addr, uint8_t val, void *priv)
             case 0x00:
                 dev->regs[dev->index] = val;
                 smc665_fdc(dev);
+                smc665_fdc_feature(dev);
             break;
 
             case 0x01:
@@ -203,6 +208,7 @@ smc665_write(uint16_t addr, uint8_t val, void *priv)
                 dev->regs[dev->index] = val;
                 smc665_uart(0, dev);
                 smc665_uart(1, dev);
+                smc665_fdc_feature(dev);
             break;
 
             case 0x03 ... 0x04:
@@ -211,12 +217,12 @@ smc665_write(uint16_t addr, uint8_t val, void *priv)
 
             case 0x05:
                 dev->regs[dev->index] = val & 0x7f;
-                smc665_fdc(dev);
+                smc665_fdc_feature(dev);
             break;
 
             case 0x07:
                 dev->regs[dev->index] = val;
-                smc665_fdc(dev);
+                smc665_fdc_feature(dev);
             break;
 
             case 0x06:
@@ -266,6 +272,7 @@ smc665_reset(void *priv)
     smc665_lpt(dev);
     smc665_uart(0, dev);
     smc665_uart(1, dev);
+    smc665_fdc_feature(dev);
 }
 
 

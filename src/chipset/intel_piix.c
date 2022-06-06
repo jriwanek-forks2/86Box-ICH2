@@ -22,11 +22,14 @@
 
 #include <86box/apm.h>
 #include <86box/dma.h>
+#include <86box/hdc.h>
+#include <86box/hdc_ide.h>
+#include <86box/hdc_ide_sff8038i.h>
 #include <86box/mem.h>
 #include <86box/pci.h>
 #include <86box/port_92.h>
 #include <86box/chipset.h>
-#define ENABLE_INTEL_PIIX_LOG 1
+
 #ifdef ENABLE_INTEL_PIIX_LOG
 int intel_piix_do_log = ENABLE_INTEL_PIIX_LOG;
 static void
@@ -49,6 +52,7 @@ typedef struct intel_piix_t
     uint8_t pci_conf[2][256];
 
     apm_t *apm;
+    sff8038i_t *ide_drive[2];
 } intel_piix_t;
 
 
@@ -142,6 +146,45 @@ intel_piix_smi_config(intel_piix_t *dev)
 
 /* IDE Configurations */
 static void
+intel_piix_ide_bm(intel_piix_t *dev)
+{
+    int enable = dev->pci_conf[1][4] & 1;
+    uint16_t bm_addr = (dev->pci_conf[1][0x21] << 8) | (dev->pci_conf[1][0x20] & 0xf0);
+
+    if(enable)
+        intel_piix_log("Intel PIIX IDE BM: BM address updated to 0x%x\n", bm_addr);
+    else
+        intel_piix_log("Intel PIIX IDE BM: BM Disabled\n");
+
+    sff_bus_master_handler(dev->ide_drive[0], enable, bm_addr);
+    sff_bus_master_handler(dev->ide_drive[1], enable, bm_addr + 8);
+}
+
+static void
+intel_piix_ide(int channel, intel_piix_t *dev)
+{
+    int enable = dev->pci_conf[1][4] & 1;
+    int ch_enable = !!(dev->pci_conf[1][channel ? 0x43 : 0x41] & 0x80);
+
+    if(channel)
+        ide_sec_disable();
+    else
+        ide_pri_disable();
+
+    if(enable && ch_enable) {
+        intel_piix_log("Intel PIIX IDE: %s channel was enabled\n", !channel ? "Primary" : "Secondary");
+        
+        if(channel)
+            ide_sec_enable();
+        else
+            ide_pri_enable();
+    }
+    else
+        intel_piix_log("Intel PIIX IDE: %s channel was disabled\n", !channel ? "Primary" : "Secondary");
+
+}
+
+static void
 intel_piix_write(int func, int addr, uint8_t val, void *priv)
 {
     intel_piix_t *dev = (intel_piix_t *)priv;
@@ -232,7 +275,44 @@ intel_piix_write(int func, int addr, uint8_t val, void *priv)
     }
     else if(func == 1) {
         intel_piix_log("Intel PIIX IDE: dev->regs[%02x] = %02x\n", addr, val);
+        
+        switch(addr)
+        {
+            case 0x04:
+                dev->pci_conf[func][addr] = (val & 5) | 2;
+            break;
 
+            case 0x07:
+                dev->pci_conf[func][addr] &= val & 0x38;
+            break;
+
+            case 0x0d:
+                dev->pci_conf[func][addr] = val & 0xf0;
+            break;
+
+            case 0x20 ... 0x21:
+                dev->pci_conf[func][addr] = val;
+                intel_piix_ide_bm(dev);
+            break;
+            
+            case 0x40:
+                dev->pci_conf[func][addr] = val;
+            break;
+
+            case 0x41:
+                dev->pci_conf[func][addr] = val & 0xb3;
+                intel_piix_ide(0, dev);
+            break;
+
+            case 0x42:
+                dev->pci_conf[func][addr] = val;
+            break;
+
+            case 0x43:
+                dev->pci_conf[func][addr] = val & 0xb3;
+                intel_piix_ide(1, dev);
+            break;
+        }
     }
 }
 
@@ -326,6 +406,11 @@ intel_piix_reset(void *priv)
 
     dev->pci_conf[1][0x20] = 0x01;
 
+    intel_piix_ide_bm(dev);
+    sff_bus_master_reset(dev->ide_drive[0], 0);
+    sff_bus_master_reset(dev->ide_drive[1], 0);
+    intel_piix_ide(0, dev);
+    intel_piix_ide(1, dev);
 }
 
 
@@ -343,9 +428,10 @@ intel_piix_init(const device_t *info)
 {
     intel_piix_t *dev = (intel_piix_t *)malloc(sizeof(intel_piix_t));
     memset(dev, 0, sizeof(intel_piix_t));
+    int slot;
 
     /* Device */
-    pci_add_card(PCI_ADD_SOUTHBRIDGE, intel_piix_read, intel_piix_write, dev); /* Device 7(Usually): Intel 82371FB PCI ISA IDE XCELERATOR */
+    slot = pci_add_card(PCI_ADD_SOUTHBRIDGE, intel_piix_read, intel_piix_write, dev); /* Device 7(Usually): Intel 82371FB PCI ISA IDE XCELERATOR */
 
     /* DMA */
     dma_alias_set_piix();
@@ -359,6 +445,12 @@ intel_piix_init(const device_t *info)
 
     /* Port 92h */
     device_add(&port_92_pci_device);
+
+    /* SFF Compatible IDE */
+    dev->ide_drive[0] = device_add_inst(&sff8038i_device, 1);
+    dev->ide_drive[1] = device_add_inst(&sff8038i_device, 2);
+    sff_set_slot(dev->ide_drive[0], slot);
+    sff_set_slot(dev->ide_drive[1], slot);
 
     intel_piix_reset(dev);
     return dev;
