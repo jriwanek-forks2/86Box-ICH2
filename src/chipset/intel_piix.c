@@ -392,7 +392,7 @@ intel_piix_reset(void *priv)
     dev->pci_conf[1][0x00] = 0x86;    /* Intel */
     dev->pci_conf[1][0x01] = 0x80;
 
-    dev->pci_conf[1][0x02] = 0x30;    /* PIIX */
+    dev->pci_conf[1][0x02] = 0x30;    /* PIIX IDE */
     dev->pci_conf[1][0x03] = 0x12;
 
     dev->pci_conf[1][0x06] = 0x80;
