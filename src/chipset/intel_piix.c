@@ -50,6 +50,7 @@ intel_piix_log(const char *fmt, ...)
 typedef struct intel_piix_t
 {
     uint8_t pci_conf[2][256];
+    int apm_smi;
 
     apm_t *apm;
     sff8038i_t *ide_drive[2];
@@ -135,13 +136,29 @@ intel_piix_mirq(int addr, intel_piix_t *dev)
 }
 
 static void
-intel_piix_smi_config(intel_piix_t *dev)
+intel_piix_apmc_smi_config(intel_piix_t *dev)
 {
     int apm_enable = !!(dev->pci_conf[0][0xa2] & 0x80);
 
-    intel_piix_log("Intel PIIX SMI: APM SMI was %s\n", apm_enable ? "enabled" : "disabled");
+    intel_piix_log("Intel PIIX SMI: APMC SMI was %s\n", apm_enable ? "enabled" : "disabled");
 
-    apm_set_do_smi(dev->apm, apm_enable); // TODO: Set the APM status too
+    if(apm_enable)
+        dev->apm_smi = 1;
+    else
+        dev->apm_smi = 0;
+}
+
+static void
+intel_piix_apm_smi(uint16_t addr, uint8_t val, void *priv)
+{
+    intel_piix_t *dev = (intel_piix_t *) priv;
+
+    if(dev->apm_smi) {
+        intel_piix_log("Intel PIIX SMI: An APMC SMI was provoked!\n");
+        smi_line = 1;
+
+        dev->pci_conf[0][0xaa] |= 0x80; // Set the APMC SMI status
+    }
 }
 
 /* IDE Configurations */
@@ -244,7 +261,7 @@ intel_piix_write(int func, int addr, uint8_t val, void *priv)
 
             case 0xa2:
                 dev->pci_conf[func][addr] = val;
-                intel_piix_smi_config(dev);
+                intel_piix_apmc_smi_config(dev);
             break;
 
             case 0xa4:
@@ -386,7 +403,7 @@ intel_piix_reset(void *priv)
     intel_piix_clock_divisor(dev);
     intel_piix_mirq(0x70, dev);
     intel_piix_mirq(0x71, dev);
-    intel_piix_smi_config(dev);
+    intel_piix_apmc_smi_config(dev);
 
     /* IDE */
     dev->pci_conf[1][0x00] = 0x86;    /* Intel */
@@ -438,6 +455,7 @@ intel_piix_init(const device_t *info)
 
     /* APM */
     dev->apm = device_add(&apm_pci_device);
+    io_sethandler(0x00b2, 1, NULL, NULL, NULL, intel_piix_apm_smi, NULL, NULL, dev); /* PIIX specific configuration for APMC SMI */
 
     /* MIRQ */
     pci_enable_mirq(0);

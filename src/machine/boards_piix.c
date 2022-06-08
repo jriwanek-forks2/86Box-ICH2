@@ -46,6 +46,7 @@ machine_at_p54tp4_common(const machine_t *model)
     pci_register_bus_slot(0, 0x0b, PCI_CARD_NORMAL,      2, 3, 4, 1);
     pci_register_bus_slot(0, 0x0a, PCI_CARD_NORMAL,      3, 4, 1, 2);
     pci_register_bus_slot(0, 0x09, PCI_CARD_NORMAL,      4, 1, 2, 3);
+
     device_add(&intel_430fx_device); /* Intel 430FX PCIset */
     device_add(&intel_piix_device); /* Intel PIIX */
 
@@ -111,12 +112,16 @@ machine_at_ap5c_init(const machine_t *model)
     pci_init(PCI_CONFIG_TYPE_1);
     pci_register_bus_slot(0, 0x00, PCI_CARD_NORTHBRIDGE, 0, 0, 0, 0);
     pci_register_bus_slot(0, 0x07, PCI_CARD_SOUTHBRIDGE, 0, 0, 0, 0);
+    pci_register_bus_slot(0, 0x12, PCI_CARD_NORMAL,      1, 2, 3, 4);
+    pci_register_bus_slot(0, 0x11, PCI_CARD_NORMAL,      2, 3, 4, 1);
+    pci_register_bus_slot(0, 0x14, PCI_CARD_NORMAL,      3, 4, 1, 2);
+    pci_register_bus_slot(0, 0x13, PCI_CARD_NORMAL,      4, 1, 2, 3);
 
     device_add(&intel_430fx_device); /* Intel 430FX PCIset */
     device_add(&intel_piix_device); /* Intel PIIX */
 
     device_add(&smc665_device); /* SMC665 */
-    device_add(&at_nvr_device); /* Standard AT NVR */
+    device_add(&ami_1994_nvr_device); /* Standard AT NVR with dirty cache hacks */
     device_add(&keyboard_ps2_ami_pci_device); /* Standard PS/2 AMI KBC */
     device_add(&intel_flash_bxt_device); /* Intel compatible flash */
 

@@ -78,33 +78,6 @@ smc665_fdc(smc665_t *dev)
 }
 
 static void
-smc665_com34(smc665_t *dev)
-{
-    switch((dev->regs[1] >> 5) & 3)
-    {
-        case 0:
-            dev->com3_addr = 0x338;
-            dev->com4_addr = 0x238;
-        break;
-
-        case 1:
-            dev->com3_addr = 0x3e8;
-            dev->com4_addr = 0x2e8;
-        break;
-
-        case 2:
-            dev->com3_addr = 0x2e8;
-            dev->com4_addr = 0x2e0;
-        break;
-
-        case 3:
-            dev->com3_addr = 0x220;
-            dev->com4_addr = 0x228;
-        break;
-    }
-}
-
-static void
 smc665_lpt(smc665_t *dev)
 {
     uint32_t base = 0;
@@ -136,6 +109,8 @@ smc665_lpt(smc665_t *dev)
         smc665_log("SMC 665 LPT: LPT initialized at address 0x%x with IRQ %d\n", base, irq);
     }
 }
+
+static void smc665_config(int deconfig, smc665_t *dev);
 
 static void
 smc665_uart(int uart, smc665_t *dev)
@@ -170,18 +145,52 @@ smc665_uart(int uart, smc665_t *dev)
         }
 
         serial_setup(dev->uart[uart], base, irq);
-        smc665_log("SMC 665 UART %c: Serial initialized at address 0x%x\n", 'A' + uart, base);
+        smc665_log("SMC 665 UART %c: Serial initialized at address 0x%x with IRQ %d\n", 'A' + uart, base, irq);
     }
+}
+
+static void
+smc665_com34(smc665_t *dev)
+{
+    switch((dev->regs[1] >> 4) & 3)
+    {
+        case 0:
+        default:
+            dev->com3_addr = 0x338;
+            dev->com4_addr = 0x238;
+        break;
+
+        case 1:
+            dev->com3_addr = 0x3e8;
+            dev->com4_addr = 0x2e8;
+        break;
+
+        case 2:
+            dev->com3_addr = 0x2e8;
+            dev->com4_addr = 0x2e0;
+        break;
+
+        case 3:
+            dev->com3_addr = 0x220;
+            dev->com4_addr = 0x228;
+        break;
+    }
+
+    smc665_log("SMC 665 UART: COM3 set at 0x%x and COM4 set at 0x%x\n", dev->com3_addr, dev->com4_addr);
+
+    smc665_uart(0, dev); /* Rerun the UART configuration in case a UART is set at those addresses */
+    smc665_uart(1, dev);
 }
 
 static void
 smc665_fdc_feature(smc665_t *dev)
 {
+    
     fdc_update_densel_force(dev->fdc, (dev->regs[5] >> 3) & 3);
     fdc_update_boot_drive(dev->fdc, dev->regs[7] & 3);
     fdc_update_densel_polarity(dev->fdc, (dev->regs[7] >> 2) & 3);
-    fdc_set_swap(dev->fdc, !!(dev->regs[1] & 0x20));
-    fdc_update_enh_mode(dev->fdc, !!(dev->regs[2] & 2));
+    fdc_set_swap(dev->fdc, !!(dev->regs[5] & 0x20));
+    fdc_update_enh_mode(dev->fdc, !!(dev->regs[3] & 2));
 }
 
 static void
@@ -190,6 +199,8 @@ smc665_write(uint16_t addr, uint8_t val, void *priv)
     smc665_t *dev = (smc665_t *)priv;
 
     if((addr == 0x3f1) && dev->config_enable) {
+        smc665_log("SMC 665: dev->regs[%02x] = %02x\n", dev->index, val);
+
         switch(dev->index)
         {
             case 0x00:
@@ -202,17 +213,25 @@ smc665_write(uint16_t addr, uint8_t val, void *priv)
                 dev->regs[dev->index] = val;
                 smc665_com34(dev);
                 smc665_lpt(dev);
+
+                if(!(val & 0x80))
+                    smc665_config(1, dev); // Lock if triggered
             break;
 
             case 0x02:
                 dev->regs[dev->index] = val;
                 smc665_uart(0, dev);
                 smc665_uart(1, dev);
+            break;
+
+            case 0x03:
+                dev->regs[dev->index] = val;
                 smc665_fdc_feature(dev);
             break;
 
-            case 0x03 ... 0x04:
+            case 0x04:
                 dev->regs[dev->index] = val;
+                smc665_fdc_feature(dev);
             break;
 
             case 0x05:
@@ -232,7 +251,7 @@ smc665_write(uint16_t addr, uint8_t val, void *priv)
             break;
         }
     }
-    else {
+    else if(addr == 0x3f0) {
         dev->index = val;
 
         if((dev->index == 0x55) || (dev->index == 0xaa))
@@ -246,8 +265,25 @@ smc665_read(uint16_t addr, void *priv)
 {
     smc665_t *dev = (smc665_t *)priv;
 
+    if((addr == 0x3f1) && (dev->index <= 0x0f))
+        return dev->regs[dev->index];
+    else if(addr == 0x3f0)
+        return dev->index;
+    else
+        return 0xff;
 }
 
+static void
+smc665_config(int deconfig, smc665_t *dev)
+{
+    if(deconfig)
+        smc665_log("SMC 665: Locking\n");
+
+    if(!deconfig)
+        io_sethandler(0x3f0, 2, smc665_read, NULL, NULL, smc665_write, NULL, NULL, dev); /* Ports 3F0h-3F1h: SMC 665 */
+    else
+        io_removehandler(0x3f0, 2, smc665_read, NULL, NULL, smc665_write, NULL, NULL, dev);
+}
 
 static void
 smc665_reset(void *priv)
@@ -268,10 +304,11 @@ smc665_reset(void *priv)
 
     fdc_reset(dev->fdc);
     smc665_fdc(dev);
-    smc665_com34(dev);
     smc665_lpt(dev);
+    smc665_config(0, dev);
     smc665_uart(0, dev);
     smc665_uart(1, dev);
+    smc665_com34(dev);
     smc665_fdc_feature(dev);
 }
 
@@ -291,8 +328,6 @@ smc665_init(const device_t *info)
     smc665_t *dev = (smc665_t *)malloc(sizeof(smc665_t));
     memset(dev, 0, sizeof(smc665_t));
 
-    io_sethandler(0x3f0, 2, smc665_read, NULL, NULL, smc665_write, NULL, NULL, dev); /* Ports 3F0h-3F1h: SMC 665 */
-
     /* FDC */
     dev->fdc = device_add(&fdc_at_smc_device);
 
@@ -309,7 +344,7 @@ const device_t smc665_device = {
     .name = "SMC FDC37C665(SMC 665)",
     .internal_name = "smc665",
     .flags = 0,
-    .local = 0x2e,
+    .local = 0,
     .init = smc665_init,
     .close = smc665_close,
     .reset = smc665_reset,
