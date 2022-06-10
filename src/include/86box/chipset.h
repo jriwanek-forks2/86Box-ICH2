@@ -21,6 +21,9 @@
 /* SARC 2016A */
 extern const device_t   sarc_2016a_device;
 
+/* Symphony Haydn II */
+extern const device_t   symphony_haydn_device;
+
 /* SiS 471 */
 extern const device_t   sis_471_device;
 

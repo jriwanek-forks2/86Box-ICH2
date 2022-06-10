@@ -142,6 +142,7 @@
 enum {
     MACHINE_TYPE_NONE = 0,
     MACHINE_TYPE_SARC_2016A,
+    MACHINE_TYPE_SYMPHONY_HAYDN,
     MACHINE_TYPE_SIS_471,
     MACHINE_TYPE_INTEL_PIIX,
     MACHINE_TYPE_ICH2,
@@ -151,6 +152,7 @@ enum {
 enum {
     MACHINE_CHIPSET_NONE = 0,
     MACHINE_CHIPSET_SARC_2016A,
+    MACHINE_CHIPSET_SYMPHONY_HAYDN,
     MACHINE_CHIPSET_SIS_471,
     MACHINE_CHIPSET_INTEL_430FX,
     MACHINE_CHIPSET_INTEL_I815EP,
@@ -230,6 +232,12 @@ extern void	machine_at_common_init_ex(const machine_t *);
 /* boards_sarc_2016a.c */
 extern int  machine_at_m396f_init(const machine_t *);
 extern int  machine_at_sxd_init(const machine_t *);
+
+/* boards_symphony_haydn.c */
+extern int  machine_at_t486dx_init(const machine_t *);
+extern int  machine_at_386sc_stock_init(const machine_t *);
+extern int  machine_at_386sc_mr_init(const machine_t *);
+extern int  machine_at_pkm0031y_init(const machine_t *);
 
 /* boards_sis_471.c */
 extern int  machine_at_vi15g_init(const machine_t *);

@@ -30,6 +30,7 @@
 const machine_filter_t machine_types[] = {
     { "None",                                          MACHINE_TYPE_NONE               },
     { "SARC 2016A",                                    MACHINE_TYPE_SARC_2016A         },
+    { "Symphony Haydn II",                             MACHINE_TYPE_SYMPHONY_HAYDN     },
     { "SiS 471",				                       MACHINE_TYPE_SIS_471	           },
     { "Intel PIIX",				                       MACHINE_TYPE_INTEL_PIIX  	   },
     { "Intel ICH2",				                       MACHINE_TYPE_ICH2	           }
@@ -38,6 +39,7 @@ const machine_filter_t machine_types[] = {
 const machine_filter_t machine_chipsets[] = {
     { "None",                                          MACHINE_CHIPSET_NONE            },
     { "SARC 2016A",                                    MACHINE_CHIPSET_SARC_2016A      },
+    { "Symphony Haydn II",                             MACHINE_CHIPSET_SYMPHONY_HAYDN  },
     { "SiS 471",                                       MACHINE_CHIPSET_SIS_471         },
     { "Intel 430FX",                                   MACHINE_CHIPSET_INTEL_430FX     },
     { "Intel i815EP",                                  MACHINE_CHIPSET_INTEL_I815EP    }
@@ -49,6 +51,12 @@ const machine_t machines[] = {
     /* SARC 2016A Based Machines */
     { "CX Technology SXD",              "sxd",           MACHINE_TYPE_SARC_2016A,    MACHINE_CHIPSET_SARC_2016A,          machine_at_sxd_init,              0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_386SX,                     CPU_BLOCK_NONE,        			            16666666, 40000000,  0, 0, 0, 0,           MACHINE_AT,        MACHINE_FLAGS_NONE,  1024,  16384,  1024, 255, NULL, NULL },
     { "PCChips M396F",                  "m396f",         MACHINE_TYPE_SARC_2016A,    MACHINE_CHIPSET_SARC_2016A,          machine_at_m396f_init,            0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_386SX,                     CPU_BLOCK_NONE,        			            16666666, 40000000,  0, 0, 0, 0,           MACHINE_AT,        MACHINE_FLAGS_NONE,  1024,  16384,  1024, 255, NULL, NULL },
+
+    /* Symphony Haydn II Based Machines */
+    { "Commodore T486DX Tower",         "t486dx",        MACHINE_TYPE_SYMPHONY_HAYDN,    MACHINE_CHIPSET_SYMPHONY_HAYDN,  machine_at_t486dx_init,           0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET1,                   CPU_BLOCK_NONE,        			            20000000, 50000000,  0, 0, 0, 0,           MACHINE_AT,        MACHINE_FLAGS_NONE,  1024,  32768,  1024, 255, NULL, NULL },
+    { "FIC 386SC",                      "386sc_stock",   MACHINE_TYPE_SYMPHONY_HAYDN,    MACHINE_CHIPSET_SYMPHONY_HAYDN,  machine_at_386sc_stock_init,      0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_386DX,                     CPU_BLOCK_NONE,        			            25555555, 40000000,  0, 0, 0, 0,           MACHINE_AT,        MACHINE_FLAGS_NONE,  1024,  32768,  1024, 255, NULL, NULL },
+    { "FIC 386SC with MR BIOS",         "386sc_mr",      MACHINE_TYPE_SYMPHONY_HAYDN,    MACHINE_CHIPSET_SYMPHONY_HAYDN,  machine_at_386sc_mr_init,         0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_386DX,                     CPU_BLOCK_NONE,        			            25555555, 40000000,  0, 0, 0, 0,           MACHINE_AT,        MACHINE_FLAGS_NONE,  1024,  32768,  1024, 255, NULL, NULL },
+    { "DTK PKM-0031Y",                  "pkm0031y",      MACHINE_TYPE_SYMPHONY_HAYDN,    MACHINE_CHIPSET_SYMPHONY_HAYDN,  machine_at_pkm0031y_init,         0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET1,                   CPU_BLOCK_NONE,        			            16666666, 50000000,  0, 0, 0, 0,           MACHINE_AT,        MACHINE_FLAGS_NONE,  1024,  32768,  1024, 255, NULL, NULL },
 
     /* SiS 471 Based Machines */
     { "AOpen Vi15G",                    "vi15g",         MACHINE_TYPE_SIS_471,       MACHINE_CHIPSET_SIS_471,             machine_at_vi15g_init,            0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET3,                   CPU_BLOCK_NONE,        			            20000000, 50000000,  0, 0, 0, 0,           MACHINE_VLB,       MACHINE_FLAGS_NONE,  8192, 131072,  8192, 255, NULL, NULL },
