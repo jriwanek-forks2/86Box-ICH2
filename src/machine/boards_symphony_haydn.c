@@ -33,7 +33,7 @@
  * Chipset: Symphony Haydn II
  * Super I/O: None
  * BIOS: AMI Color
- * Notes: None
+ * Notes: Also called Schneider T486DX
 */
 int
 machine_at_t486dx_init(const machine_t *model)
@@ -116,7 +116,7 @@ machine_at_386sc_mr_init(const machine_t *model)
  * 
  * Chipset: Symphony Haydn II
  * Super I/O: None
- * BIOS: AMI Color
+ * BIOS: DTK 4.27
  * Notes: None
 */
 int

@@ -8,9 +8,10 @@
 
 /*
 
-    Symphony Haydn Configuration Registers:
+    Symphony Haydn II Configuration Registers:
 
-    Note: We emulate the Haydn II which is Haydn with a cache controller chip.
+    Note: We emulate the Haydn II which is Haydn 486 support and with a cache controller chip.
+    Note 2: We don't know how exactly the memory is remapped on old AMI BIOS cores. Recommended to disable it.
 
     Register 01h:
     Bit 0: FASTA20 Trigger
@@ -27,6 +28,9 @@
          1 0 1  Undocumented
          1 1 0  CLK2/2.5
          1 1 1  CLK2/2
+
+    Register 2Dh:
+    Bit 7: Remap 256KB to Top Memory, Note: We can also remap 384KB but the registers responsible remain unknown
 
     Register 2Eh:
     Bit 3: CC000-CFFFF Shadow Read
@@ -55,6 +59,7 @@
     Register 31h:
     Bit 7: F0000-FFFFF Shadow Read
     Bit 6: F0000-FFFFF Shadow Write
+
 */
 
 #include <stdarg.h>
@@ -154,6 +159,18 @@ symphony_haydn_bus_recalc(symphony_haydn_t *dev)
 }
 
 static void
+symphony_haydn_mem_relocate(symphony_haydn_t *dev)
+{
+    int enable_256k = dev->regs[0x2d] & 0x80;
+
+    if(enable_256k) {
+        symphony_haydn_log("Symphony Haydn Memory Remap: 256KB of memory were remapped\n");
+        mem_remap_top(256);
+    }
+
+}
+
+static void
 symphony_haydn_shadow_low(int seg, symphony_haydn_t *dev)
 {
     uint32_t base = seg ? 0xd0000 : 0xc0000;
@@ -167,6 +184,8 @@ symphony_haydn_shadow_low(int seg, symphony_haydn_t *dev)
         mem_set_mem_state_both(base, 0x4000, read | write);
         base += 0x4000;
     }
+
+    flushmmucache_nopc();
 }
 
 static void
@@ -180,6 +199,8 @@ symphony_haydn_shadow_high(int seg, symphony_haydn_t *dev)
     write = (dev->regs[reg] & 0x40) ? MEM_WRITE_INTERNAL : MEM_WRITE_EXTANY;
     symphony_haydn_log("Symphony Haydn Shadow: Segment 0x%x\n", base);
     mem_set_mem_state_both(base, 0x4000, read | write);
+
+    flushmmucache_nopc();
 }
 
 static void
@@ -209,6 +230,10 @@ symphony_haydn_write(uint16_t addr, uint8_t val, void *priv)
                 symphony_haydn_bus_recalc(dev);
             break;
 
+            case 0x2d:
+                symphony_haydn_mem_relocate(dev);
+            break;
+
             case 0x2e:
             case 0x2f:
                 symphony_haydn_shadow_low(dev->index & 1, dev);
@@ -230,8 +255,11 @@ symphony_haydn_read(uint16_t addr, void *priv)
     
     if(!(addr & 1))
         return dev->index;
+    else if(addr & 1)
+        if((dev->index > 0) && (dev->index <= 0x45))
+            return dev->regs[dev->index];
     else
-        return dev->regs[dev->index];
+        return 0xff;
 }
 
 
@@ -275,7 +303,7 @@ symphony_haydn_init(const device_t *info)
 }
 
 const device_t symphony_haydn_device = {
-    .name = "Symphony Haydn",
+    .name = "Symphony Haydn II",
     .internal_name = "symphony_haydn",
     .flags = 0,
     .local = 0,
