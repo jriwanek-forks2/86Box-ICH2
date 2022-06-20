@@ -10,14 +10,13 @@
 
     Symphony Haydn II Configuration Registers:
 
-    Note: We emulate the Haydn II which is Haydn 486 support and with a cache controller chip.
+    Note: We emulate the Haydn II which is Haydn with 486 support and with a cache controller chip.
     Note 2: We don't know how exactly the memory is remapped on old AMI BIOS cores. Recommended to disable it.
 
     Register 01h:
     Bit 0: FASTA20 Trigger
 
     Register 02h:
-
     CPU Bus Speed: Note: We don't know the datasheet default Bus Speed (Speculated CLK2/3 from defaults BIOS gives)
     Bits 5 4 3:
          0 0 0  CLK2/3
@@ -31,6 +30,8 @@
 
     Register 2Dh:
     Bit 7: Remap 256KB to Top Memory, Note: We can also remap 384KB but the registers responsible remain unknown
+           Old AMI BIOS cores don't seem to utilize it, plus we don't know what ranges it actually remaps
+           Speculated ranges are A, B and D
 
     Register 2Eh:
     Bit 3: CC000-CFFFF Shadow Read
