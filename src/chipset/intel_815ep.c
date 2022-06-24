@@ -24,6 +24,7 @@
 #include <86box/pci.h>
 #include <86box/smram.h>
 #include <86box/spd.h>
+#include <86box/video.h>
 #include <86box/chipset.h>
 
 #ifdef ENABLE_INTEL_815EP_LOG
@@ -47,7 +48,32 @@ typedef struct intel_815ep_t
 {
     uint8_t pci_conf[256];
     smram_t *lsmm_segment, *h_segment, *usmm_segment;
+    void *agpgart; // Wtf those 86guys where thinking. Make it a device ffs.
+
 } intel_815ep_t;
+
+static void
+intel_815ep_agp_aperature(intel_815ep_t *dev)
+{
+    uint32_t aperature_base, aperature_size_calc;
+    int aperature_size, aperature_enable;
+
+    aperature_base = dev->pci_conf[0x13] << 24;
+    aperature_size = !!(dev->pci_conf[0xb4] & 8);
+    aperature_size_calc = 1 << (aperature_size ? 25 : 24); /* 815EP has the choice of 64 & 32MB only */
+
+    aperature_enable = aperature_base != 0;
+
+    if(aperature_size)
+        dev->pci_conf[0x13] &= 0xfe;
+
+    if(aperature_enable)
+        intel_815ep_log("Intel 815EP AGP Aperature: Enabled at size 0x%x and size of %dMB\n", aperature_base, aperature_size ? 64 : 32);
+    else
+        intel_815ep_log("Intel 815EP AGP Aperature: AGP Aperature disabled\n");
+
+    agpgart_set_aperture(dev->agpgart, aperature_base, aperature_size_calc, aperature_enable);
+}
 
 static void
 intel_usmm_segment_recalc(intel_815ep_t *dev, uint8_t val)
@@ -111,6 +137,16 @@ intel_pam_recalc(int addr, uint8_t val)
 }
 
 static void
+intel_815ep_gart_table(intel_815ep_t *dev)
+{
+    uint32_t agp_gart_base = (dev->pci_conf[0xbb] << 24) | (dev->pci_conf[0xba] << 16) | (dev->pci_conf[0xb9] << 8);
+
+    intel_815ep_log("Intel 815EP AGP GART: GART address updated at 0x%x", agp_gart_base);
+
+    agpgart_set_gart(dev->agpgart, agp_gart_base);
+}
+
+static void
 intel_815ep_write(int func, int addr, uint8_t val, void *priv)
 {
     intel_815ep_t *dev = (intel_815ep_t *)priv;
@@ -131,9 +167,10 @@ intel_815ep_write(int func, int addr, uint8_t val, void *priv)
             if(dev->pci_conf[addr] != 0)
                 dev->pci_conf[addr] = val;
         break;
- 
+
         case 0x13:
-            dev->pci_conf[addr] = val & 0xfe;
+            dev->pci_conf[addr] = val;
+            intel_815ep_agp_aperature(dev);
         break;
 
         case 0x50:
@@ -220,18 +257,22 @@ intel_815ep_write(int func, int addr, uint8_t val, void *priv)
 
         case 0xb4:
             dev->pci_conf[addr] = val & 8;
+            intel_815ep_agp_aperature(dev);
         break;
 
         case 0xb9:
             dev->pci_conf[addr] = val & 0xf0;
+            intel_815ep_gart_table(dev);
         break;
 
         case 0xba:
             dev->pci_conf[addr] = val;
+            intel_815ep_gart_table(dev);
         break;
 
         case 0xbb:
             dev->pci_conf[addr] = val & 0x1f;
+            intel_815ep_gart_table(dev);
         break;
 
         case 0xbc ... 0xbd:
@@ -305,11 +346,15 @@ intel_815ep_reset(void *priv)
 
     dev->pci_conf[0xa9] = 0x01; /* Hack: Brute Force AGP Enabled */
 
+    intel_815ep_agp_aperature(dev); /* Configure AGP Aperature */
+
     for(int i = 0x59; i <= 0x5f; i++)  /* Reset PAM to defaults */
         intel_pam_recalc(i, 0);
 
     intel_lsmm_segment_recalc(dev, 0); /* Reset LSMM SMRAM to defaults */
     intel_usmm_segment_recalc(dev, 0); /* Reset USMM SMRAM to defaults */
+
+    intel_815ep_gart_table(dev); /* Reset AGP GART to defaults */
 
 }
 
@@ -337,6 +382,9 @@ intel_815ep_init(const device_t *info)
 
     /* AGP Bridge */
     device_add(&intel_815ep_agp_device);
+
+    /* AGP GART*/
+    dev->agpgart = device_add(&agpgart_device);
 
     /* L1 & L2 Cache */
     cpu_cache_int_enabled = 1;
