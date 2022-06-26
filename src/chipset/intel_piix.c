@@ -178,26 +178,28 @@ intel_piix_ide_bm(intel_piix_t *dev)
 }
 
 static void
-intel_piix_ide(int channel, intel_piix_t *dev)
+intel_piix_ide(intel_piix_t *dev)
 {
     int enable = dev->pci_conf[1][4] & 1;
-    int ch_enable = !!(dev->pci_conf[1][channel ? 0x43 : 0x41] & 0x80);
+    int pri_enable = dev->pci_conf[1][0x41] & 0x80;
+    int sec_enable = dev->pci_conf[1][0x43] & 0x80;
 
-    if(channel)
-        ide_sec_disable();
-    else
-        ide_pri_disable();
+    ide_sec_disable();
+    ide_pri_disable();
 
-    if(enable && ch_enable) {
-        intel_piix_log("Intel PIIX IDE: %s channel was enabled\n", !channel ? "Primary" : "Secondary");
-        
-        if(channel)
-            ide_sec_enable();
-        else
+    if(enable){
+        if(pri_enable){
             ide_pri_enable();
+            intel_piix_log("Intel PIIX IDE: Primary channel was enabled\n");
+        }
+
+        if(sec_enable){
+            ide_sec_enable();
+            intel_piix_log("Intel PIIX IDE: Secondary channel was enabled\n");
+        }
     }
     else
-        intel_piix_log("Intel PIIX IDE: %s channel was disabled\n", !channel ? "Primary" : "Secondary");
+        intel_piix_log("Intel PIIX IDE: IDE was disabled entirely!");
 
 }
 
@@ -297,6 +299,8 @@ intel_piix_write(int func, int addr, uint8_t val, void *priv)
         {
             case 0x04:
                 dev->pci_conf[func][addr] = (val & 5) | 2;
+                intel_piix_ide(dev);
+                intel_piix_ide_bm(dev);
             break;
 
             case 0x07:
@@ -318,7 +322,7 @@ intel_piix_write(int func, int addr, uint8_t val, void *priv)
 
             case 0x41:
                 dev->pci_conf[func][addr] = val & 0xb3;
-                intel_piix_ide(0, dev);
+                intel_piix_ide(dev);
             break;
 
             case 0x42:
@@ -327,7 +331,7 @@ intel_piix_write(int func, int addr, uint8_t val, void *priv)
 
             case 0x43:
                 dev->pci_conf[func][addr] = val & 0xb3;
-                intel_piix_ide(1, dev);
+                intel_piix_ide(dev);
             break;
         }
     }
@@ -423,11 +427,10 @@ intel_piix_reset(void *priv)
 
     dev->pci_conf[1][0x20] = 0x01;
 
-    intel_piix_ide_bm(dev);
     sff_bus_master_reset(dev->ide_drive[0], 0);
     sff_bus_master_reset(dev->ide_drive[1], 0);
-    intel_piix_ide(0, dev);
-    intel_piix_ide(1, dev);
+    intel_piix_ide_bm(dev);
+    intel_piix_ide(dev);
 }
 
 

@@ -131,6 +131,9 @@ intel_430fx_write(int func, int addr, uint8_t val, void *priv)
 
     intel_430fx_log("Intel 430FX: dev->regs[%02x] = %02x\n", addr, val);
 
+    if(func)
+        return;
+
     switch(addr)
     {
         case 0x04:
@@ -195,7 +198,10 @@ intel_430fx_read(int func, int addr, void *priv)
 
     intel_430fx_log("Intel 430FX: dev->regs[%02x] (%02x)\n", addr, dev->pci_conf[addr]);
 
-    return dev->pci_conf[addr];
+    if(func)
+        return 0xff;
+    else
+        return dev->pci_conf[addr];
 }
 
 

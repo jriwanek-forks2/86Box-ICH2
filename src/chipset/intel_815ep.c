@@ -153,6 +153,9 @@ intel_815ep_write(int func, int addr, uint8_t val, void *priv)
 
     intel_815ep_log("Intel 815EP MCH: dev->regs[%02x] = %02x\n", addr, val);
 
+    if(func)
+        return;
+
     switch(addr)
     {
         case 0x05:
@@ -296,6 +299,9 @@ intel_815ep_read(int func, int addr, void *priv)
     intel_815ep_t *dev = (intel_815ep_t *)priv;
 
     intel_815ep_log("Intel 815EP MCH: dev->regs[%02x] (%02x)\n", addr, dev->pci_conf[addr]);
+
+    if(func)
+        return 0xff;
 
     if(addr == 0x51) // Bit 2 is Write Only. It cannot be read.
         return dev->pci_conf[addr] & 3;
