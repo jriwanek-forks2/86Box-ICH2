@@ -27,6 +27,47 @@
 #include <86box/machine.h>
 
 /*
+ * AOpex AX3S-U
+ * 
+ * North Bridge: Intel 815EP
+ * Super I/O: Winbond W83627HF
+ * BIOS: AOpen Vivid BIOS (Based on Award 6.00PG)
+ * Notes: None
+*/
+int
+machine_at_ax3su_init(const machine_t *model)
+{
+    int ret;
+
+    ret = bios_load_linear("roms/machines/ich2/ax3su/3U112.BIN",
+			   0x00080000, 524288, 0);
+
+    if (bios_only || !ret)
+	return ret;
+
+    machine_at_common_init_ex(model);
+
+    pci_init(PCI_CONFIG_TYPE_1);
+    pci_register_bus_slot(0, 0x00, PCI_CARD_NORTHBRIDGE, 0, 0, 0, 0);
+    pci_register_bus_slot(0, 0x01, PCI_CARD_AGPBRIDGE,   1, 2, 0, 0);
+    pci_register_bus_slot(0, 0x1e, PCI_CARD_BRIDGE,      0, 0, 0, 0);
+    pci_register_bus_slot(0, 0x1f, PCI_CARD_SOUTHBRIDGE, 1, 2, 8, 4);
+    pci_register_bus_slot(1, 0x01, PCI_CARD_AGP,         1, 2, 3, 4);
+    pci_register_bus_slot(2, 0x04, PCI_CARD_NORMAL,      3, 4, 5, 6);
+    pci_register_bus_slot(2, 0x05, PCI_CARD_NORMAL,      4, 5, 6, 7);
+    pci_register_bus_slot(2, 0x06, PCI_CARD_NORMAL,      5, 6, 7, 8);
+    pci_register_bus_slot(2, 0x07, PCI_CARD_NORMAL,      6, 7, 8, 1);
+
+    device_add(&intel_815ep_device); /* Intel 815EP MCH */
+    device_add(&intel_ich2_device); /* Intel ICH2 */
+    device_add(&nsc366_device); /* Winbond W83627HF */
+    device_add(&sst_flash_49lf004_device); /* SST 4Mbit Firmware Hub */
+    intel_815ep_spd_init(); /* SPD */
+
+    return ret;
+}
+
+/*
  * Tyan Tomcat 815T (S2080)
  * 
  * North Bridge: Intel 815EP

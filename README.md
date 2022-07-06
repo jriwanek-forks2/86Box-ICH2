@@ -17,6 +17,8 @@ Intel i8xx series in general is way beyond 86Box's scope. It's already stated by
 * SMBus craze
     - Caused by the dynarec potentially. Setting the CPU beyond 66Mhz on some boards, it can cause the BIOS to send random commands through the SMBus and generally halt. The current board doesn't have that.
 
+    - By analysis it's caused due to the emulated timer on 86Box being severely broken for late machine tasks.
+
 * This works, this bugs, this doesn't
     - Tons of variety can be found within late machines. Different configurations, Super I/O's, I2C chips and anything that could come to anyones imagination. One discovery was the lack of FWH programming some BIOS do, including the introduced one. FWH pins are undocumented where they talk to so although the functionality can be implemented, the position to where the functionality is triggered upon remains unknown. Also other machines may fail to boot for a number of reasons, not one man can solve them all.
 

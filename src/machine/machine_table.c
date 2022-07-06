@@ -70,6 +70,7 @@ const machine_t machines[] = {
     { "Micronics M54Hi",                "m54hi",         MACHINE_TYPE_INTEL_PIIX,    MACHINE_CHIPSET_INTEL_430FX,         machine_at_m54hi_init,            0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET5_7,                 CPU_BLOCK_NONE,        			            50000000, 66666666,  3300, 3600, 1.5, 2.0, MACHINE_PS2_PCI,   MACHINE_IDE_DUAL,    8192, 131072,  8192, 255, NULL, NULL },
 
     /* Intel 815EP Based Machines */
+    { "AOpen AX3S-U",                   "ax3su",         MACHINE_TYPE_ICH2,          MACHINE_CHIPSET_INTEL_I815EP,        machine_at_ax3su_init,            0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET370,                 CPU_BLOCK_NONE,        			            66666667, 133333333, 1300, 3500, 1.5, 8.0, MACHINE_PS2_NOISA, MACHINE_IDE_DUAL,   32768, 524288, 32768, 255, NULL, NULL },
     { "Tyan Tomcat i815T",              "s2080",         MACHINE_TYPE_ICH2,          MACHINE_CHIPSET_INTEL_I815EP,        machine_at_s2080_init,            0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET370,                 CPU_BLOCK_NONE,        			            66666667, 133333333, 1300, 3500, 1.5, 8.0, MACHINE_PS2_NOISA, MACHINE_IDE_DUAL,   32768, 524288, 32768, 255, NULL, NULL },
 
     { NULL,                                            NULL,            MACHINE_TYPE_NONE,          MACHINE_CHIPSET_NONE,                NULL,                             0, 0, MACHINE_AVAILABLE, 0 , 0,                                 CPU_BLOCK_NONE,                              0, 0, 0, 0, 0, 0, MACHINE_BUS_NONE,  MACHINE_FLAGS_NONE, 0, 0, 0, 0, NULL, NULL }

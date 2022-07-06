@@ -31,6 +31,7 @@
 #include <86box/apm.h>
 #include <86box/nvr.h>
 #include <86box/acpi.h>
+#include <86box/pci.h>
 
 #include <86box/smbus.h>
 

@@ -28,6 +28,7 @@
 #include <86box/hdc.h>
 #include <86box/hdc_ide.h>
 #include <86box/hdc_ide_sff8038i.h>
+#include <86box/intel_ac97.h>
 #include <86box/intel_ich2_gpio.h>
 #include <86box/intel_ich2_trap.h>
 #include <86box/mem.h>
@@ -58,9 +59,10 @@ intel_ich2_log(const char *fmt, ...)
 
 typedef struct intel_ich2_t
 {
-    uint8_t pci_conf[5][256];
+    uint8_t pci_conf[7][256];
 
     acpi_t *acpi;
+    intel_ac97_t *ac97;
     intel_ich2_gpio_t *gpio;
     intel_ich2_trap_t *trap_device[10];
     nvr_t *nvr;
@@ -287,6 +289,8 @@ uint16_t smbus_addr = (dev->pci_conf[3][0x21] << 8) | (dev->pci_conf[3][0x20] & 
 if(dev->pci_conf[0][0xf2] & 2) {
     ide_pri_disable();
     ide_sec_disable();
+    sff_bus_master_handler(dev->ide_drive[0], 0, 0);
+    sff_bus_master_handler(dev->ide_drive[1], 0, 0);
 }
 
 /* Disable USB Hub 1 */
@@ -427,6 +431,39 @@ intel_ich2_write(int func, int addr, uint8_t val, void *priv)
 
             case 0x91:
                 dev->pci_conf[func][addr] = val & 0xfc;
+            break;
+
+            case 0xa0:
+                dev->pci_conf[func][addr] = val & 0x6c;
+            break;
+
+            case 0xa1:
+                dev->pci_conf[func][addr] = val & 6;
+            break;
+
+            case 0xa2:
+                dev->pci_conf[func][addr] &= val & 3;
+            break;
+
+            case 0xa4:
+                dev->pci_conf[func][addr] = val & 1;
+                dev->pci_conf[func][addr] &= val & 6;
+            break;
+
+            case 0xb8 ... 0xbb: 
+                dev->pci_conf[func][addr] = val; /* GPIO Routing */
+            break;
+
+            case 0xc0:
+                dev->pci_conf[func][addr] = val & 0xf0;
+            break;
+
+            case 0xc4 ... 0xcb:
+                dev->pci_conf[func][addr] = val;
+            break;
+
+            case 0xcc ... 0xcd:
+                dev->pci_conf[func][addr] &= val;
             break;
 
             case 0xd0:
@@ -604,14 +641,71 @@ intel_ich2_write(int func, int addr, uint8_t val, void *priv)
             break;
 
             case 0x3c:
-                dev->pci_conf[func][addr] = val;
-                smbus_piix4_get_irq(val, dev->smbus);
+                dev->pci_conf[func][addr] = val;                       /* 86Box doesn't give any capabilities to take the PCI IRQ pin, also */
+                smbus_piix4_get_irq(pci_get_int(0x1f, 2), dev->smbus); /* can't use pointers as whatever recieved from there is temporary.  */
+                intel_ich2_log("Intel ICH2 SMBus: Got IRQ %d\n", pci_get_int(0x1f, 2));
             break;
 
             case 0x40:
                 dev->pci_conf[func][addr] = val & 7;
                 intel_ich2_smbus_setup(dev);
                 smbus_piix4_smi_en(!!(val & 2), dev->smbus);
+            break;
+        }
+    }
+    else if((func == 5) && !(dev->pci_conf[0][0xf2] & 0x20)) {
+        intel_ich2_log("Intel ICH2 AC'97: dev->regs[%02x] = %02x\n", addr, val);
+        switch(addr)
+        {
+            case 0x04:
+                dev->pci_conf[func][addr] = val & 5;
+            break;
+
+            case 0x07:
+                dev->pci_conf[func][addr] &= val & 0x26;
+            break;
+
+            case 0x11:
+                dev->pci_conf[func][addr] = val;
+                intel_ac97_mixer_base(dev->pci_conf[5][4] & 1, dev->pci_conf[5][0x11] << 8, dev->ac97);
+            break;
+
+            case 0x14:
+            case 0x15:
+                dev->pci_conf[func][addr] = (addr & 1) ? val : ((val & 0xc0) | 1);
+                intel_ac97_base(dev->pci_conf[5][4] & 1, (dev->pci_conf[5][0x15] << 8) | (dev->pci_conf[5][0x14] & 0xc0), dev->ac97);
+            break;
+
+            case 0x3c:
+                dev->pci_conf[func][addr] = val;
+            break;
+        }
+    }
+    else if((func == 6) && !(dev->pci_conf[0][0xf2] & 0x40)) {
+        intel_ich2_log("Intel ICH2 AC'97 Modem: dev->regs[%02x] = %02x\n", addr, val);
+        switch(addr)
+        {
+            case 0x04:
+                dev->pci_conf[func][addr] = val & 5;
+            break;
+
+            case 0x07:
+                dev->pci_conf[func][addr] &= val & 0x20;
+            break;
+
+            case 0x11:
+                dev->pci_conf[func][addr] = val;
+
+            break;
+
+            case 0x14:
+            case 0x15:
+                dev->pci_conf[func][addr] = (addr & 1) ? val : ((val & 0x80) | 1);
+
+            break;
+
+            case 0x3c:
+                dev->pci_conf[func][addr] = val;
             break;
         }
     }
@@ -645,6 +739,14 @@ intel_ich2_read(int func, int addr, void *priv)
     if((addr >= 0x2c) && (addr <= 0x2f)) /* SMBus shares the same subsystem vendor info as the IDE */
         return dev->pci_conf[1][addr];
 
+    return dev->pci_conf[func][addr];
+    }
+    else if((func == 5) && !(dev->pci_conf[0][0xf2] & 0x20)) {
+    intel_ich2_log("Intel ICH2 AC'97: dev->regs[%02x] (%02x)\n", addr, dev->pci_conf[func][addr]);
+    return dev->pci_conf[func][addr];
+    }
+    else if((func == 6) && !(dev->pci_conf[0][0xf2] & 0x40)) {
+    intel_ich2_log("Intel ICH2 AC'97 Modem: dev->regs[%02x] (%02x)\n", addr, dev->pci_conf[func][addr]);
     return dev->pci_conf[func][addr];
     }
     else return 0xff;
@@ -810,6 +912,46 @@ intel_ich2_reset(void *priv)
     dev->pci_conf[4][0xc1] = 0x20;
 
     intel_ich2_usb_setup(4, dev);
+
+    /* Function 5: AC'97 */
+    dev->pci_conf[5][0x00] = 0x86;
+    dev->pci_conf[5][0x01] = 0x80;
+
+    dev->pci_conf[5][0x02] = 0x45;
+    dev->pci_conf[5][0x03] = 0x24;
+
+    dev->pci_conf[5][0x06] = 0x80;
+    dev->pci_conf[5][0x07] = 0x02;
+
+    dev->pci_conf[5][0x08] = 0x02;
+
+    dev->pci_conf[5][0x0a] = 0x01;
+    dev->pci_conf[5][0x0b] = 0x03;
+
+    dev->pci_conf[5][0x10] = 0x01;
+    dev->pci_conf[5][0x14] = 0x01;
+
+    dev->pci_conf[5][0x3d] = 0x02;
+
+    /* Function 6: AC'97 Modem */
+    dev->pci_conf[6][0x00] = 0x86;
+    dev->pci_conf[6][0x01] = 0x80;
+
+    dev->pci_conf[6][0x02] = 0x46;
+    dev->pci_conf[6][0x03] = 0x24;
+
+    dev->pci_conf[6][0x06] = 0x80;
+    dev->pci_conf[6][0x07] = 0x02;
+
+    dev->pci_conf[6][0x08] = 0x02;
+
+    dev->pci_conf[6][0x0a] = 0x03;
+    dev->pci_conf[6][0x0b] = 0x07;
+
+    dev->pci_conf[6][0x10] = 0x01;
+    dev->pci_conf[6][0x14] = 0x01;
+
+    dev->pci_conf[6][0x3d] = 0x02;
 }
 
 
@@ -834,6 +976,9 @@ intel_ich2_init(const device_t *info)
     /* ACPI Interface */
     dev->acpi = device_add(&acpi_intel_ich2_device);
     acpi_set_slot(dev->acpi, slot);
+
+    /* AC'97 Audio */
+    dev->ac97 = device_add(&intel_ac97_device);
 
     /* DMA */
     dma_alias_set_piix();

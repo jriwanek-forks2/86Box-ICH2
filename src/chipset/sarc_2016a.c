@@ -50,7 +50,6 @@
     Bit 0: EC000-EFFFF Shadow Read Enable
 
     Register 86h:
-
     Bits 7 6
          0 0  Burst 1
          0 1  Burst 2
