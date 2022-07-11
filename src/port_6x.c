@@ -97,7 +97,7 @@ port_61_read(uint16_t port, void *priv)
         ret |= 0x20;
 
     if (dev->flags & PORT_6X_TURBO)
-        ret = (ret & 0xfb) | (xi8088_turbo_get() ? 0x04 : 0x00);
+        ret = (ret & 0xfb);
 
     return(ret);
 }
