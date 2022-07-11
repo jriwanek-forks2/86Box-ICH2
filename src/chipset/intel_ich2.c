@@ -39,7 +39,7 @@
 #include <86box/usb.h>
 
 #include <86box/chipset.h>
-
+#define ENABLE_INTEL_ICH2_LOG 1
 #ifdef ENABLE_INTEL_ICH2_LOG
 int intel_ich2_do_log = ENABLE_INTEL_ICH2_LOG;
 static void
@@ -695,13 +695,11 @@ intel_ich2_write(int func, int addr, uint8_t val, void *priv)
 
             case 0x11:
                 dev->pci_conf[func][addr] = val;
-
             break;
 
             case 0x14:
             case 0x15:
                 dev->pci_conf[func][addr] = (addr & 1) ? val : ((val & 0x80) | 1);
-
             break;
 
             case 0x3c:

@@ -27,19 +27,19 @@
 #include <86box/machine.h>
 
 /*
- * AOpex AX3S-U
+ * Biostar M6TSL
  * 
- * North Bridge: Intel 815EP
- * Super I/O: Winbond W83627HF
- * BIOS: AOpen Vivid BIOS (Based on Award 6.00PG)
+ * North Bridge: Intel 815E
+ * Super I/O: National Semiconductor NSC366 (PC87366)
+ * BIOS: Award BIOS 6.00PG
  * Notes: None
 */
 int
-machine_at_ax3su_init(const machine_t *model)
+machine_at_m6tsl_init(const machine_t *model)
 {
     int ret;
 
-    ret = bios_load_linear("roms/machines/ich2/ax3su/3U112.BIN",
+    ret = bios_load_linear("roms/machines/ich2/m6tsl/tsl0425f.bin",
 			   0x00080000, 524288, 0);
 
     if (bios_only || !ret)

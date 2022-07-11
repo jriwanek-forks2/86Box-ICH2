@@ -26,21 +26,16 @@ extern "C" {
 #include <86box/mem.h>
 #include <86box/snd_ac97.h>
 
-typedef struct intel_ac97_buffer_t
-{
-    uint16_t buffer_base;
-    uint8_t regs[256];
-    uint32_t buffer[32][2]; /* 8 Bytes on each 32 samples */
-    mem_mapping_t *ac97_buffer;
-} intel_ac97_buffer_t;
-
 typedef struct intel_ac97_t
 {
     uint16_t ac97_base;
     uint16_t mixer_base;
+    uint32_t buffer_base;
+
     uint8_t regs[256];
 
     ac97_codec_t *mixer;
+    mem_mapping_t *buffer_location;
 } intel_ac97_t;
 
 /* AC'97 Configuration */

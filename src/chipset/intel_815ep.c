@@ -26,7 +26,7 @@
 #include <86box/spd.h>
 #include <86box/video.h>
 #include <86box/chipset.h>
-
+#define ENABLE_INTEL_815EP_LOG 1
 #ifdef ENABLE_INTEL_815EP_LOG
 int intel_815ep_do_log = ENABLE_INTEL_815EP_LOG;
 static void

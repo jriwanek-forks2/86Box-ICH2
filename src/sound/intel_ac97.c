@@ -21,7 +21,7 @@
 
 #include <86box/snd_ac97.h>
 #include <86box/intel_ac97.h>
-
+#define ENABLE_INTEL_AC97_LOG 1
 #ifdef ENABLE_INTEL_AC97_LOG
 int intel_ac97_do_log = ENABLE_INTEL_AC97_LOG;
 static void
@@ -65,6 +65,7 @@ intel_ac97_mixer_base(int enable, uint16_t addr, intel_ac97_t *dev)
     if(dev->mixer_base != 0)
         io_removehandler(dev->mixer_base, 256, NULL, intel_ac97_mixer_read, NULL, NULL, intel_ac97_mixer_write, NULL, dev);
 
+    intel_ac97_log("Intel AC'97 Mixer: Base has been set on 0x%x\n", addr);
     dev->mixer_base = addr;
 
     if((addr != 0) && enable)
@@ -77,7 +78,24 @@ static void
 intel_ac97_write(uint16_t addr, uint8_t val, void *priv)
 {
     intel_ac97_t *dev = (intel_ac97_t *) priv;
+    addr -= dev->ac97_base;
 
+    intel_ac97_log("Intel AC'97: dev->regs[%02x] = %02x\n", addr, val);
+
+    switch(addr)
+    {
+        case 0x10 ... 0x13: /* Buffer BAR */
+            dev->regs[addr] = val;
+        break;
+
+        case 0x15: /* Last Valid Index */
+            dev->regs[addr] &= val;
+        break;
+
+        case 0x16: /* Status */
+            dev->regs[addr] &= val;
+        break;
+    }
 }
 
 
@@ -85,7 +103,11 @@ static uint8_t
 intel_ac97_read(uint16_t addr, void *priv)
 {
     intel_ac97_t *dev = (intel_ac97_t *) priv;
-    return 0xff;
+    addr -= dev->ac97_base;
+
+    intel_ac97_log("Intel AC'97: dev->regs[%02x] (%02x)\n", addr, dev->regs[addr]);
+
+    return dev->regs[addr];
 }
 
 void
@@ -94,10 +116,12 @@ intel_ac97_base(int enable, uint16_t addr, intel_ac97_t *dev)
     if(dev->ac97_base != 0)
         io_removehandler(dev->ac97_base, 64, intel_ac97_read, NULL, NULL, intel_ac97_write, NULL, NULL, dev);
 
+    intel_ac97_log("Intel AC'97: Base has been set on 0x%x\n", addr);
     dev->ac97_base = addr;
 
     if((addr != 0) && enable)
         io_sethandler(addr, 64, intel_ac97_read, NULL, NULL, intel_ac97_write, NULL, NULL, dev);
+
 }
 
 
