@@ -33,6 +33,7 @@ typedef struct intel_ac97_t
     uint32_t buffer_base;
 
     uint8_t regs[256];
+    int irq;
 
     ac97_codec_t *mixer;
     mem_mapping_t *buffer_location;
@@ -41,6 +42,7 @@ typedef struct intel_ac97_t
 /* AC'97 Configuration */
 extern void intel_ac97_base(int enable, uint16_t addr, intel_ac97_t *dev);
 extern void intel_ac97_mixer_base(int enable, uint16_t addr, intel_ac97_t *dev);
+extern void intel_ac97_set_irq(int irq, intel_ac97_t *dev);
 
 extern const device_t   intel_ac97_device;
 extern const device_t   intel_ac97_mixer_device;

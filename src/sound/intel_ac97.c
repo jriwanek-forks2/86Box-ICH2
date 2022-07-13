@@ -74,6 +74,14 @@ intel_ac97_mixer_base(int enable, uint16_t addr, intel_ac97_t *dev)
 
 
 /* AC'97 Configuration */
+void
+intel_ac97_set_irq(int irq, intel_ac97_t *dev)
+{
+    intel_ac97_log("Intel AC'97: IRQ Base was set to %d\n");
+
+    dev->irq = irq;
+}
+
 static void
 intel_ac97_write(uint16_t addr, uint8_t val, void *priv)
 {
@@ -95,6 +103,22 @@ intel_ac97_write(uint16_t addr, uint8_t val, void *priv)
         case 0x16: /* Status */
             dev->regs[addr] &= val;
         break;
+
+        case 0x1b: /* Control */
+            dev->regs[addr] = val & 0x1f;
+        break;
+
+        case 0x2c: /* Global Control */
+            dev->regs[addr] = val & 0x3f;
+        break;
+
+        case 0x2e: /* Global Control */
+            dev->regs[addr] = val & 0x30;
+        break;
+
+        case 0x34: /* Codec Access Semaphore */
+            dev->regs[addr] = val & 1;
+        break;
     }
 }
 
@@ -105,9 +129,12 @@ intel_ac97_read(uint16_t addr, void *priv)
     intel_ac97_t *dev = (intel_ac97_t *) priv;
     addr -= dev->ac97_base;
 
-    intel_ac97_log("Intel AC'97: dev->regs[%02x] (%02x)\n", addr, dev->regs[addr]);
-
-    return dev->regs[addr];
+    if(addr < 0x40) {
+        intel_ac97_log("Intel AC'97: dev->regs[%02x] (%02x)\n", addr, dev->regs[addr]);
+        return dev->regs[addr];
+    }
+    else
+        return 0xff;
 }
 
 void
@@ -131,6 +158,7 @@ intel_ac97_reset(void *priv)
     intel_ac97_t *dev = (intel_ac97_t *) priv;
     memset(dev->regs, 0, sizeof(dev->regs)); /* Wash out the registers */
 
+    // We got nothing here yet
 }
 
 
@@ -148,6 +176,9 @@ intel_ac97_init(const device_t *info)
 {
     intel_ac97_t *dev = (intel_ac97_t *) malloc(sizeof(intel_ac97_t));
     memset(dev, 0, sizeof(intel_ac97_t));
+
+    intel_ac97_log("Intel AC'97: Started!\n");
+    // We got nothing here yet
 
     return dev;
 }

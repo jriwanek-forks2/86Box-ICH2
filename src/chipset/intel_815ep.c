@@ -141,7 +141,7 @@ intel_815ep_gart_table(intel_815ep_t *dev)
 {
     uint32_t agp_gart_base = (dev->pci_conf[0xbb] << 24) | (dev->pci_conf[0xba] << 16) | (dev->pci_conf[0xb9] << 8);
 
-    intel_815ep_log("Intel 815EP AGP GART: GART address updated at 0x%x", agp_gart_base);
+    intel_815ep_log("Intel 815EP AGP GART: GART address updated at 0x%x\n", agp_gart_base);
 
     agpgart_set_gart(dev->agpgart, agp_gart_base);
 }

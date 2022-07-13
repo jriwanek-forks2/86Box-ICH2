@@ -35,6 +35,7 @@
 #include <86box/pci.h>
 #include <86box/pic.h>
 #include <86box/smbus.h>
+#include <86box/sound.h>
 #include <86box/tco.h>
 #include <86box/usb.h>
 
@@ -267,7 +268,7 @@ intel_ich2_trap_update(void *priv)
             temp_addr = 0xf40;
         break;
     }
-    intel_ich2_device_trap_setup(0x49, 0x04, 0x170, 8, dev->trap_device[6]);
+    intel_ich2_device_trap_setup(0x49, 0x04, temp_addr, 8, dev->trap_device[6]);
 
     /* MIDI */
     temp_addr = (dev->pci_conf[0][0xe2] & 8) ? 0x300 : 0x330;
@@ -667,17 +668,23 @@ intel_ich2_write(int func, int addr, uint8_t val, void *priv)
 
             case 0x11:
                 dev->pci_conf[func][addr] = val;
-                intel_ac97_mixer_base(dev->pci_conf[5][4] & 1, dev->pci_conf[5][0x11] << 8, dev->ac97);
+
+                if(sound_card_current == SOUND_INTERNAL)
+                    intel_ac97_mixer_base(dev->pci_conf[5][4] & 1, dev->pci_conf[5][0x11] << 8, dev->ac97);
             break;
 
             case 0x14:
             case 0x15:
                 dev->pci_conf[func][addr] = (addr & 1) ? val : ((val & 0xc0) | 1);
-                intel_ac97_base(dev->pci_conf[5][4] & 1, (dev->pci_conf[5][0x15] << 8) | (dev->pci_conf[5][0x14] & 0xc0), dev->ac97);
+
+                if(sound_card_current == SOUND_INTERNAL)
+                    intel_ac97_base(dev->pci_conf[5][4] & 1, (dev->pci_conf[5][0x15] << 8) | (dev->pci_conf[5][0x14] & 0xc0), dev->ac97);
             break;
 
             case 0x3c:
-                dev->pci_conf[func][addr] = val;
+                dev->pci_conf[func][addr] = val;                       /* 86Box doesn't give any capabilities to take the PCI IRQ pin, also */
+                if(sound_card_current == SOUND_INTERNAL)               /* can't use pointers as whatever recieved from there is temporary.  */
+                    intel_ac97_set_irq(pci_get_int(0x1f, 2), dev->ac97);
             break;
         }
     }
@@ -931,6 +938,11 @@ intel_ich2_reset(void *priv)
 
     dev->pci_conf[5][0x3d] = 0x02;
 
+    if(sound_card_current == SOUND_INTERNAL) {
+        intel_ac97_mixer_base(dev->pci_conf[5][4] & 1, dev->pci_conf[5][0x11] << 8, dev->ac97);
+        intel_ac97_base(dev->pci_conf[5][4] & 1, (dev->pci_conf[5][0x15] << 8) | (dev->pci_conf[5][0x14] & 0xc0), dev->ac97);
+    }
+
     /* Function 6: AC'97 Modem */
     dev->pci_conf[6][0x00] = 0x86;
     dev->pci_conf[6][0x01] = 0x80;
@@ -976,7 +988,8 @@ intel_ich2_init(const device_t *info)
     acpi_set_slot(dev->acpi, slot);
 
     /* AC'97 Audio */
-    dev->ac97 = device_add(&intel_ac97_device);
+    if(sound_card_current == SOUND_INTERNAL)
+        dev->ac97 = device_add(&intel_ac97_device);
 
     /* DMA */
     dma_alias_set_piix();
