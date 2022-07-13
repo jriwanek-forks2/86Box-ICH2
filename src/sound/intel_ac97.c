@@ -21,7 +21,7 @@
 
 #include <86box/snd_ac97.h>
 #include <86box/intel_ac97.h>
-#define ENABLE_INTEL_AC97_LOG 1
+
 #ifdef ENABLE_INTEL_AC97_LOG
 int intel_ac97_do_log = ENABLE_INTEL_AC97_LOG;
 static void
