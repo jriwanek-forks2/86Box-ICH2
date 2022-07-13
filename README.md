@@ -1,27 +1,12 @@
-<<<<<<< HEAD
 <h1>86Box-ICH2</h1>
-=======
-86Box
-=====
-[![Build Status](http://ci.86box.net/job/86Box/badge/icon)](http://ci.86box.net/job/86Box)
-
-**86Box** is a low level x86 emulator that runs older operating systems and software designed for IBM PC systems and compatibles from 1981 through fairly recent system designs based on the PCI bus.
->>>>>>> upstream/master
 
 
 <p align="center"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Intel_ICH2.jpg/240px-Intel_ICH2.jpg"></p>
 
 <p align="center">This is a fork of 86Box that tries to emulate the Intel ICH, more specifically the Intel ICH2 but also a few legacy minor boards</p>
 
-<<<<<<< HEAD
 <h2>Whats ICH2</h2>
 The ICH2 is a southbridge released by Intel in the early 2000's. It came incorporated with many peripherals like USB, Audio & IDE. The ICH series in general also got rid of the ISA bus replacing it with the not so different LPC bus.
-=======
-It is also recommended to use a manager application with 86Box for easier handling of multiple virtual machines.
-* [86Box Manager](https://github.com/86Box/86BoxManager) by [Overdoze](https://github.com/daviunic) (Windows only)
-* [86Box Manager Lite](https://github.com/insanemal/86box_manager_py) by [Insanemal](https://github.com/insanemal)
-* [WinBox for 86Box](https://github.com/86Box/WinBox-for-86Box) by Laci bá' (Windows only)
->>>>>>> upstream/master
 
 <h2>Emulation details</h2>
 The fork emulates an Intel ICH2 desktop board with the basic components it needs. There are a few quirks that haven't been implemented or fixed yet. Additionally there's is one 386SX, few 486 and a Intel 430FX chipset for some basic 386SX to Pentium needs although mainstream 86Box covers that.
