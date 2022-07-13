@@ -180,6 +180,8 @@ intel_ac97_init(const device_t *info)
     intel_ac97_log("Intel AC'97: Started!\n");
     // We got nothing here yet
 
+    dev->mixer = device_add(&ad1881_device); /* Add a mixer with no real functionality for now */
+
     return dev;
 }
 
