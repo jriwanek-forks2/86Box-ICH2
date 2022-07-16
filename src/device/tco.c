@@ -93,7 +93,7 @@ tco_write(uint16_t addr, uint8_t val, tco_t *dev)
         case 0x09:
             if(val & 1) {
                 if(!nmi) /* If we're already on NMI */
-                    nmi = 1;
+                    nmi_raise();
 
                 dev->regs[addr] = (dev->regs[addr] & 1) | val;
                 dev->regs[addr] &= val;
