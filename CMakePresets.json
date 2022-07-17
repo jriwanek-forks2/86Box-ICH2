@@ -15,30 +15,6 @@
             "generator": "Ninja"
         },
         {
-            "name": "minsizerel",
-            "inherits": [
-                "flags-base"
-            ],
-            "generator": "Ninja",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "MinSizeRel",
-                "DEV_BRANCH": "OFF",
-                "NEW_DYNAREC": "OFF"
-            }
-        },
-        {
-            "name": "minsizerelndr",
-            "inherits": [
-                "flags-base"
-            ],
-            "generator": "Ninja",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "MinSizeRel",
-                "DEV_BRANCH": "OFF",
-                "NEW_DYNAREC": "ON"
-            }
-        },
-        {
             "name": "optimized",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Optimized",
