@@ -32,7 +32,7 @@
  * North Bridge: Intel 815E
  * Super I/O: National Semiconductor NSC366 (PC87366)
  * BIOS: Award BIOS 6.00PG
- * Notes: None
+ * Notes: Doesn't work at all. XGA is brute forced on 86Box. 86Box bug?
 */
 int
 machine_at_m6tsl_init(const machine_t *model)

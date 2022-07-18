@@ -6,6 +6,11 @@
  * Copyright 2022 Tiseno100.
  */
 
+/*
+ * Buffers, AC-Link and other things require understanding.
+ * But I also need a functional board with AC'97 to continue.
+*/
+
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
