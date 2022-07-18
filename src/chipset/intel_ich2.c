@@ -87,6 +87,19 @@ intel_ich2_acpi_setup(intel_ich2_t *dev)
 }
 
 static void
+intel_ich2_bioswe(intel_ich2_t *dev)
+{
+    int bios_lock_enable = dev->pci_conf[0][0x4e] & 2;
+    int bios_write = dev->pci_conf[0][0x4e] & 1;
+
+    if(bios_lock_enable)
+        if(bios_write) {
+            intel_ich2_log("Intel ICH2 BIOSWE: BIOSWE SMI was raised\n");
+            smi_raise();
+        }
+}
+
+static void
 intel_ich2_tco_interrupt(intel_ich2_t *dev)
 {
     uint16_t tco_irq = ((dev->pci_conf[0][0x54] & 7) < 3) ? (9 + (dev->pci_conf[0][0x45] & 7)) : 9; /* Under APIC you can set this even higher but */
@@ -319,7 +332,7 @@ intel_ich2_ide_setup(intel_ich2_t *dev)
     ide_pri_disable();
     ide_sec_disable();
     sff_bus_master_handler(dev->ide_drive[0], 0, bm_base);
-    sff_bus_master_handler(dev->ide_drive[1], 0, bm_base);
+    sff_bus_master_handler(dev->ide_drive[1], 0, bm_base + 8);
 
     if(dev->pci_conf[1][0x41] & 0x80) {
         intel_ich2_log("Intel ICH2 IDE: Primary Channel is enabled with Bus Master Address 0x%x.\n", bm_base);
@@ -388,9 +401,12 @@ intel_ich2_write(int func, int addr, uint8_t val, void *priv)
             break;
 
             case 0x4e:
-                dev->pci_conf[func][addr] = val & 0x03;
-                if((val & 0x01) && ((val & 0x02) == 0x02))
-                    smi_line = 1;
+                if(!(val & 2))
+                    dev->pci_conf[func][addr] = val & 3;
+                else
+                    dev->pci_conf[func][addr] = (val & 1) | 2;
+
+                intel_ich2_bioswe(dev);
             break;
 
             case 0x54:
