@@ -30,24 +30,6 @@
 #include <86box/sound.h>
 #include <86box/video.h>
 
-// Temporarily here till we move everything out into the right files
-extern const device_t pcjr_device;
-extern const device_t m19_vid_device;
-extern const device_t vid_device;
-extern const device_t vid_device_hx;
-extern const device_t t1000_video_device;
-extern const device_t xi8088_device;
-extern const device_t cga_device;
-extern const device_t vid_1512_device;
-extern const device_t vid_1640_device;
-extern const device_t vid_pc2086_device;
-extern const device_t vid_pc3086_device;
-extern const device_t vid_200_device;
-extern const device_t vid_ppc512_device;
-extern const device_t vid_device_sl;
-extern const device_t t1200_video_device;
-extern const device_t compaq_plasma_device;
-
 const machine_filter_t machine_types[] = {
     { "None",                                          MACHINE_TYPE_NONE               },
     { "SARC 2016A",                                    MACHINE_TYPE_SARC_2016A         },
@@ -66,36 +48,572 @@ const machine_filter_t machine_chipsets[] = {
     { "Intel i815EP",                                  MACHINE_CHIPSET_INTEL_I815EP    }
 };
 
-
 const machine_t machines[] = {
+    /* SARC 2016A Motherboards */
+    {
+        .name = "CX Technology SXD",
+        .internal_name = "sxd",
+        .type = MACHINE_TYPE_SARC_2016A,
+        .chipset = MACHINE_CHIPSET_SARC_2016A,
+        .init = machine_at_sxd_init,
+        .pad = 0,
+        .pad0 = 0,
+        .pad1 = MACHINE_AVAILABLE,
+        .pad2 = 0,
+        .cpu = {
+            .package = CPU_PKG_386SX,
+            .block = CPU_BLOCK_NONE,
+            .min_bus = 16666666,
+            .max_bus = 40000000,
+            .min_voltage = 0,
+            .max_voltage = 0,
+            .min_multi = 0,
+            .max_multi = 0
+        },
+        .bus_flags = MACHINE_AT,
+        .flags = MACHINE_FLAGS_NONE,
+        .ram = {
+            .min = 1024,
+            .max = 16384,
+            .step = 1024
+        },
+        .nvrmask = 255,
+        .kbc = KBC_UNKNOWN,
+        .kbc_p1 = 0,
+        .gpio = 0,
+        .device = NULL,
+        .vid_device = NULL
+    },
 
-    /* SARC 2016A Based Machines */
-    { "CX Technology SXD",              "sxd",           MACHINE_TYPE_SARC_2016A,    MACHINE_CHIPSET_SARC_2016A,          machine_at_sxd_init,              0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_386SX,                     CPU_BLOCK_NONE,        			            16666666, 40000000,  0, 0, 0, 0,           MACHINE_AT,        MACHINE_FLAGS_NONE,                 1024,  16384,  1024, 255, NULL, NULL },
-    { "PCChips M396F",                  "m396f",         MACHINE_TYPE_SARC_2016A,    MACHINE_CHIPSET_SARC_2016A,          machine_at_m396f_init,            0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_386SX,                     CPU_BLOCK_NONE,        			            16666666, 40000000,  0, 0, 0, 0,           MACHINE_AT,        MACHINE_FLAGS_NONE,                 1024,  16384,  1024, 255, NULL, NULL },
+    {
+        .name = "PCChips M396F",
+        .internal_name = "m396f",
+        .type = MACHINE_TYPE_SARC_2016A,
+        .chipset = MACHINE_CHIPSET_SARC_2016A,
+        .init = machine_at_m396f_init,
+        .pad = 0,
+        .pad0 = 0,
+        .pad1 = MACHINE_AVAILABLE,
+        .pad2 = 0,
+        .cpu = {
+            .package = CPU_PKG_386SX,
+            .block = CPU_BLOCK_NONE,
+            .min_bus = 16666666,
+            .max_bus = 40000000,
+            .min_voltage = 0,
+            .max_voltage = 0,
+            .min_multi = 0,
+            .max_multi = 0
+        },
+        .bus_flags = MACHINE_AT,
+        .flags = MACHINE_FLAGS_NONE,
+        .ram = {
+            .min = 1024,
+            .max = 16384,
+            .step = 1024
+        },
+        .nvrmask = 255,
+        .kbc = KBC_UNKNOWN,
+        .kbc_p1 = 0,
+        .gpio = 0,
+        .device = NULL,
+        .vid_device = NULL
+    },
 
-    /* Symphony Haydn II Based Machines */
-    { "Commodore T486DX Tower",         "t486dx",        MACHINE_TYPE_SYMPHONY_HAYDN,    MACHINE_CHIPSET_SYMPHONY_HAYDN,  machine_at_t486dx_init,           0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET1,                   CPU_BLOCK_NONE,        			            20000000, 50000000,  0, 0, 0, 0,           MACHINE_AT,        MACHINE_FLAGS_NONE,                 1024,  32768,  1024, 255, NULL, NULL },
-    { "FIC 386SC",                      "386sc_stock",   MACHINE_TYPE_SYMPHONY_HAYDN,    MACHINE_CHIPSET_SYMPHONY_HAYDN,  machine_at_386sc_stock_init,      0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_386DX,                     CPU_BLOCK_NONE,        			            25555555, 40000000,  0, 0, 0, 0,           MACHINE_AT,        MACHINE_FLAGS_NONE,                 1024,  32768,  1024, 255, NULL, NULL },
-    { "FIC 386SC with MR BIOS",         "386sc_mr",      MACHINE_TYPE_SYMPHONY_HAYDN,    MACHINE_CHIPSET_SYMPHONY_HAYDN,  machine_at_386sc_mr_init,         0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_386DX,                     CPU_BLOCK_NONE,        			            25555555, 40000000,  0, 0, 0, 0,           MACHINE_AT,        MACHINE_FLAGS_NONE,                 1024,  32768,  1024, 255, NULL, NULL },
-    { "DTK PKM-0031Y",                  "pkm0031y",      MACHINE_TYPE_SYMPHONY_HAYDN,    MACHINE_CHIPSET_SYMPHONY_HAYDN,  machine_at_pkm0031y_init,         0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET1,                   CPU_BLOCK_NONE,        			            16666666, 50000000,  0, 0, 0, 0,           MACHINE_AT,        MACHINE_FLAGS_NONE,                 1024,  32768,  1024, 255, NULL, NULL },
+    /* Symphony Haydn II Motherboards */
+    {
+        .name = "Commodore T486DX Tower",
+        .internal_name = "t486dx",
+        .type = MACHINE_TYPE_SYMPHONY_HAYDN,
+        .chipset = MACHINE_CHIPSET_SYMPHONY_HAYDN,
+        .init = machine_at_t486dx_init,
+        .pad = 0,
+        .pad0 = 0,
+        .pad1 = MACHINE_AVAILABLE,
+        .pad2 = 0,
+        .cpu = {
+            .package = CPU_PKG_SOCKET1,
+            .block = CPU_BLOCK_NONE,
+            .min_bus = 20000000,
+            .max_bus = 50000000,
+            .min_voltage = 0,
+            .max_voltage = 0,
+            .min_multi = 0,
+            .max_multi = 0
+        },
+        .bus_flags = MACHINE_AT,
+        .flags = MACHINE_FLAGS_NONE,
+        .ram = {
+            .min = 1024,
+            .max = 32768,
+            .step = 1024
+        },
+        .nvrmask = 255,
+        .kbc = KBC_UNKNOWN,
+        .kbc_p1 = 0,
+        .gpio = 0,
+        .device = NULL,
+        .vid_device = NULL
+    },
 
-    /* SiS 471 Based Machines */
-    { "AOpen Vi15G",                    "vi15g",         MACHINE_TYPE_SIS_471,       MACHINE_CHIPSET_SIS_471,             machine_at_vi15g_init,            0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET3,                   CPU_BLOCK_NONE,        			            20000000, 50000000,  0, 0, 0, 0,           MACHINE_VLB,       MACHINE_FLAGS_NONE,                 8192, 131072,  8192, 255, NULL, NULL },
-    { "ASUS VL/I-486SV2G",              "486sv2g",       MACHINE_TYPE_SIS_471,       MACHINE_CHIPSET_SIS_471,             machine_at_486sv2g_init,          0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET3,                   CPU_BLOCK_NONE,        			            20000000, 50000000,  0, 0, 0, 0,           MACHINE_PS2_VLB,   MACHINE_FLAGS_NONE,                 8192,  65536,  8192, 255, NULL, NULL },
+    {
+        .name = "FIC 386SC",
+        .internal_name = "386sc_stock",
+        .type = MACHINE_TYPE_SYMPHONY_HAYDN,
+        .chipset = MACHINE_CHIPSET_SYMPHONY_HAYDN,
+        .init = machine_at_386sc_stock_init,
+        .pad = 0,
+        .pad0 = 0,
+        .pad1 = MACHINE_AVAILABLE,
+        .pad2 = 0,
+        .cpu = {
+            .package = CPU_PKG_SOCKET1,
+            .block = CPU_BLOCK_NONE,
+            .min_bus = 25555555,
+            .max_bus = 50000000,
+            .min_voltage = 0,
+            .max_voltage = 0,
+            .min_multi = 0,
+            .max_multi = 0
+        },
+        .bus_flags = MACHINE_AT,
+        .flags = MACHINE_FLAGS_NONE,
+        .ram = {
+            .min = 1024,
+            .max = 32768,
+            .step = 1024
+        },
+        .nvrmask = 255,
+        .kbc = KBC_UNKNOWN,
+        .kbc_p1 = 0,
+        .gpio = 0,
+        .device = NULL,
+        .vid_device = NULL
+    },
 
-    /* Intel PIIX Based Machines */
-    { "ASUS PCI/I-P54TP4",              "p54tp4_stock",  MACHINE_TYPE_INTEL_PIIX,    MACHINE_CHIPSET_INTEL_430FX,         machine_at_p54tp4_stock_init,     0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET5_7,                 CPU_BLOCK_NONE,        			            50000000, 66666666,  3300, 3600, 1.5, 2.0, MACHINE_PS2_PCI,   MACHINE_IDE_DUAL,                   4096, 131072,  4096, 255, NULL, NULL },
-    { "ASUS PCI/I-P54TP4 with MR BIOS", "p54tp4_mr",     MACHINE_TYPE_INTEL_PIIX,    MACHINE_CHIPSET_INTEL_430FX,         machine_at_p54tp4_mr_init,        0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET5_7,                 CPU_BLOCK_NONE,        			            50000000, 66666666,  3300, 3600, 1.5, 2.0, MACHINE_PS2_PCI,   MACHINE_IDE_DUAL,                   4096, 131072,  4096, 255, NULL, NULL },
-    { "AOpen AP5C",                     "ap5c",          MACHINE_TYPE_INTEL_PIIX,    MACHINE_CHIPSET_INTEL_430FX,         machine_at_ap5c_init,             0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET5_7,                 CPU_BLOCK_NONE,        			            50000000, 66666666,  3300, 5000, 1.5, 2.0, MACHINE_PS2_PCI,   MACHINE_IDE_DUAL,                   4096, 131072,  4096, 255, NULL, NULL },
-    { "Acer V30",                       "acerv30",       MACHINE_TYPE_INTEL_PIIX,    MACHINE_CHIPSET_INTEL_430FX,         machine_at_acerv30_init,          0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET5_7,                 CPU_BLOCK_NONE,        			            50000000, 66666666,  3300, 5000, 1.5, 2.5, MACHINE_PS2_PCI,   MACHINE_IDE_DUAL,                   8192, 131072,  8192, 255, NULL, NULL },
-    { "Micronics M54Hi",                "m54hi",         MACHINE_TYPE_INTEL_PIIX,    MACHINE_CHIPSET_INTEL_430FX,         machine_at_m54hi_init,            0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET5_7,                 CPU_BLOCK_NONE,        			            50000000, 66666666,  3300, 3600, 1.5, 2.0, MACHINE_PS2_PCI,   MACHINE_IDE_DUAL,                   8192, 131072,  8192, 255, NULL, NULL },
+    {
+        .name = "FIC 386SC with MR BIOS",
+        .internal_name = "386sc_mr",
+        .type = MACHINE_TYPE_SYMPHONY_HAYDN,
+        .chipset = MACHINE_CHIPSET_SYMPHONY_HAYDN,
+        .init = machine_at_386sc_mr_init,
+        .pad = 0,
+        .pad0 = 0,
+        .pad1 = MACHINE_AVAILABLE,
+        .pad2 = 0,
+        .cpu = {
+            .package = CPU_PKG_SOCKET1,
+            .block = CPU_BLOCK_NONE,
+            .min_bus = 25555555,
+            .max_bus = 50000000,
+            .min_voltage = 0,
+            .max_voltage = 0,
+            .min_multi = 0,
+            .max_multi = 0
+        },
+        .bus_flags = MACHINE_AT,
+        .flags = MACHINE_FLAGS_NONE,
+        .ram = {
+            .min = 1024,
+            .max = 32768,
+            .step = 1024
+        },
+        .nvrmask = 255,
+        .kbc = KBC_UNKNOWN,
+        .kbc_p1 = 0,
+        .gpio = 0,
+        .device = NULL,
+        .vid_device = NULL
+    },
 
-    /* Intel 815EP Based Machines */
-    { "Biostar M6TSL",                  "m6tsl",         MACHINE_TYPE_ICH2,          MACHINE_CHIPSET_INTEL_I815EP,        machine_at_m6tsl_init,            0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET370,                 CPU_BLOCK_NONE,        			            66666667, 133333333, 1300, 3500, 1.5, 8.0, MACHINE_PS2_NOISA, MACHINE_IDE_DUAL | MACHINE_SOUND,   32768, 524288, 32768, 255, NULL, NULL },
-    { "Tyan Tomcat i815T",              "s2080",         MACHINE_TYPE_ICH2,          MACHINE_CHIPSET_INTEL_I815EP,        machine_at_s2080_init,            0, 0, MACHINE_AVAILABLE, 0 , CPU_PKG_SOCKET370,                 CPU_BLOCK_NONE,        			            66666667, 133333333, 1300, 3500, 1.5, 8.0, MACHINE_PS2_NOISA, MACHINE_IDE_DUAL,                   32768, 524288, 32768, 255, NULL, NULL },
+    {
+        .name = "DTK PKM-0031Y",
+        .internal_name = "pkm0031y",
+        .type = MACHINE_TYPE_SYMPHONY_HAYDN,
+        .chipset = MACHINE_CHIPSET_SYMPHONY_HAYDN,
+        .init = machine_at_pkm0031y_init,
+        .pad = 0,
+        .pad0 = 0,
+        .pad1 = MACHINE_AVAILABLE,
+        .pad2 = 0,
+        .cpu = {
+            .package = CPU_PKG_SOCKET1,
+            .block = CPU_BLOCK_NONE,
+            .min_bus = 16666666,
+            .max_bus = 40000000,
+            .min_voltage = 0,
+            .max_voltage = 0,
+            .min_multi = 0,
+            .max_multi = 0
+        },
+        .bus_flags = MACHINE_AT,
+        .flags = MACHINE_FLAGS_NONE,
+        .ram = {
+            .min = 1024,
+            .max = 32768,
+            .step = 1024
+        },
+        .nvrmask = 255,
+        .kbc = KBC_UNKNOWN,
+        .kbc_p1 = 0,
+        .gpio = 0,
+        .device = NULL,
+        .vid_device = NULL
+    },
 
-    { NULL,                                            NULL,            MACHINE_TYPE_NONE,          MACHINE_CHIPSET_NONE,                NULL,                             0, 0, MACHINE_AVAILABLE, 0 , 0,                                 CPU_BLOCK_NONE,                              0, 0, 0, 0, 0, 0, MACHINE_BUS_NONE,  MACHINE_FLAGS_NONE, 0, 0, 0, 0, NULL, NULL }
+    /* SiS 471 Motherboards */
+    {
+        .name = "AOpen Vi15G",
+        .internal_name = "vi15g",
+        .type = MACHINE_TYPE_SIS_471,
+        .chipset = MACHINE_CHIPSET_SIS_471,
+        .init = machine_at_vi15g_init,
+        .pad = 0,
+        .pad0 = 0,
+        .pad1 = MACHINE_AVAILABLE,
+        .pad2 = 0,
+        .cpu = {
+            .package = CPU_PKG_SOCKET3,
+            .block = CPU_BLOCK_NONE,
+            .min_bus = 20000000,
+            .max_bus = 50000000,
+            .min_voltage = 0,
+            .max_voltage = 0,
+            .min_multi = 0,
+            .max_multi = 0
+        },
+        .bus_flags = MACHINE_PS2_VLB,
+        .flags = MACHINE_FLAGS_NONE,
+        .ram = {
+            .min = 1024,
+            .max = 32768,
+            .step = 1024
+        },
+        .nvrmask = 255,
+        .kbc = KBC_UNKNOWN,
+        .kbc_p1 = 0,
+        .gpio = 0,
+        .device = NULL,
+        .vid_device = NULL
+    },
 
+    {
+        .name = "ASUS VL/I-486SV2G",
+        .internal_name = "486sv2g",
+        .type = MACHINE_TYPE_SIS_471,
+        .chipset = MACHINE_CHIPSET_SIS_471,
+        .init = machine_at_486sv2g_init,
+        .pad = 0,
+        .pad0 = 0,
+        .pad1 = MACHINE_AVAILABLE,
+        .pad2 = 0,
+        .cpu = {
+            .package = CPU_PKG_SOCKET3,
+            .block = CPU_BLOCK_NONE,
+            .min_bus = 20000000,
+            .max_bus = 50000000,
+            .min_voltage = 0,
+            .max_voltage = 0,
+            .min_multi = 0,
+            .max_multi = 0
+        },
+        .bus_flags = MACHINE_PS2_VLB,
+        .flags = MACHINE_FLAGS_NONE,
+        .ram = {
+            .min = 1024,
+            .max = 32768,
+            .step = 1024
+        },
+        .nvrmask = 255,
+        .kbc = KBC_UNKNOWN,
+        .kbc_p1 = 0,
+        .gpio = 0,
+        .device = NULL,
+        .vid_device = NULL
+    },
+
+    /* Intel 430FX Motherboards */
+    {
+        .name = "ASUS PCI/I-P54TP4",
+        .internal_name = "p54tp4_stock",
+        .type = MACHINE_TYPE_INTEL_PIIX,
+        .chipset = MACHINE_CHIPSET_INTEL_430FX,
+        .init = machine_at_p54tp4_stock_init,
+        .pad = 0,
+        .pad0 = 0,
+        .pad1 = MACHINE_AVAILABLE,
+        .pad2 = 0,
+        .cpu = {
+            .package = CPU_PKG_SOCKET5_7,
+            .block = CPU_BLOCK_NONE,
+            .min_bus = 50000000,
+            .max_bus = 66666666,
+            .min_voltage = 3300,
+            .max_voltage = 3600,
+            .min_multi = 1.5,
+            .max_multi = 2.0
+        },
+        .bus_flags = MACHINE_PS2_PCI,
+        .flags = MACHINE_IDE_DUAL,
+        .ram = {
+            .min = 4096,
+            .max = 131072,
+            .step = 4096
+        },
+        .nvrmask = 255,
+        .kbc = KBC_UNKNOWN,
+        .kbc_p1 = 0,
+        .gpio = 0,
+        .device = NULL,
+        .vid_device = NULL
+    },
+
+    {
+        .name = "ASUS PCI/I-P54TP4(with MR BIOS)",
+        .internal_name = "p54tp4_mr",
+        .type = MACHINE_TYPE_INTEL_PIIX,
+        .chipset = MACHINE_CHIPSET_INTEL_430FX,
+        .init = machine_at_p54tp4_mr_init,
+        .pad = 0,
+        .pad0 = 0,
+        .pad1 = MACHINE_AVAILABLE,
+        .pad2 = 0,
+        .cpu = {
+            .package = CPU_PKG_SOCKET5_7,
+            .block = CPU_BLOCK_NONE,
+            .min_bus = 50000000,
+            .max_bus = 66666666,
+            .min_voltage = 3300,
+            .max_voltage = 3600,
+            .min_multi = 1.5,
+            .max_multi = 2.0
+        },
+        .bus_flags = MACHINE_PS2_PCI,
+        .flags = MACHINE_IDE_DUAL,
+        .ram = {
+            .min = 4096,
+            .max = 131072,
+            .step = 4096
+        },
+        .nvrmask = 255,
+        .kbc = KBC_UNKNOWN,
+        .kbc_p1 = 0,
+        .gpio = 0,
+        .device = NULL,
+        .vid_device = NULL
+    },
+
+    {
+        .name = "AOpen AP5C",
+        .internal_name = "ap5c",
+        .type = MACHINE_TYPE_INTEL_PIIX,
+        .chipset = MACHINE_CHIPSET_INTEL_430FX,
+        .init = machine_at_ap5c_init,
+        .pad = 0,
+        .pad0 = 0,
+        .pad1 = MACHINE_AVAILABLE,
+        .pad2 = 0,
+        .cpu = {
+            .package = CPU_PKG_SOCKET5_7,
+            .block = CPU_BLOCK_NONE,
+            .min_bus = 50000000,
+            .max_bus = 66666666,
+            .min_voltage = 3300,
+            .max_voltage = 5000,
+            .min_multi = 1.5,
+            .max_multi = 2.0
+        },
+        .bus_flags = MACHINE_PS2_PCI,
+        .flags = MACHINE_IDE_DUAL,
+        .ram = {
+            .min = 4096,
+            .max = 131072,
+            .step = 4096
+        },
+        .nvrmask = 255,
+        .kbc = KBC_UNKNOWN,
+        .kbc_p1 = 0,
+        .gpio = 0,
+        .device = NULL,
+        .vid_device = NULL
+    },
+
+    {
+        .name = "Acer V30",
+        .internal_name = "acerv30",
+        .type = MACHINE_TYPE_INTEL_PIIX,
+        .chipset = MACHINE_CHIPSET_INTEL_430FX,
+        .init = machine_at_acerv30_init,
+        .pad = 0,
+        .pad0 = 0,
+        .pad1 = MACHINE_AVAILABLE,
+        .pad2 = 0,
+        .cpu = {
+            .package = CPU_PKG_SOCKET5_7,
+            .block = CPU_BLOCK_NONE,
+            .min_bus = 50000000,
+            .max_bus = 66666666,
+            .min_voltage = 3300,
+            .max_voltage = 5000,
+            .min_multi = 1.5,
+            .max_multi = 2.5
+        },
+        .bus_flags = MACHINE_PS2_PCI,
+        .flags = MACHINE_IDE_DUAL,
+        .ram = {
+            .min = 8096,
+            .max = 131072,
+            .step = 8096
+        },
+        .nvrmask = 255,
+        .kbc = KBC_UNKNOWN,
+        .kbc_p1 = 0,
+        .gpio = 0,
+        .device = NULL,
+        .vid_device = NULL
+    },
+
+    {
+        .name = "Micronics M54Hi",
+        .internal_name = "m54hi",
+        .type = MACHINE_TYPE_INTEL_PIIX,
+        .chipset = MACHINE_CHIPSET_INTEL_430FX,
+        .init = machine_at_m54hi_init,
+        .pad = 0,
+        .pad0 = 0,
+        .pad1 = MACHINE_AVAILABLE,
+        .pad2 = 0,
+        .cpu = {
+            .package = CPU_PKG_SOCKET5_7,
+            .block = CPU_BLOCK_NONE,
+            .min_bus = 50000000,
+            .max_bus = 66666666,
+            .min_voltage = 3300,
+            .max_voltage = 3600,
+            .min_multi = 1.5,
+            .max_multi = 2.0
+        },
+        .bus_flags = MACHINE_PS2_PCI,
+        .flags = MACHINE_IDE_DUAL,
+        .ram = {
+            .min = 8096,
+            .max = 131072,
+            .step = 8096
+        },
+        .nvrmask = 255,
+        .kbc = KBC_UNKNOWN,
+        .kbc_p1 = 0,
+        .gpio = 0,
+        .device = NULL,
+        .vid_device = NULL
+    },
+
+    /* Intel 815EP Motherboards */
+    {
+        .name = "Biostar M6TSL",
+        .internal_name = "m6tsl",
+        .type = MACHINE_TYPE_ICH2,
+        .chipset = MACHINE_CHIPSET_INTEL_I815EP,
+        .init = machine_at_m6tsl_init,
+        .pad = 0,
+        .pad0 = 0,
+        .pad1 = MACHINE_AVAILABLE,
+        .pad2 = 0,
+        .cpu = {
+            .package = CPU_PKG_SOCKET5_7,
+            .block = CPU_BLOCK_NONE,
+            .min_bus = 66666666,
+            .max_bus = 133333333,
+            .min_voltage = 1300,
+            .max_voltage = 3500,
+            .min_multi = 1.5,
+            .max_multi = 8.0
+        },
+        .bus_flags = MACHINE_PS2_NOISA,
+        .flags = MACHINE_IDE_DUAL | MACHINE_SOUND,
+        .ram = {
+            .min = 32768,
+            .max = 524288,
+            .step = 32768
+        },
+        .nvrmask = 255,
+        .kbc = KBC_UNKNOWN,
+        .kbc_p1 = 0,
+        .gpio = 0,
+        .device = NULL,
+        .vid_device = NULL
+    },
+
+    {
+        .name = "Tyan Tomcat i815T",
+        .internal_name = "s2080",
+        .type = MACHINE_TYPE_ICH2,
+        .chipset = MACHINE_CHIPSET_INTEL_I815EP,
+        .init = machine_at_s2080_init,
+        .pad = 0,
+        .pad0 = 0,
+        .pad1 = MACHINE_AVAILABLE,
+        .pad2 = 0,
+        .cpu = {
+            .package = CPU_PKG_SOCKET5_7,
+            .block = CPU_BLOCK_NONE,
+            .min_bus = 66666666,
+            .max_bus = 133333333,
+            .min_voltage = 1300,
+            .max_voltage = 3500,
+            .min_multi = 1.5,
+            .max_multi = 8.0
+        },
+        .bus_flags = MACHINE_PS2_NOISA,
+        .flags = MACHINE_IDE_DUAL,
+        .ram = {
+            .min = 32768,
+            .max = 524288,
+            .step = 32768
+        },
+        .nvrmask = 255,
+        .kbc = KBC_UNKNOWN,
+        .kbc_p1 = 0,
+        .gpio = 0,
+        .device = NULL,
+        .vid_device = NULL
+    },
+
+    /* Reference */
+    {
+        .name = NULL,
+        .internal_name = NULL,
+        .type = MACHINE_TYPE_NONE,
+        .chipset = MACHINE_CHIPSET_NONE,
+        .init = NULL,
+        .pad = 0,
+        .pad0 = 0,
+        .pad1 = MACHINE_AVAILABLE,
+        .pad2 = 0,
+        .cpu = {
+            .package = 0,
+            .block = CPU_BLOCK_NONE,
+            .min_bus = 0,
+            .max_bus = 0,
+            .min_voltage = 0,
+            .max_voltage = 0,
+            .min_multi = 0,
+            .max_multi = 0
+        },
+        .bus_flags = MACHINE_BUS_NONE,
+        .flags = MACHINE_FLAGS_NONE,
+        .ram = {
+            .min = 0,
+            .max = 0,
+            .step = 0
+        },
+        .nvrmask = 0,
+        .kbc = KBC_UNKNOWN,
+        .kbc_p1 = 0,
+        .gpio = 0,
+        .device = NULL,
+        .vid_device = NULL
+    }
 };
 
 int
