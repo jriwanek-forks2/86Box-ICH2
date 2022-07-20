@@ -26,6 +26,27 @@
 #include <86box/rom.h>
 #include <86box/device.h>
 #include <86box/machine.h>
+#include <86box/keyboard.h>
+#include <86box/sound.h>
+#include <86box/video.h>
+
+// Temporarily here till we move everything out into the right files
+extern const device_t pcjr_device;
+extern const device_t m19_vid_device;
+extern const device_t vid_device;
+extern const device_t vid_device_hx;
+extern const device_t t1000_video_device;
+extern const device_t xi8088_device;
+extern const device_t cga_device;
+extern const device_t vid_1512_device;
+extern const device_t vid_1640_device;
+extern const device_t vid_pc2086_device;
+extern const device_t vid_pc3086_device;
+extern const device_t vid_200_device;
+extern const device_t vid_ppc512_device;
+extern const device_t vid_device_sl;
+extern const device_t t1200_video_device;
+extern const device_t compaq_plasma_device;
 
 const machine_filter_t machine_types[] = {
     { "None",                                          MACHINE_TYPE_NONE               },
@@ -98,8 +119,8 @@ machine_getname_ex(int m)
 const device_t *
 machine_getdevice(int m)
 {
-    if (machines[m].get_device)
-        return(machines[m].get_device());
+    if (machines[m].device)
+        return(machines[m].device);
 
     return(NULL);
 }
@@ -107,8 +128,8 @@ machine_getdevice(int m)
 const device_t *
 machine_getviddevice(int m)
 {
-    if (machines[m].get_vid_device)
-        return(machines[m].get_vid_device());
+    if (machines[m].vid_device)
+        return(machines[m].vid_device);
 
     return(NULL);
 }
@@ -152,23 +173,23 @@ machine_has_cartridge(int m)
 int
 machine_get_min_ram(int m)
 {
-    return(machines[m].min_ram);
+    return(machines[m].ram.min);
 }
 
 int
 machine_get_max_ram(int m)
 {
 #if (!(defined __amd64__ || defined _M_X64 || defined __aarch64__ || defined _M_ARM64))
-    return MIN(((int) machines[m].max_ram), 2097152);
+    return MIN(((int) machines[m].ram.max), 2097152);
 #else
-    return MIN(((int) machines[m].max_ram), 3145728);
+    return MIN(((int) machines[m].ram.max), 3145728);
 #endif
 }
 
 int
 machine_get_ram_granularity(int m)
 {
-    return(machines[m].ram_granularity);
+    return(machines[m].ram.step);
 }
 
 int
