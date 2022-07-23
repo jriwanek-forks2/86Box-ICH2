@@ -35,8 +35,16 @@
  * Notes: None
 */
 int
-machine_at_p54tp4_common(const machine_t *model)
+machine_at_p54tp4_init(const machine_t *model)
 {
+    int ret;
+
+    ret = bios_load_linear("roms/machines/piix/p54tp4/T15I0302.AWD",
+			   0x000e0000, 131072, 0);
+
+    if (bios_only || !ret)
+	return ret;
+
     machine_at_common_init_ex(model);
 
     pci_init(PCI_CONFIG_TYPE_1);
@@ -54,36 +62,6 @@ machine_at_p54tp4_common(const machine_t *model)
     device_add(&at_nvr_device); /* Standard AT NVR */
     device_add(&keyboard_ps2_ami_pci_device); /* Standard PS/2 AMI KBC */
     device_add(&intel_flash_bxt_device); /* Intel compatible flash */
-}
-
-int
-machine_at_p54tp4_stock_init(const machine_t *model)
-{
-    int ret;
-
-    ret = bios_load_linear("roms/machines/piix/p54tp4/T15I0302.AWD",
-			   0x000e0000, 131072, 0);
-
-    if (bios_only || !ret)
-	return ret;
-
-    machine_at_p54tp4_common(model);
-
-    return ret;
-}
-
-int
-machine_at_p54tp4_mr_init(const machine_t *model)
-{
-    int ret;
-
-    ret = bios_load_linear("roms/machines/piix/p54tp4/MR.BIN",
-			   0x000e0000, 131072, 0);
-
-    if (bios_only || !ret)
-	return ret;
-
-    machine_at_p54tp4_common(model);
 
     return ret;
 }

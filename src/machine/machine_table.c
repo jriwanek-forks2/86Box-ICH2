@@ -335,45 +335,10 @@ const machine_t machines[] = {
     /* Intel 430FX Motherboards */
     {
         .name = "ASUS PCI/I-P54TP4",
-        .internal_name = "p54tp4_stock",
+        .internal_name = "p54tp4",
         .type = MACHINE_TYPE_INTEL_PIIX,
         .chipset = MACHINE_CHIPSET_INTEL_430FX,
-        .init = machine_at_p54tp4_stock_init,
-        .pad = 0,
-        .pad0 = 0,
-        .pad1 = MACHINE_AVAILABLE,
-        .pad2 = 0,
-        .cpu = {
-            .package = CPU_PKG_SOCKET5_7,
-            .block = CPU_BLOCK_NONE,
-            .min_bus = 50000000,
-            .max_bus = 66666666,
-            .min_voltage = 3300,
-            .max_voltage = 3600,
-            .min_multi = 1.5,
-            .max_multi = 2.0
-        },
-        .bus_flags = MACHINE_PS2_PCI,
-        .flags = MACHINE_IDE_DUAL,
-        .ram = {
-            .min = 4096,
-            .max = 131072,
-            .step = 4096
-        },
-        .nvrmask = 255,
-        .kbc = KBC_UNKNOWN,
-        .kbc_p1 = 0,
-        .gpio = 0,
-        .device = NULL,
-        .vid_device = NULL
-    },
-
-    {
-        .name = "ASUS PCI/I-P54TP4(with MR BIOS)",
-        .internal_name = "p54tp4_mr",
-        .type = MACHINE_TYPE_INTEL_PIIX,
-        .chipset = MACHINE_CHIPSET_INTEL_430FX,
-        .init = machine_at_p54tp4_mr_init,
+        .init = machine_at_p54tp4_init,
         .pad = 0,
         .pad0 = 0,
         .pad1 = MACHINE_AVAILABLE,
@@ -510,41 +475,6 @@ const machine_t machines[] = {
 
     /* Intel 815EP Motherboards */
     {
-        .name = "Biostar M6TSL",
-        .internal_name = "m6tsl",
-        .type = MACHINE_TYPE_ICH2,
-        .chipset = MACHINE_CHIPSET_INTEL_I815EP,
-        .init = machine_at_m6tsl_init,
-        .pad = 0,
-        .pad0 = 0,
-        .pad1 = MACHINE_AVAILABLE,
-        .pad2 = 0,
-        .cpu = {
-            .package = CPU_PKG_SOCKET5_7,
-            .block = CPU_BLOCK_NONE,
-            .min_bus = 66666666,
-            .max_bus = 133333333,
-            .min_voltage = 1300,
-            .max_voltage = 3500,
-            .min_multi = 1.5,
-            .max_multi = 8.0
-        },
-        .bus_flags = MACHINE_PS2_NOISA,
-        .flags = MACHINE_IDE_DUAL | MACHINE_SOUND,
-        .ram = {
-            .min = 32768,
-            .max = 524288,
-            .step = 32768
-        },
-        .nvrmask = 255,
-        .kbc = KBC_UNKNOWN,
-        .kbc_p1 = 0,
-        .gpio = 0,
-        .device = NULL,
-        .vid_device = NULL
-    },
-
-    {
         .name = "Tyan Tomcat i815T",
         .internal_name = "s2080",
         .type = MACHINE_TYPE_ICH2,
@@ -555,7 +485,7 @@ const machine_t machines[] = {
         .pad1 = MACHINE_AVAILABLE,
         .pad2 = 0,
         .cpu = {
-            .package = CPU_PKG_SOCKET5_7,
+            .package = CPU_PKG_SOCKET370,
             .block = CPU_BLOCK_NONE,
             .min_bus = 66666666,
             .max_bus = 133333333,

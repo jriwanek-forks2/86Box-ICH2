@@ -44,7 +44,7 @@
 int acpi_rtc_status = 0;
 
 static double cpu_to_acpi;
-
+#define ENABLE_ACPI_LOG 1
 #ifdef ENABLE_ACPI_LOG
 int acpi_do_log = ENABLE_ACPI_LOG;
 
@@ -142,7 +142,7 @@ acpi_raise_smi(void *priv, int do_smi)
     acpi_t *dev = (acpi_t *) priv;
 
     if ((dev->vendor == VEN_INTEL_ICH2) && do_smi && (dev->regs.smi_en & 1))
-        smi_raise();
+        smi_line = 1;
 }
 
 

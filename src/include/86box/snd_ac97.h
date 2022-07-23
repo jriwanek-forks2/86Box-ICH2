@@ -123,14 +123,6 @@ extern void            ac97_codec_getattn(void *priv, uint8_t reg, int *l, int *
 extern uint32_t        ac97_codec_getrate(void *priv, uint8_t reg);
 extern const device_t *ac97_codec_get(int model);
 
-extern void    ac97_via_set_slot(void *priv, int slot, int irq_pin);
-extern uint8_t ac97_via_read_status(void *priv, uint8_t modem);
-extern void    ac97_via_write_control(void *priv, uint8_t modem, uint8_t val);
-extern void    ac97_via_remap_audio_sgd(void *priv, uint16_t new_io_base, uint8_t enable);
-extern void    ac97_via_remap_modem_sgd(void *priv, uint16_t new_io_base, uint8_t enable);
-extern void    ac97_via_remap_audio_codec(void *priv, uint16_t new_io_base, uint8_t enable);
-extern void    ac97_via_remap_modem_codec(void *priv, uint16_t new_io_base, uint8_t enable);
-
 extern ac97_codec_t **ac97_codec, **ac97_modem_codec;
 extern int            ac97_codec_count, ac97_modem_codec_count,
     ac97_codec_id, ac97_modem_codec_id;
@@ -144,8 +136,6 @@ extern const device_t cs4297a_device;
 extern const device_t stac9708_device;
 extern const device_t stac9721_device;
 extern const device_t wm9701a_device;
-
-extern const device_t ac97_via_device;
 #endif
 
 #endif /*SOUND_AC97_H*/
