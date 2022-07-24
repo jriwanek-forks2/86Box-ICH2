@@ -96,9 +96,10 @@ acpi_timer_overflow(void *priv)
 {
     acpi_t *dev = (acpi_t *) priv;
 
+    dev->regs.pmsts |= TMROF_STS;
+
     if(dev->regs.pmen & 1) /* Timer Overflow Interrupt Enable */
     {
-        dev->regs.pmsts |= TMROF_STS;
     
         if(dev->regs.pmcntrl & 1) /* Trigger an SCI or SMI depending on the status of the SCI_EN register */
             acpi_update_irq(dev);
@@ -147,7 +148,7 @@ acpi_raise_smi(void *priv, int do_smi)
     acpi_t *dev = (acpi_t *) priv;
 
     if (do_smi && (dev->regs.smi_en & 1))
-        smi_line = 1;
+        smi_raise();
 }
 
 
