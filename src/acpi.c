@@ -95,16 +95,18 @@ static void
 acpi_timer_overflow(void *priv)
 {
     acpi_t *dev = (acpi_t *) priv;
+    int sci_en = dev->regs.pmcntrl & 1;
 
     dev->regs.pmsts |= TMROF_STS;
 
     if(dev->regs.pmen & 1) /* Timer Overflow Interrupt Enable */
     {
-    
-        if(dev->regs.pmcntrl & 1) /* Trigger an SCI or SMI depending on the status of the SCI_EN register */
+        acpi_log("ACPI: Overflow detected. Provoking an %s\n", sci_en ? "SCI" : "SMI");
+
+        if(sci_en) /* Trigger an SCI or SMI depending on the status of the SCI_EN register */
             acpi_update_irq(dev);
         else
-            smi_raise();
+            acpi_raise_smi(dev, 1);
     }
 
 }
