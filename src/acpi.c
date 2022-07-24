@@ -44,7 +44,7 @@
 int acpi_rtc_status = 0;
 
 static double cpu_to_acpi;
-#define ENABLE_ACPI_LOG 1
+
 #ifdef ENABLE_ACPI_LOG
 int acpi_do_log = ENABLE_ACPI_LOG;
 
@@ -141,7 +141,7 @@ acpi_raise_smi(void *priv, int do_smi)
 {
     acpi_t *dev = (acpi_t *) priv;
 
-    if ((dev->vendor == VEN_INTEL_ICH2) && do_smi && (dev->regs.smi_en & 1))
+    if (do_smi && (dev->regs.smi_en & 1))
         smi_line = 1;
 }
 
@@ -297,7 +297,7 @@ acpi_reg_write_common_regs(int size, uint16_t addr, uint8_t val, void *p)
 		break;
 	case 0x04: case 0x05:
 		/* PMCNTRL - Power Management Control Register (IO) */
-        if((addr == 0x05) && !!(val & 0x20) && !!(val & 4) && !!(dev->regs.smi_en & 0x00000010) && (dev->vendor == VEN_INTEL_ICH2)) {
+        if((addr == 0x05) && !!(val & 0x20) && !!(val & 4) && !!(dev->regs.smi_en & 0x00000010)) {
             dev->regs.smi_sts |= 0x00000010; /* ICH2 Specific. Trigger an SMI if SLP_SMI_EN bit is set instead of transistioning to a Sleep State. */
             acpi_raise_smi(dev, 1);
         }
@@ -455,7 +455,6 @@ acpi_reg_read_common(int size, uint16_t addr, void *p)
     acpi_t *dev = (acpi_t *) p;
     uint8_t ret = 0xff;
 
-    if (dev->vendor == VEN_INTEL_ICH2)
 	ret = acpi_reg_read_intel_ich2(size, addr, p);
 
     return ret;
@@ -467,7 +466,6 @@ acpi_reg_write_common(int size, uint16_t addr, uint8_t val, void *p)
 {
     acpi_t *dev = (acpi_t *) p;
 
-    if (dev->vendor == VEN_INTEL_ICH2)
 	acpi_reg_write_intel_ich2(size, addr, val, p);
 
 }
@@ -549,21 +547,10 @@ acpi_reg_write(uint16_t addr, uint8_t val, void *p)
 void
 acpi_update_io_mapping(acpi_t *dev, uint32_t base, int chipset_en)
 {
-    int size;
-
-    switch (dev->vendor) {
-    case VEN_INTEL_ICH2:
-		size = 0x080;
-		break;
-    default:
-        size = 0x000;
-        break;
-    }
-
     acpi_log("ACPI: Update I/O %04X to %04X (%sabled)\n", dev->io_base, base, chipset_en ? "en" : "dis");
 
     if (dev->io_base != 0x0000) {
-	io_removehandler(dev->io_base, size,
+	io_removehandler(dev->io_base, 0x0080,
 			 acpi_reg_read, acpi_reg_readw, acpi_reg_readl,
 			 acpi_reg_write, acpi_reg_writew, acpi_reg_writel, dev);
     }
@@ -571,7 +558,7 @@ acpi_update_io_mapping(acpi_t *dev, uint32_t base, int chipset_en)
     dev->io_base = base;
 
     if (chipset_en && (dev->io_base != 0x0000)) {
-	io_sethandler(dev->io_base, size,
+	io_sethandler(dev->io_base, 0x0080,
 		      acpi_reg_read, acpi_reg_readw, acpi_reg_readl,
 		      acpi_reg_write, acpi_reg_writew, acpi_reg_writel, dev);
     }
@@ -698,8 +685,10 @@ acpi_apm_out(uint16_t port, uint8_t val, void *p)
 
 	if (port == 0x0000) {
 		dev->apm->cmd = val;
-        if (dev->vendor == VEN_INTEL_ICH2)
-            dev->regs.smi_sts |= 0x00000020;
+    
+        if(dev->apm->do_smi)
+        dev->regs.smi_sts |= 0x00000020;
+
         acpi_raise_smi(dev, dev->apm->do_smi);
 	} else
 		dev->apm->stat = val;
@@ -793,20 +782,13 @@ acpi_init(const device_t *info)
 
     dev->irq_line = 9;
 
-    if (dev->vendor == VEN_INTEL_ICH2) {
 	dev->apm = device_add(&apm_pci_acpi_device);
-
 	io_sethandler(0x00b2, 0x0002, acpi_apm_in, NULL, NULL, acpi_apm_out, NULL, NULL, dev);
-    }
 
-    switch (dev->vendor) {
-    case VEN_INTEL_ICH2:
-        dev->suspend_types[1] = SUS_SUSPEND | SUS_RESET_CPU;
-        dev->suspend_types[5] = SUS_SUSPEND | SUS_NVR | SUS_RESET_CPU | SUS_RESET_PCI;
-        dev->suspend_types[6] = SUS_POWER_OFF;
-        dev->suspend_types[7] = SUS_POWER_OFF;
-    break;
-    }
+    dev->suspend_types[1] = SUS_SUSPEND | SUS_RESET_CPU;
+    dev->suspend_types[5] = SUS_SUSPEND | SUS_NVR | SUS_RESET_CPU | SUS_RESET_PCI;
+    dev->suspend_types[6] = SUS_POWER_OFF;
+    dev->suspend_types[7] = SUS_POWER_OFF;
 
     timer_add(&dev->timer, acpi_timer_overflow, dev, 0);
     timer_add(&dev->resume_timer, acpi_timer_resume, dev, 0);
