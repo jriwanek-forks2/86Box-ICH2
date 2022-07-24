@@ -682,6 +682,8 @@ dma16_write(uint16_t addr, uint8_t val, void *priv)
 static void
 dma_page_write(uint16_t addr, uint8_t val, void *priv)
 {
+    addr &= 0x00ff;
+
     uint8_t convert[8] = CHANNELS;
 
 #ifdef USE_DYNAREC
@@ -716,6 +718,7 @@ dma_page_write(uint16_t addr, uint8_t val, void *priv)
 static uint8_t
 dma_page_read(uint16_t addr, void *priv)
 {
+    addr &= 0x00ff;
     uint8_t convert[8] = CHANNELS;
     uint8_t ret = 0xff;
 

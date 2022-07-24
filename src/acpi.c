@@ -95,8 +95,17 @@ static void
 acpi_timer_overflow(void *priv)
 {
     acpi_t *dev = (acpi_t *) priv;
-    dev->regs.pmsts |= TMROF_STS;
-    acpi_update_irq(dev);
+
+    if(dev->regs.pmen & 1) /* Timer Overflow Interrupt Enable */
+    {
+        dev->regs.pmsts |= TMROF_STS;
+    
+        if(dev->regs.pmcntrl & 1) /* Trigger an SCI or SMI depending on the status of the SCI_EN register */
+            acpi_update_irq(dev);
+        else
+            smi_raise();
+    }
+
 }
 
 static void
@@ -113,8 +122,6 @@ void
 acpi_update_irq(acpi_t *dev)
 {
     int sci_level = (dev->regs.pmsts & dev->regs.pmen) & (RTC_EN | PWRBTN_EN | GBL_EN | TMROF_EN);
-    if (dev->vendor == VEN_SMC)
-	sci_level |= (dev->regs.pmsts & BM_STS);
 
     if (sci_level) {
 	if (dev->irq_mode == 1)
@@ -131,8 +138,6 @@ acpi_update_irq(acpi_t *dev)
 	else
 		pci_clear_mirq(0xf0 | dev->irq_line, 1);
     }
-
-    acpi_timer_update(dev, (dev->regs.pmen & TMROF_EN) && !(dev->regs.pmsts & TMROF_STS));
 }
 
 
@@ -147,7 +152,7 @@ acpi_raise_smi(void *priv, int do_smi)
 
 
 static uint32_t
-acpi_reg_read_common_regs(int size, uint16_t addr, void *p)
+acpi_reg_read_intel_ich2_regs(int size, uint16_t addr, void *p)
 {
     acpi_t *dev = (acpi_t *) p;
     uint32_t ret = 0x00000000;
@@ -257,7 +262,7 @@ acpi_reg_read_intel_ich2(int size, uint16_t addr, void *p)
         ret = tco_read(addr, dev->tco);
         break;
 	default:
-		ret = acpi_reg_read_common_regs(size, addr, p);
+		ret = acpi_reg_read_intel_ich2_regs(size, addr, p);
 		break;
     }
 
@@ -270,7 +275,7 @@ acpi_reg_read_intel_ich2(int size, uint16_t addr, void *p)
 
 
 static void
-acpi_reg_write_common_regs(int size, uint16_t addr, uint8_t val, void *p)
+acpi_reg_write_intel_ich2_regs(int size, uint16_t addr, uint8_t val, void *p)
 {
     acpi_t *dev = (acpi_t *) p;
     int shift16, sus_typ;
@@ -288,12 +293,14 @@ acpi_reg_write_common_regs(int size, uint16_t addr, uint8_t val, void *p)
 		dev->regs.pmsts &= ~((val << shift16) & 0x8d31);
 		if ((addr == 0x01) && (val & 0x04))
 			acpi_rtc_status = 0;
-		acpi_update_irq(dev);
+
+		acpi_timer_update(dev, (dev->regs.pmen & TMROF_EN) && !(dev->regs.pmsts & TMROF_STS));
 		break;
 	case 0x02: case 0x03:
 		/* PMEN - Power Management Resume Enable Register (IO) */
 		dev->regs.pmen = ((dev->regs.pmen & ~(0xff << shift16)) | (val << shift16)) & 0x0521;
-		acpi_update_irq(dev);
+
+		acpi_timer_update(dev, (dev->regs.pmen & TMROF_EN) && !(dev->regs.pmsts & TMROF_STS));
 		break;
 	case 0x04: case 0x05:
 		/* PMCNTRL - Power Management Control Register (IO) */
@@ -427,7 +434,7 @@ acpi_reg_write_intel_ich2(int size, uint16_t addr, uint8_t val, void *p)
         tco_write(addr, val, dev->tco);
         break;
 	default:
-		acpi_reg_write_common_regs(size, addr, val, p);
+		acpi_reg_write_intel_ich2_regs(size, addr, val, p);
         if((addr == 0x04) && !!(val & 4) && !!(dev->regs.smi_en & 4)) {
             dev->regs.smi_sts = 0x00000004;
             acpi_raise_smi(dev, 1);
@@ -450,36 +457,14 @@ acpi_i2c_set(acpi_t *dev)
 
 
 static uint32_t
-acpi_reg_read_common(int size, uint16_t addr, void *p)
-{
-    acpi_t *dev = (acpi_t *) p;
-    uint8_t ret = 0xff;
-
-	ret = acpi_reg_read_intel_ich2(size, addr, p);
-
-    return ret;
-}
-
-
-static void
-acpi_reg_write_common(int size, uint16_t addr, uint8_t val, void *p)
-{
-    acpi_t *dev = (acpi_t *) p;
-
-	acpi_reg_write_intel_ich2(size, addr, val, p);
-
-}
-
-
-static uint32_t
 acpi_reg_readl(uint16_t addr, void *p)
 {
     uint32_t ret = 0x00000000;
 
-    ret = acpi_reg_read_common(4, addr, p);
-    ret |= (acpi_reg_read_common(4, addr + 1, p) << 8);
-    ret |= (acpi_reg_read_common(4, addr + 2, p) << 16);
-    ret |= (acpi_reg_read_common(4, addr + 3, p) << 24);
+    ret = acpi_reg_read_intel_ich2(4, addr, p);
+    ret |= (acpi_reg_read_intel_ich2(4, addr + 1, p) << 8);
+    ret |= (acpi_reg_read_intel_ich2(4, addr + 2, p) << 16);
+    ret |= (acpi_reg_read_intel_ich2(4, addr + 3, p) << 24);
 
     acpi_log("ACPI: Read L %08X from %04X\n", ret, addr);
 
@@ -492,8 +477,8 @@ acpi_reg_readw(uint16_t addr, void *p)
 {
     uint16_t ret = 0x0000;
 
-    ret = acpi_reg_read_common(2, addr, p);
-    ret |= (acpi_reg_read_common(2, addr + 1, p) << 8);
+    ret = acpi_reg_read_intel_ich2(2, addr, p);
+    ret |= (acpi_reg_read_intel_ich2(2, addr + 1, p) << 8);
 
     acpi_log("ACPI: Read W %08X from %04X\n", ret, addr);
 
@@ -506,7 +491,7 @@ acpi_reg_read(uint16_t addr, void *p)
 {
     uint8_t ret = 0x00;
 
-    ret = acpi_reg_read_common(1, addr, p);
+    ret = acpi_reg_read_intel_ich2(1, addr, p);
 
     acpi_log("ACPI: Read B %02X from %04X\n", ret, addr);
 
@@ -518,10 +503,10 @@ acpi_reg_writel(uint16_t addr, uint32_t val, void *p)
 {
     acpi_log("ACPI: Write L %08X to %04X\n", val, addr);
 
-    acpi_reg_write_common(4, addr, val & 0xff, p);
-    acpi_reg_write_common(4, addr + 1, (val >> 8) & 0xff, p);
-    acpi_reg_write_common(4, addr + 2, (val >> 16) & 0xff, p);
-    acpi_reg_write_common(4, addr + 3, (val >> 24) & 0xff, p);
+    acpi_reg_write_intel_ich2(4, addr, val & 0xff, p);
+    acpi_reg_write_intel_ich2(4, addr + 1, (val >> 8) & 0xff, p);
+    acpi_reg_write_intel_ich2(4, addr + 2, (val >> 16) & 0xff, p);
+    acpi_reg_write_intel_ich2(4, addr + 3, (val >> 24) & 0xff, p);
 }
 
 
@@ -530,8 +515,8 @@ acpi_reg_writew(uint16_t addr, uint16_t val, void *p)
 {
     acpi_log("ACPI: Write W %04X to %04X\n", val, addr);
 
-    acpi_reg_write_common(2, addr, val & 0xff, p);
-    acpi_reg_write_common(2, addr + 1, (val >> 8) & 0xff, p);
+    acpi_reg_write_intel_ich2(2, addr, val & 0xff, p);
+    acpi_reg_write_intel_ich2(2, addr + 1, (val >> 8) & 0xff, p);
 }
 
 
@@ -540,7 +525,7 @@ acpi_reg_write(uint16_t addr, uint8_t val, void *p)
 {
     acpi_log("ACPI: Write B %02X to %04X\n", val, addr);
 
-    acpi_reg_write_common(1, addr, val, p);
+    acpi_reg_write_intel_ich2(1, addr, val, p);
 }
 
 

@@ -383,6 +383,12 @@ intel_815ep_init(const device_t *info)
     intel_815ep_t *dev = (intel_815ep_t *)malloc(sizeof(intel_815ep_t));
     memset(dev, 0, sizeof(intel_815ep_t));
 
+    /* Bus Speed(815EP runs at 133Mhz) */
+    if(cpu_busspeed >= 133333333)
+        cpu_set_pci_speed(133333333);
+    else
+        cpu_set_pci_speed(cpu_busspeed);
+
     /* Device */
     pci_add_card(PCI_ADD_NORTHBRIDGE, intel_815ep_read, intel_815ep_write, dev); /* Device 0: Intel 815EP MCH */
 
