@@ -109,7 +109,7 @@ typedef struct
 /* Global variables. */
 extern int		acpi_rtc_status;
 
-extern const device_t	acpi_intel_ich2_device;
+extern const device_t	intel_ich2_acpi_device;
 
 
 

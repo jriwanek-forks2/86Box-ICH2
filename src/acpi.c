@@ -95,8 +95,6 @@ static double acpi_get_overflow_period(acpi_t *dev) {
 static void
 acpi_timer_update(acpi_t *dev, bool enable)
 {
-    acpi_log("ACPI: Timer is updated\n");
-
     if (enable) {
         timer_on_auto(&dev->timer, acpi_get_overflow_period(dev));
     } else {
@@ -112,16 +110,19 @@ acpi_timer_overflow(void *priv)
 
     dev->regs.pmsts |= TMROF_STS;
 
+    acpi_log("Intel ICH2 ACPI: Beating calmly\n");
+
     if(dev->regs.pmen & 1) /* Timer Overflow Interrupt Enable */
     {
-
-        acpi_log("ACPI: Overflow detected. Provoking an %s\n", sci_en ? "SCI" : "SMI");
+        acpi_log("Intel ICH2 ACPI: Overflow detected. Provoking an %s\n", sci_en ? "SCI" : "SMI");
 
         if(sci_en) /* Trigger an SCI or SMI depending on the status of the SCI_EN register */
             acpi_update_irq(dev);
         else
             acpi_raise_smi(dev, 1);
     }
+
+    acpi_timer_update(dev, 1); // Prepare for the next beat
 }
 
 
@@ -130,20 +131,12 @@ acpi_update_irq(acpi_t *dev)
 {
     int sci_level = (dev->regs.pmsts & dev->regs.pmen) & (RTC_EN | PWRBTN_EN | GBL_EN | TMROF_EN);
 
+    acpi_log("Intel ICH2 ACPI: An IRQ was risen on line %d\n", dev->irq_line);
+
     if (sci_level) {
-	if (dev->irq_mode == 1)
 		pci_set_irq(dev->slot, dev->irq_pin);
-	else if (dev->irq_mode == 2)
-		pci_set_mirq(5, dev->mirq_is_level);
-	else
-		pci_set_mirq(0xf0 | dev->irq_line, 1);
     } else {
-	if (dev->irq_mode == 1)
 		pci_clear_irq(dev->slot, dev->irq_pin);
-	else if (dev->irq_mode == 2)
-		pci_clear_mirq(5, dev->mirq_is_level);
-	else
-		pci_clear_mirq(0xf0 | dev->irq_line, 1);
     }
 }
 
@@ -300,14 +293,10 @@ acpi_reg_write_default_regs(int size, uint16_t addr, uint8_t val, void *p)
 		dev->regs.pmsts &= ~((val << shift16) & 0x8d31);
 		if ((addr == 0x01) && (val & 0x04))
 			acpi_rtc_status = 0;
-
-		acpi_timer_update(dev, !(dev->regs.pmsts & TMROF_STS));
 		break;
 	case 0x02: case 0x03:
 		/* PMEN - Power Management Resume Enable Register (IO) */
 		dev->regs.pmen = ((dev->regs.pmen & ~(0xff << shift16)) | (val << shift16)) & 0x0521;
-
-		acpi_timer_update(dev, !(dev->regs.pmsts & TMROF_STS));
 		break;
 	case 0x04: case 0x05:
 		/* PMCNTRL - Power Management Control Register (IO) */
@@ -403,7 +392,7 @@ acpi_reg_write_intel_ich2(int size, uint16_t addr, uint8_t val, void *p)
 
         if(addr == 0x30) {
             if(val & 0x80) {
-                acpi_log("ACPI: SCI risen per BIOS request\n");
+                acpi_log("Intel ICH2 ACPI: SCI risen per BIOS request\n");
                 dev->regs.pmsts |= 0x0020;
 
                 if(dev->regs.pmen & 0x0020) /* Provoke an SCI when Global Enable is Active*/
@@ -470,7 +459,7 @@ acpi_reg_readl(uint16_t addr, void *p)
     ret |= (acpi_reg_read_intel_ich2(4, addr + 2, p) << 16);
     ret |= (acpi_reg_read_intel_ich2(4, addr + 3, p) << 24);
 
-    acpi_log("ACPI: Read L %08X from %04X\n", ret, addr);
+    acpi_log("Intel ICH2 ACPI: Read L %08X from %04X\n", ret, addr);
 
     return ret;
 }
@@ -484,7 +473,7 @@ acpi_reg_readw(uint16_t addr, void *p)
     ret = acpi_reg_read_intel_ich2(2, addr, p);
     ret |= (acpi_reg_read_intel_ich2(2, addr + 1, p) << 8);
 
-    acpi_log("ACPI: Read W %08X from %04X\n", ret, addr);
+    acpi_log("Intel ICH2 ACPI: Read W %08X from %04X\n", ret, addr);
 
     return ret;
 }
@@ -497,7 +486,7 @@ acpi_reg_read(uint16_t addr, void *p)
 
     ret = acpi_reg_read_intel_ich2(1, addr, p);
 
-    acpi_log("ACPI: Read B %02X from %04X\n", ret, addr);
+    acpi_log("Intel ICH2 ACPI: Read B %02X from %04X\n", ret, addr);
 
     return ret;
 }
@@ -505,7 +494,7 @@ acpi_reg_read(uint16_t addr, void *p)
 static void
 acpi_reg_writel(uint16_t addr, uint32_t val, void *p)
 {
-    acpi_log("ACPI: Write L %08X to %04X\n", val, addr);
+    acpi_log("Intel ICH2 ACPI: Write L %08X to %04X\n", val, addr);
 
     acpi_reg_write_intel_ich2(4, addr, val & 0xff, p);
     acpi_reg_write_intel_ich2(4, addr + 1, (val >> 8) & 0xff, p);
@@ -517,7 +506,7 @@ acpi_reg_writel(uint16_t addr, uint32_t val, void *p)
 static void
 acpi_reg_writew(uint16_t addr, uint16_t val, void *p)
 {
-    acpi_log("ACPI: Write W %04X to %04X\n", val, addr);
+    acpi_log("Intel ICH2 ACPI: Write W %04X to %04X\n", val, addr);
 
     acpi_reg_write_intel_ich2(2, addr, val & 0xff, p);
     acpi_reg_write_intel_ich2(2, addr + 1, (val >> 8) & 0xff, p);
@@ -527,7 +516,7 @@ acpi_reg_writew(uint16_t addr, uint16_t val, void *p)
 static void
 acpi_reg_write(uint16_t addr, uint8_t val, void *p)
 {
-    acpi_log("ACPI: Write B %02X to %04X\n", val, addr);
+    acpi_log("Intel ICH2 ACPI: Write B %02X to %04X\n", val, addr);
 
     acpi_reg_write_intel_ich2(1, addr, val, p);
 }
@@ -536,7 +525,7 @@ acpi_reg_write(uint16_t addr, uint8_t val, void *p)
 void
 acpi_update_io_mapping(acpi_t *dev, uint32_t base, int chipset_en)
 {
-    acpi_log("ACPI: Update I/O %04X to %04X (%sabled)\n", dev->io_base, base, chipset_en ? "en" : "dis");
+    acpi_log("Intel ICH2 ACPI: Update I/O %04X to %04X (%sabled)\n", dev->io_base, base, chipset_en ? "en" : "dis");
 
     if (dev->io_base != 0x0000) {
 	io_removehandler(dev->io_base, 0x0080,
@@ -565,17 +554,6 @@ acpi_timer_resume(void *priv)
        SMI trap handler clears the resume bit before returning control to the OS. */
     if (in_smm)
 	timer_set_delay_u64(&dev->resume_timer, 50 * TIMER_USEC);
-}
-
-
-void
-acpi_init_gporeg(acpi_t *dev, uint8_t val0, uint8_t val1, uint8_t val2, uint8_t val3)
-{
-    dev->regs.gporeg[0] = dev->gporeg_default[0] = val0;
-    dev->regs.gporeg[1] = dev->gporeg_default[1] = val1;
-    dev->regs.gporeg[2] = dev->gporeg_default[2] = val2;
-    dev->regs.gporeg[3] = dev->gporeg_default[3] = val3;
-    acpi_log("acpi_init_gporeg(): %02X %02X %02X %02X\n", dev->regs.gporeg[0], dev->regs.gporeg[1], dev->regs.gporeg[2], dev->regs.gporeg[3]);
 }
 
 
@@ -675,9 +653,9 @@ acpi_apm_out(uint16_t port, uint8_t val, void *p)
 	if (port == 0x0000) {
 		dev->apm->cmd = val;
     
-        if(dev->regs.smi_en & 0x00000020){ /* ICH2 APMC SMI */
-        dev->regs.smi_sts |= 0x00000020;
-        acpi_raise_smi(dev, 1);
+        if(dev->regs.smi_en & 0x00000020) { /* ICH2 APMC SMI */
+            dev->regs.smi_sts |= 0x00000020;
+            acpi_raise_smi(dev, 1);
         }
 
 	} else
@@ -718,13 +696,13 @@ acpi_reset(void *priv)
        Gigabyte GA-686BX:
        - Bit 1: CMOS battery low (active high) */
     dev->regs.gpireg[2] = dev->gpireg2_default;
-    for (i = 0; i < 4; i++)
-	dev->regs.gporeg[i] = dev->gporeg_default[i];
 
     /* Power on always generates a resume event. */
     dev->regs.pmsts |= 0x8000;
 
     acpi_rtc_status = 0;
+
+    acpi_timer_update(dev, 1);
 }
 
 
@@ -767,7 +745,7 @@ acpi_init(const device_t *info)
     if (dev == NULL) return(NULL);
     memset(dev, 0x00, sizeof(acpi_t));
 
-    cpu_to_acpi = ACPI_TIMER_FREQ;
+    cpu_to_acpi = ACPI_TIMER_FREQ / cpuclock;
     dev->vendor = info->local;
 
     dev->irq_line = 9;
@@ -788,7 +766,7 @@ acpi_init(const device_t *info)
     return dev;
 }
 
-const device_t acpi_intel_ich2_device = {
+const device_t intel_ich2_acpi_device = {
     .name = "Intel ICH2 ACPI",
     .internal_name = "acpi_intel_ich2",
     .flags = DEVICE_PCI,

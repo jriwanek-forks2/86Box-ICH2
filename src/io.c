@@ -513,18 +513,6 @@ inl(uint16_t port)
     }
     ret = (ret8[3] << 24) | (ret8[2] << 16) | (ret8[1] << 8) | ret8[0];
 
-<<<<<<< HEAD
-=======
-    if (amstrad_latch & 0x80000000) {
-        if (port & 0x80)
-            amstrad_latch = AMSTRAD_NOLATCH | 0x80000000;
-        else if (port & 0x4000)
-            amstrad_latch = AMSTRAD_SW10 | 0x80000000;
-        else
-            amstrad_latch = AMSTRAD_SW9 | 0x80000000;
-    }
-
->>>>>>> upstream/master
     if (!found)
 	cycles -= io_delay;
 

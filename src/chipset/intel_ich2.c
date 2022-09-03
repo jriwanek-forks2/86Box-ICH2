@@ -885,7 +885,7 @@ intel_ich2_init(const device_t *info)
     slot = pci_add_card(PCI_ADD_SOUTHBRIDGE, intel_ich2_read, intel_ich2_write, dev); /* Device 31: Intel ICH2 */
 
     /* ACPI Interface */
-    dev->acpi = device_add(&acpi_intel_ich2_device);
+    dev->acpi = device_add(&intel_ich2_acpi_device);
     acpi_set_slot(dev->acpi, slot);
 
     /* DMA */
