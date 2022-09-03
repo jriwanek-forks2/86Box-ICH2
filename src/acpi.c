@@ -44,7 +44,7 @@
 int acpi_rtc_status = 0;
 
 static double cpu_to_acpi;
-
+#define ENABLE_ACPI_LOG 1
 #ifdef ENABLE_ACPI_LOG
 int acpi_do_log = ENABLE_ACPI_LOG;
 
@@ -91,6 +91,19 @@ static double acpi_get_overflow_period(acpi_t *dev) {
     return ((double)time_to_overflow / (double)ACPI_TIMER_FREQ) * 1000000.0;
 }
 
+
+static void
+acpi_timer_update(acpi_t *dev, bool enable)
+{
+    acpi_log("ACPI: Timer is updated\n");
+
+    if (enable) {
+        timer_on_auto(&dev->timer, acpi_get_overflow_period(dev));
+    } else {
+        timer_stop(&dev->timer);
+    }
+}
+
 static void
 acpi_timer_overflow(void *priv)
 {
@@ -101,6 +114,7 @@ acpi_timer_overflow(void *priv)
 
     if(dev->regs.pmen & 1) /* Timer Overflow Interrupt Enable */
     {
+
         acpi_log("ACPI: Overflow detected. Provoking an %s\n", sci_en ? "SCI" : "SMI");
 
         if(sci_en) /* Trigger an SCI or SMI depending on the status of the SCI_EN register */
@@ -108,18 +122,8 @@ acpi_timer_overflow(void *priv)
         else
             acpi_raise_smi(dev, 1);
     }
-
 }
 
-static void
-acpi_timer_update(acpi_t *dev, bool enable)
-{
-    if (enable) {
-        timer_on_auto(&dev->timer, acpi_get_overflow_period(dev));
-    } else {
-        timer_stop(&dev->timer);
-    }
-}
 
 void
 acpi_update_irq(acpi_t *dev)
@@ -155,7 +159,7 @@ acpi_raise_smi(void *priv, int do_smi)
 
 
 static uint32_t
-acpi_reg_read_intel_ich2_regs(int size, uint16_t addr, void *p)
+acpi_reg_read_default_regs(int size, uint16_t addr, void *p)
 {
     acpi_t *dev = (acpi_t *) p;
     uint32_t ret = 0x00000000;
@@ -265,20 +269,20 @@ acpi_reg_read_intel_ich2(int size, uint16_t addr, void *p)
         ret = tco_read(addr, dev->tco);
         break;
 	default:
-		ret = acpi_reg_read_intel_ich2_regs(size, addr, p);
+		ret = acpi_reg_read_default_regs(size, addr, p);
 		break;
     }
 
 #ifdef ENABLE_ACPI_LOG
-    // if (size != 1)
-		// acpi_log("(%i) ACPI Read  (%i) %02X: %02X\n", in_smm, size, addr, ret);
+    if (size != 1)
+	    acpi_log("(%i) ACPI Read  (%i) %02X: %02X\n", in_smm, size, addr, ret);
 #endif
     return ret;
 }
 
 
 static void
-acpi_reg_write_intel_ich2_regs(int size, uint16_t addr, uint8_t val, void *p)
+acpi_reg_write_default_regs(int size, uint16_t addr, uint8_t val, void *p)
 {
     acpi_t *dev = (acpi_t *) p;
     int shift16, sus_typ;
@@ -297,13 +301,13 @@ acpi_reg_write_intel_ich2_regs(int size, uint16_t addr, uint8_t val, void *p)
 		if ((addr == 0x01) && (val & 0x04))
 			acpi_rtc_status = 0;
 
-		acpi_timer_update(dev, (dev->regs.pmen & TMROF_EN) && !(dev->regs.pmsts & TMROF_STS));
+		acpi_timer_update(dev, !(dev->regs.pmsts & TMROF_STS));
 		break;
 	case 0x02: case 0x03:
 		/* PMEN - Power Management Resume Enable Register (IO) */
 		dev->regs.pmen = ((dev->regs.pmen & ~(0xff << shift16)) | (val << shift16)) & 0x0521;
 
-		acpi_timer_update(dev, (dev->regs.pmen & TMROF_EN) && !(dev->regs.pmsts & TMROF_STS));
+		acpi_timer_update(dev, !(dev->regs.pmsts & TMROF_STS));
 		break;
 	case 0x04: case 0x05:
 		/* PMCNTRL - Power Management Control Register (IO) */
@@ -398,11 +402,12 @@ acpi_reg_write_intel_ich2(int size, uint16_t addr, uint8_t val, void *p)
 		dev->regs.smi_en = ((dev->regs.smi_en & ~(0xff << shift32)) | (val << shift32)) & 0x0000867f;
 
         if(addr == 0x30) {
-            apm_set_do_smi(dev->apm, !!(val & 0x20));
-
             if(val & 0x80) {
-                dev->regs.glbsts |= 0x0020;
-                acpi_update_irq(dev);
+                acpi_log("ACPI: SCI risen per BIOS request\n");
+                dev->regs.pmsts |= 0x0020;
+
+                if(dev->regs.pmen & 0x0020) /* Provoke an SCI when Global Enable is Active*/
+                    acpi_update_irq(dev);
             }
         }
 		break;
@@ -437,15 +442,11 @@ acpi_reg_write_intel_ich2(int size, uint16_t addr, uint8_t val, void *p)
         tco_write(addr, val, dev->tco);
         break;
 	default:
-		acpi_reg_write_intel_ich2_regs(size, addr, val, p);
+		acpi_reg_write_default_regs(size, addr, val, p);
         if((addr == 0x04) && !!(val & 4) && !!(dev->regs.smi_en & 4)) {
             dev->regs.smi_sts = 0x00000004;
             acpi_raise_smi(dev, 1);
         }
-
-        if((addr == 0x02) || !!(val & 0x20) || !!(dev->regs.glbsts & 0x0020))
-            acpi_update_irq(dev);
-
         break;
     }
 }
@@ -674,10 +675,11 @@ acpi_apm_out(uint16_t port, uint8_t val, void *p)
 	if (port == 0x0000) {
 		dev->apm->cmd = val;
     
-        if(dev->apm->do_smi)
+        if(dev->regs.smi_en & 0x00000020){ /* ICH2 APMC SMI */
         dev->regs.smi_sts |= 0x00000020;
+        acpi_raise_smi(dev, 1);
+        }
 
-        acpi_raise_smi(dev, dev->apm->do_smi);
 	} else
 		dev->apm->stat = val;
 }
@@ -765,7 +767,7 @@ acpi_init(const device_t *info)
     if (dev == NULL) return(NULL);
     memset(dev, 0x00, sizeof(acpi_t));
 
-    cpu_to_acpi = ACPI_TIMER_FREQ / cpuclock;
+    cpu_to_acpi = ACPI_TIMER_FREQ;
     dev->vendor = info->local;
 
     dev->irq_line = 9;
