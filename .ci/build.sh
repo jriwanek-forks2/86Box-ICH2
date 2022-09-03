@@ -37,10 +37,17 @@
 #       build_arch x86_64 (or arm64)
 #       universal_archs (blank)
 #       ui_interactive no
-#       macosx_deployment_target 10.13 (for x86_64, or 11.0 for arm64)
+#       macosx_deployment_target 10.13 (for x86_64, 10.14 for Qt Vulkan, or 11.0 for arm64)
 #   - For universal building on Apple Silicon hardware, install native MacPorts on the default
 #     /opt/local and Intel MacPorts on /opt/intel, then tell build.sh to build for "x86_64+arm64"
-#   - port is called through sudo to manage dependencies; make sure it is configured
+#   - Qt Vulkan support through MoltenVK requires 10.14 while we target 10.13. We deal with that
+#     (at least for now) by abusing the x86_64h universal slice to branch Haswell and newer Macs
+#     into a Vulkan-enabled but 10.14+ binary, with older ones opting for a 10.13-compatible,
+#     non-Vulkan binary. With this approach, the only machines that miss out on Vulkan despite
+#     supporting Metal are Ivy Bridge ones as well as GPU-upgraded Mac Pros. For building that
+#     Vulkan binary, install another Intel MacPorts on /opt/x86_64h, then use the "x86_64h"
+#     architecture when invoking build.sh (either standalone or as part of an universal build)
+#   - port and sed are called through sudo to manage dependencies; make sure those are configured
 #     as NOPASSWD in /etc/sudoers if you're doing unattended builds
 #
 
@@ -104,6 +111,19 @@ make_tar() {
 
 	# Run tar.
 	"$tar_cmd" -c $compression_flag -f "$1$compression_ext" $ownership_flags *
+	return $?
+}
+
+cache_dir="$HOME/86box-build-cache"
+[ ! -d "$cache_dir" ] && mkdir -p "$cache_dir"
+check_buildtag() {
+	[ -z "$BUILD_TAG" -o "$BUILD_TAG" != "$(cat "$cache_dir/buildtag.$1" 2> /dev/null)" ]
+	return $?
+}
+save_buildtag() {
+	local contents="$BUILD_TAG"
+	[ -n "$2" ] && local contents="$2"
+	echo "$contents" > "$cache_dir/buildtag.$1"
 	return $?
 }
 
@@ -217,11 +237,10 @@ case $arch in
 	*)		toolchain="$toolchain_prefix-$arch";;
 esac
 [ ! -e "cmake/$toolchain.cmake" ] && toolchain=flags-gcc
+toolchain_file="cmake/$toolchain.cmake"
 
 # Perform platform-specific setup.
 strip_binary=strip
-cache_dir="$HOME/86box-build-cache"
-[ ! -d "$cache_dir" ] && mkdir -p "$cache_dir"
 if is_windows
 then
 	# Switch into the correct MSYSTEM if required.
@@ -248,26 +267,34 @@ then
 
 	# Install dependencies only if we're in a new build and/or architecture.
 	freetype_dll="$cache_dir/freetype.$MSYSTEM.dll"
-	buildtag_file="$cache_dir/buildtag.$MSYSTEM"
-	if [ -z "$BUILD_TAG" -o "$(cat "$buildtag_file" 2> /dev/null)" != "$BUILD_TAG" ]
+	if check_buildtag "$MSYSTEM"
 	then
-		# Update keyring, as the package signing keys sometimes change.
-		echo [-] Updating package databases and keyring
-		yes | pacman -Sy --needed msys2-keyring
+		# Update databases and keyring only if we're in a new build.
+		if check_buildtag pacmansync
+		then
+			# Update keyring as well, since the package signing keys sometimes change.
+			echo [-] Updating package databases and keyring
+			yes | pacman -Sy --needed msys2-keyring
+
+			# Save build tag to skip pacman sync/keyring later.
+			save_buildtag pacmansync
+		else
+			echo [-] Not updating package databases and keyring again
+		fi
 
 		# Query installed packages.
-		pacman -Qe > pacman.txt
+		pacman -Qe > "$cache_dir/pacman.txt"
 
 		# Download the specified versions of architecture-specific dependencies.
 		echo -n [-] Downloading dependencies:
 		pkg_dir="/var/cache/pacman/pkg"
 		repo_base="https://repo.msys2.org/mingw/$(echo $MSYSTEM | tr '[:upper:]' '[:lower:]')"
-		cat .ci/dependencies_msys.txt | tr -d '\r' > deps.txt
+		cat .ci/dependencies_msys.txt | tr -d '\r' > "$cache_dir/deps.txt"
 		pkgs=""
 		while IFS=" " read pkg version
 		do
 			prefixed_pkg="$MINGW_PACKAGE_PREFIX-$pkg"
-			installed_version=$(grep -E "^$prefixed_pkg " pacman.txt | cut -d " " -f 2)
+			installed_version=$(grep -E "^$prefixed_pkg " "$cache_dir/pacman.txt" | cut -d " " -f 2)
 			if [ "$installed_version" != "$version" ] # installed_version will be empty if not installed
 			then
 				echo -n " [$pkg"
@@ -310,7 +337,7 @@ then
 				fi
 				echo -n "]"
 			fi
-		done < deps.txt
+		done < "$cache_dir/deps.txt"
 		[ -z "$pkgs" ] && echo -n ' none required'
 		echo
 
@@ -331,7 +358,7 @@ then
 			popd
 
 			# Query installed packages again.
-			pacman -Qe > pacman.txt
+			pacman -Qe > "$cache_dir/pacman.txt"
 		fi
 
 		# Install the latest versions for any missing packages (if the specified version couldn't be installed).
@@ -339,9 +366,9 @@ then
 		while IFS=" " read pkg version
 		do
 			prefixed_pkg="$MINGW_PACKAGE_PREFIX-$pkg"
-			grep -qE "^$prefixed_pkg " pacman.txt || pkgs="$pkgs $prefixed_pkg"
-		done < deps.txt
-		rm -f pacman.txt deps.txt
+			grep -qE "^$prefixed_pkg " "$cache_dir/pacman.txt" || pkgs="$pkgs $prefixed_pkg"
+		done < "$cache_dir/deps.txt"
+		rm -f "$cache_dir/pacman.txt" "$cache_dir/deps.txt"
 		yes | pacman -S --needed $pkgs
 		if [ $? -ne 0 ]
 		then
@@ -357,13 +384,10 @@ then
 
 		# Save build tag to skip this later. Doing it here (once everything is
 		# in place) is important to avoid potential issues with retried builds.
-		echo "$BUILD_TAG" > "$buildtag_file"
+		save_buildtag "$MSYSTEM"
 	else
 		echo [-] Not installing dependencies again
 	fi
-
-	# Point CMake to the toolchain file.
-	[ -e "cmake/$toolchain.cmake" ] && cmake_flags_extra="$cmake_flags_extra -D \"CMAKE_TOOLCHAIN_FILE=cmake/$toolchain.cmake\""
 elif is_mac
 then
 	# macOS lacks nproc, but sysctl can do the same job.
@@ -384,10 +408,10 @@ then
 			args=
 			[ $strip -ne 0 ] && args="-t $args"
 			case $arch_universal in # workaround: force new dynarec on for ARM
-				arm32 | arm64)	cmake_flags_extra="-D NEW_DYNAREC=ON";;
-				*)		cmake_flags_extra=;;
+				arm*) cmake_flags_extra="-D NEW_DYNAREC=ON";;
+				*)    cmake_flags_extra=;;
 			esac
-			zsh -lc 'exec "'"$0"'" -n -b "universal part" "'"$arch_universal"'" '"$args""$cmake_flags"' '"$cmake_flags_extra"
+			zsh -lc 'exec "'"$0"'" -n -b "universal slice" "'"$arch_universal"'" '"$args""$cmake_flags"' '"$cmake_flags_extra"
 			status=$?
 
 			if [ $status -eq 0 ]
@@ -408,18 +432,18 @@ then
 					echo [-] Merging app bundles [$merge_src] and [$arch_universal] into [$merge_dest]
 
 					# Merge directory structures.
-					(cd "archive_tmp_universal/$merge_src.app" && find . -type d && cd "../../archive_tmp_universal/$arch_universal.app" && find . -type d && cd ../..) | sort > universal_listing.txt
-					cat universal_listing.txt | uniq | while IFS= read line
+					(cd "archive_tmp_universal/$merge_src.app" && find . -type d && cd "../../archive_tmp_universal/$arch_universal.app" && find . -type d && cd ../..) | sort > "$cache_dir/universal_listing.txt"
+					cat "$cache_dir/universal_listing.txt" | uniq | while IFS= read line
 					do
 						echo "> Directory: $line"
 						mkdir -p "archive_tmp_universal/$merge_dest.app/$line"
 					done
 
 					# Create merged file listing.
-					(cd "archive_tmp_universal/$merge_src.app" && find . -type f && cd "../../archive_tmp_universal/$arch_universal.app" && find . -type f && cd ../..) | sort > universal_listing.txt
+					(cd "archive_tmp_universal/$merge_src.app" && find . -type f && cd "../../archive_tmp_universal/$arch_universal.app" && find . -type f && cd ../..) | sort > "$cache_dir/universal_listing.txt"
 
 					# Copy files that only exist on one bundle.
-					cat universal_listing.txt | uniq -u | while IFS= read line
+					cat "$cache_dir/universal_listing.txt" | uniq -u | while IFS= read line
 					do
 						if [ -e "archive_tmp_universal/$merge_src.app/$line" ]
 						then
@@ -432,7 +456,7 @@ then
 					done
 
 					# Copy or lipo files that exist on both bundles.
-					cat universal_listing.txt | uniq -d | while IFS= read line
+					cat "$cache_dir/universal_listing.txt" | uniq -d | while IFS= read line
 					do
 						if cmp -s "archive_tmp_universal/$merge_src.app/$line" "archive_tmp_universal/$arch_universal.app/$line"
 						then
@@ -448,8 +472,8 @@ then
 					done
 
 					# Merge symlinks.
-					(cd "archive_tmp_universal/$merge_src.app" && find . -type l && cd "../../archive_tmp_universal/$arch_universal.app" && find . -type l && cd ../..) | sort > universal_listing.txt
-					cat universal_listing.txt | uniq | while IFS= read line
+					(cd "archive_tmp_universal/$merge_src.app" && find . -type l && cd "../../archive_tmp_universal/$arch_universal.app" && find . -type l && cd ../..) | sort > "$cache_dir/universal_listing.txt"
+					cat "$cache_dir/universal_listing.txt" | uniq | while IFS= read line
 					do
 						# Get symlink destinations.
 						other_link_dest=
@@ -521,8 +545,8 @@ then
 
 	# Switch into the correct architecture if required.
 	case $arch in
-		x86_64)	arch_mac="i386";;
-		*)	arch_mac="$arch";;
+		x86_64*) arch_mac="i386";;
+		*)	 arch_mac="$arch";;
 	esac
 	if [ "$(arch)" != "$arch" -a "$(arch)" != "$arch_mac" ]
 	then
@@ -543,25 +567,37 @@ then
 	[ "$arch" = "x86_64" -a -e "/opt/intel/bin/port" ] && macports="/opt/intel"
 	export PATH="$macports/bin:$macports/sbin:$macports/libexec/qt5/bin:$PATH"
 
-	# Install dependencies only if we're in a new build and/or architecture.
-	buildtag_file="$cache_dir/buildtag.$(arch)"
-	if [ -z "$BUILD_TAG" -o "$(cat "$buildtag_file" 2> /dev/null)" != "$BUILD_TAG" ]
+	# Enable MoltenVK on x86_64h and arm64, but not on x86_64.
+	# The rationale behind that is explained on the big comment up top.
+	moltenvk=0
+	if [ "$arch" != "x86_64" ]
+	then
+		moltenvk=1
+		cmake_flags_extra="$cmake_flags_extra -D MOLTENVK=ON -D \"MOLTENVK_INCLUDE_DIR=$macports\""
+	fi
+
+	# Install dependencies only if we're in a new build and/or MacPorts prefix.
+	if check_buildtag "$(basename "$macports")"
 	then
 		# Install dependencies.
 		echo [-] Installing dependencies through MacPorts
 		sudo "$macports/bin/port" selfupdate
+		if [ $moltenvk -ne 0 ]
+		then
+			# Patch Qt to enable Vulkan support where supported.
+			qt5_portfile="$macports/var/macports/sources/rsync.macports.org/macports/release/tarballs/ports/aqua/qt5/Portfile"
+			sudo sed -i -e 's/-no-feature-vulkan/-feature-vulkan/g' "$qt5_portfile"
+			sudo sed -i -e 's/configure.env-append MAKE=/configure.env-append VULKAN_SDK=${prefix} MAKE=/g' "$qt5_portfile"
+		fi
 		sudo "$macports/bin/port" install $(cat .ci/dependencies_macports.txt)
 
 		# Save build tag to skip this later. Doing it here (once everything is
 		# in place) is important to avoid potential issues with retried builds.
-		echo "$BUILD_TAG" > "$buildtag_file"
+		save_buildtag "$(basename "$macports")"
 	else
 		echo [-] Not installing dependencies again
 
 	fi
-
-	# Point CMake to the toolchain file.
-	[ -e "cmake/$toolchain.cmake" ] && cmake_flags_extra="$cmake_flags_extra -D \"CMAKE_TOOLCHAIN_FILE=cmake/$toolchain.cmake\""
 else
 	# Determine Debian architecture.
 	case $arch in
@@ -572,8 +608,7 @@ else
 	esac
 
 	# Establish general dependencies.
-	buildtag_aptupdate_file="$cache_dir/buildtag.aptupdate"
-	pkgs="cmake ninja-build pkg-config git wget p7zip-full wayland-protocols tar gzip file appstream"
+	pkgs="cmake ninja-build pkg-config git wget p7zip-full extra-cmake-modules wayland-protocols tar gzip file appstream"
 	if [ "$(dpkg --print-architecture)" = "$arch_deb" ]
 	then
 		pkgs="$pkgs build-essential"
@@ -584,14 +619,14 @@ else
 			sudo dpkg --add-architecture "$arch_deb"
 			
 			# Force an apt-get update.
-			rm -f "$buildtag_aptupdate_file"
+			save_buildtag aptupdate "arch_$arch_deb"
 		fi
 
 		pkgs="$pkgs crossbuild-essential-$arch_deb"
 	fi
 
 	# Establish architecture-specific dependencies we don't want listed on the readme...
-	pkgs="$pkgs linux-libc-dev:$arch_deb extra-cmake-modules:$arch_deb qttools5-dev:$arch_deb qtbase5-private-dev:$arch_deb"
+	pkgs="$pkgs linux-libc-dev:$arch_deb qttools5-dev:$arch_deb qtbase5-private-dev:$arch_deb"
 
 	# ...and the ones we do want listed. Non-dev packages fill missing spots on the list.
 	libpkgs=""
@@ -617,8 +652,12 @@ else
 		*)	libdir="$arch_triplet";;
 	esac
 
-	# Create CMake toolchain file.
-	cat << EOF > toolchain.cmake
+	# Create CMake cross toolchain file. The file is saved on a fixed location for
+	# the library builds we do later, since running CMake again on a library we've
+	# already built before will *not* update its toolchain file path; therefore, we
+	# cannot point them to our working directory, which may change across builds.
+	toolchain_file_new="$cache_dir/toolchain.$arch_deb.cmake"
+	cat << EOF > "$toolchain_file_new"
 set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_PROCESSOR $arch)
 
@@ -639,31 +678,30 @@ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 set(ENV{PKG_CONFIG_PATH} "")
 set(ENV{PKG_CONFIG_LIBDIR} "/usr/lib/$libdir/pkgconfig:/usr/share/$libdir/pkgconfig")
 
-include("$(pwd)/cmake/$toolchain.cmake")
+include("$(realpath "$toolchain_file")")
 EOF
-	cmake_flags_extra="$cmake_flags_extra -D CMAKE_TOOLCHAIN_FILE=toolchain.cmake"
+	toolchain_file="$toolchain_file_new"
 	strip_binary="$arch_triplet-strip"
 
 	# Install dependencies only if we're in a new build and/or architecture.
-	buildtag_file="$cache_dir/buildtag.$arch_deb"
-	if [ -z "$BUILD_TAG" -o "$(cat "$buildtag_file" 2> /dev/null)" != "$BUILD_TAG" ]
+	if check_buildtag "$arch_deb"
 	then
 		# Install or update dependencies.
 		echo [-] Installing dependencies through apt
-		if [ -z "$BUILD_TAG" -o "$(cat "$buildtag_aptupdate_file" 2> /dev/null)" != "$BUILD_TAG" ]
+		if check_buildtag aptupdate
 		then
 			sudo apt-get update
 
 			# Save build tag to skip apt-get update later, unless a new architecture
-			# is added to dpkg, in which case, this saved tag file gets removed.
-			echo "$BUILD_TAG" > "$buildtag_aptupdate_file"
+			# is added to dpkg, in which case, this saved tag file gets replaced.
+			save_buildtag aptupdate
 		fi
 		DEBIAN_FRONTEND=noninteractive sudo apt-get -y install $pkgs $libpkgs
 		sudo apt-get clean
 
 		# Save build tag to skip this later. Doing it here (once everything is
 		# in place) is important to avoid potential issues with retried builds.
-		echo "$BUILD_TAG" > "$buildtag_file"
+		save_buildtag "$arch_deb"
 	else
 		echo [-] Not installing dependencies again
 	fi
@@ -672,6 +710,9 @@ EOF
 	cmake_flags_extra="$cmake_flags_extra -D SLIRP_EXTERNAL=ON"
 fi
 
+# Point CMake to the toolchain file.
+[ -e "$toolchain_file" ] && cmake_flags_extra="$cmake_flags_extra -D \"CMAKE_TOOLCHAIN_FILE=$toolchain_file\""
+
 # Clean workspace.
 echo [-] Cleaning workspace
 rm -rf build
@@ -679,7 +720,7 @@ rm -rf build
 # Add ARCH to skip the arch_detect process.
 case $arch in
 	32 | x86)	cmake_flags_extra="$cmake_flags_extra -D ARCH=i386";;
-	64 | x86_64)	cmake_flags_extra="$cmake_flags_extra -D ARCH=x86_64";;
+	64 | x86_64*)	cmake_flags_extra="$cmake_flags_extra -D ARCH=x86_64";;
 	ARM32 | arm32)	cmake_flags_extra="$cmake_flags_extra -D ARCH=arm";;
 	ARM64 | arm64)	cmake_flags_extra="$cmake_flags_extra -D ARCH=arm64";;
 	*)		cmake_flags_extra="$cmake_flags_extra -D \"ARCH=$arch\"";;
@@ -712,33 +753,46 @@ then
 	exit 3
 fi
 
-# Run actual build.
-echo [-] Running build
-cmake --build build -j$(nproc)
-status=$?
-if [ $status -ne 0 ]
+# Run actual build, unless we're running a dry build to precondition a node.
+if [ "$BUILD_TAG" != "precondition" ]
 then
-	echo [!] Build failed with status [$status]
-	exit 4
+	echo [-] Running build
+	cmake --build build -j$(nproc)
+	status=$?
+	if [ $status -ne 0 ]
+	then
+		echo [!] Build failed with status [$status]
+		exit 4
+	fi
+else
+	# Copy dummy binary into place.
+	echo [-] Preconditioning build node
+	mkdir -p build/src
+	if is_windows
+	then
+		cp "$(which cp)" "build/src/$project.exe"
+	elif is_mac
+	then
+		: # Special check during app bundle generation.
+	else
+		cp "$(which cp)" "build/src/$project"
+	fi
 fi
 
 # Download Discord Game SDK from their CDN if we're in a new build.
-discord_zip="$cache_dir/discord_game_sdk.zip"
-buildtag_file="$cache_dir/buildtag.any"
-if [ -z "$BUILD_TAG" -o "$(cat "$buildtag_file" 2> /dev/null)" != "$BUILD_TAG" ]
+discord_version="3.2.1"
+discord_zip="$cache_dir/discord_game_sdk-$discord_version.zip"
+if [ ! -e "$discord_zip" ]
 then
 	# Download file.
 	echo [-] Downloading Discord Game SDK
-	wget -qO "$discord_zip" "https://dl-game-sdk.discordapp.net/latest/discord_game_sdk.zip"
+	rm -f "$cache_dir/discord_game_sdk"* # remove old versions
+	wget -qO "$discord_zip" "https://dl-game-sdk.discordapp.net/$discord_version/discord_game_sdk.zip"
 	status=$?
 	if [ $status -ne 0 ]
 	then
 		echo [!] Discord Game SDK download failed with status [$status]
 		rm -f "$discord_zip"
-	else
-		# Save build tag to skip this later. Doing it here (once everything is
-		# in place) is important to avoid potential issues with retried builds.
-		echo "$BUILD_TAG" > "$buildtag_file"
 	fi
 else
 	echo [-] Not downloading Discord Game SDK again
@@ -747,7 +801,7 @@ fi
 # Determine Discord Game SDK architecture.
 case $arch in
 	32)		arch_discord="x86";;
-	64)		arch_discord="x86_64";;
+	64 | x86_64*)	arch_discord="x86_64";;
 	arm64 | ARM64)	arch_discord="aarch64";;
 	*)		arch_discord="$arch";;
 esac
@@ -813,26 +867,75 @@ then
 		unzip -j "$discord_zip" "lib/$arch_discord/discord_game_sdk.dylib" -d "archive_tmp/"*".app/Contents/Frameworks"
 		[ ! -e "archive_tmp/"*".app/Contents/Frameworks/discord_game_sdk.dylib" ] && echo [!] No Discord Game SDK for architecture [$arch_discord]
 
+		# Hack to convert x86_64 binaries to x86_64h when building that architecture.
+		if [ "$arch" = "x86_64h" ]
+		then
+			find archive_tmp -type f | while IFS= read line
+			do
+				# Parse and patch a fat header (0xCAFEBABE, big endian) first.
+				macho_offset=0
+				if [ "$(dd if="$line" bs=1 count=4 status=none)" = "$(printf '\xCA\xFE\xBA\xBE')" ]
+				then
+					# Get the number of fat architectures.
+					fat_archs=$(($(dd if="$line" bs=1 skip=4 count=4 status=none | rev | tr -d '\n' | od -An -vtu4)))
+
+					# Go through fat architectures.
+					fat_offset=8
+					for fat_arch in $(seq 1 $fat_archs)
+					do
+						# Check CPU type.
+						if [ "$(dd if="$line" bs=1 skip=$fat_offset count=4 status=none)" = "$(printf '\x01\x00\x00\x07')" ]
+						then
+							# Change CPU subtype in the fat header from ALL (0x00000003) to H (0x00000008).
+							printf '\x00\x00\x00\x08' | dd of="$line" bs=1 seek=$((fat_offset + 4)) count=4 conv=notrunc status=none
+
+							# Save offset for this architecture's Mach-O header.
+							macho_offset=$(($(dd if="$line" bs=1 skip=$((fat_offset + 8)) count=4 status=none | rev | tr -d '\n' | od -An -vtu4)))
+
+							# Stop looking for the x86_64 slice.
+							break
+						fi
+
+						# Move on to the next architecture.
+						fat_offset=$((fat_offset + 20))
+					done
+				fi
+
+				# Now patch a 64-bit Mach-O header (0xFEEDFACF, little endian), either at
+				# the beginning or as a sub-header within a fat binary as parsed above.
+				if [ "$(dd if="$line" bs=1 skip=$macho_offset count=8 status=none)" = "$(printf '\xCF\xFA\xED\xFE\x07\x00\x00\x01')" ]
+				then
+					# Change CPU subtype in the Mach-O header from ALL (0x00000003) to H (0x00000008).
+					printf '\x08\x00\x00\x00' | dd of="$line" bs=1 seek=$((macho_offset + 8)) count=4 conv=notrunc status=none
+				fi
+			done
+		fi
+
 		# Sign app bundle, unless we're in an universal build.
 		[ $skip_archive -eq 0 ] && codesign --force --deep -s - "archive_tmp/"*".app"
+	elif [ "$BUILD_TAG" = "precondition" ]
+	then
+		# Continue with no app bundle on a dry build.
+		status=0
 	fi
 else
 	cwd_root="$(pwd)"
+	check_buildtag "libs.$arch_deb"
 
 	if grep -q "OPENAL:BOOL=ON" build/CMakeCache.txt
 	then
 		# Build openal-soft 1.21.1 manually to fix audio issues. This is a temporary
 		# workaround until a newer version of openal-soft trickles down to Debian repos.
 		prefix="$cache_dir/openal-soft-1.21.1"
-		if [ -d "$prefix" ]
+		if [ ! -d "$prefix" ]
 		then
-			rm -rf "$prefix/build"
-		else
+			rm -rf "$cache_dir/openal-soft-"* # remove old versions
 			wget -qO - https://github.com/kcat/openal-soft/archive/refs/tags/1.21.1.tar.gz | tar zxf - -C "$cache_dir" || rm -rf "$prefix"
 		fi
-		cmake -G Ninja -D "CMAKE_TOOLCHAIN_FILE=$cwd_root/toolchain.cmake" -D "CMAKE_INSTALL_PREFIX=$cwd_root/archive_tmp/usr" -S "$prefix" -B "$prefix/build" || exit 99
-		cmake --build "$prefix/build" -j$(nproc) || exit 99
-		cmake --install "$prefix/build" || exit 99
+		prefix_build="$prefix/build-$arch_deb"
+		cmake -G Ninja -D "CMAKE_TOOLCHAIN_FILE=$toolchain_file" -D "CMAKE_INSTALL_PREFIX=$cwd_root/archive_tmp/usr" -S "$prefix" -B "$prefix_build" || exit 99
+		cmake --build "$prefix_build" -j$(nproc) || exit 99
+		cmake --install "$prefix_build" || exit 99
 
 		# Build SDL2 without sound systems.
 		sdl_ss=OFF
@@ -840,15 +943,15 @@ else
 		# Build FAudio 22.03 manually to remove the dependency on GStreamer. This is a temporary
 		# workaround until a newer version of FAudio trickles down to Debian repos.
 		prefix="$cache_dir/FAudio-22.03"
-		if [ -d "$prefix" ]
+		if [ ! -d "$prefix" ]
 		then
-			rm -rf "$prefix/build"
-		else
+			rm -rf "$cache_dir/FAudio-"* # remove old versions
 			wget -qO - https://github.com/FNA-XNA/FAudio/archive/refs/tags/22.03.tar.gz | tar zxf - -C "$cache_dir" || rm -rf "$prefix"
 		fi
-		cmake -G Ninja -D "CMAKE_TOOLCHAIN_FILE=$cwd_root/toolchain.cmake" -D "CMAKE_INSTALL_PREFIX=$cwd_root/archive_tmp/usr" -S "$prefix" -B "$prefix/build" || exit 99
-		cmake --build "$prefix/build" -j$(nproc) || exit 99
-		cmake --install "$prefix/build" || exit 99
+		prefix_build="$prefix/build-$arch_deb"
+		cmake -G Ninja -D "CMAKE_TOOLCHAIN_FILE=$toolchain_file" -D "CMAKE_INSTALL_PREFIX=$cwd_root/archive_tmp/usr" -S "$prefix" -B "$prefix_build" || exit 99
+		cmake --build "$prefix_build" -j$(nproc) || exit 99
+		cmake --install "$prefix_build" || exit 99
 
 		# Build SDL2 with sound systems.
 		sdl_ss=ON
@@ -860,24 +963,25 @@ else
 
 	# Build rtmidi without JACK support to remove the dependency on libjack.
 	prefix="$cache_dir/rtmidi-4.0.0"
-	if [ -d "$prefix" ]
+	if [ ! -d "$prefix" ]
 	then
-		rm -rf "$prefix/build"
-	else
+		rm -rf "$cache_dir/rtmidi-"* # remove old versions
 		wget -qO - https://github.com/thestk/rtmidi/archive/refs/tags/4.0.0.tar.gz | tar zxf - -C "$cache_dir" || rm -rf "$prefix"
 	fi
-	cmake -G Ninja -D RTMIDI_API_JACK=OFF -D "CMAKE_TOOLCHAIN_FILE=$cwd_root/toolchain.cmake" -D "CMAKE_INSTALL_PREFIX=$cwd_root/archive_tmp/usr" -S "$prefix" -B "$prefix/build" || exit 99
-	cmake --build "$prefix/build" -j$(nproc) || exit 99
-	cmake --install "$prefix/build" || exit 99
+	prefix_build="$prefix/build-$arch_deb"
+	cmake -G Ninja -D RTMIDI_API_JACK=OFF -D "CMAKE_TOOLCHAIN_FILE=$toolchain_file" -D "CMAKE_INSTALL_PREFIX=$cwd_root/archive_tmp/usr" -S "$prefix" -B "$prefix_build" || exit 99
+	cmake --build "$prefix_build" -j$(nproc) || exit 99
+	cmake --install "$prefix_build" || exit 99
 
 	# Build SDL2 for joystick and FAudio support, with most components
 	# disabled to remove the dependencies on PulseAudio and libdrm.
 	prefix="$cache_dir/SDL2-2.0.20"
 	if [ ! -d "$prefix" ]
 	then
+		rm -rf "$cache_dir/SDL2-"* # remove old versions
 		wget -qO - https://www.libsdl.org/release/SDL2-2.0.20.tar.gz | tar zxf - -C "$cache_dir" || rm -rf "$prefix"
 	fi
-	rm -rf "$cache_dir/sdlbuild"
+	prefix_build="$cache_dir/SDL2-2.0.20-build-$arch_deb"
 	cmake -G Ninja -D SDL_SHARED=ON -D SDL_STATIC=OFF \
 		\
 		-D SDL_AUDIO=$sdl_ss -D SDL_DUMMYAUDIO=$sdl_ss -D SDL_DISKAUDIO=OFF -D SDL_OSS=OFF -D SDL_ALSA=$sdl_ss -D SDL_ALSA_SHARED=$sdl_ss \
@@ -895,10 +999,10 @@ else
 		-D SDL_ATOMIC=OFF -D SDL_EVENTS=ON -D SDL_HAPTIC=OFF -D SDL_POWER=OFF -D SDL_THREADS=ON -D SDL_TIMERS=ON -D SDL_FILE=OFF \
 		-D SDL_LOADSO=ON -D SDL_CPUINFO=ON -D SDL_FILESYSTEM=$sdl_ui -D SDL_DLOPEN=OFF -D SDL_SENSOR=OFF -D SDL_LOCALE=OFF \
 		\
-		-D "CMAKE_TOOLCHAIN_FILE=$cwd_root/toolchain.cmake" -D "CMAKE_INSTALL_PREFIX=$cwd_root/archive_tmp/usr" \
-		-S "$prefix" -B "$cache_dir/sdlbuild" || exit 99
-	cmake --build "$cache_dir/sdlbuild" -j$(nproc) || exit 99
-	cmake --install "$cache_dir/sdlbuild" || exit 99
+		-D "CMAKE_TOOLCHAIN_FILE=$toolchain_file" -D "CMAKE_INSTALL_PREFIX=$cwd_root/archive_tmp/usr" \
+		-S "$prefix" -B "$prefix_build" || exit 99
+	cmake --build "$prefix_build" -j$(nproc) || exit 99
+	cmake --install "$prefix_build" || exit 99
 
 	# Archive Discord Game SDK library.
 	7z e -y -o"archive_tmp/usr/lib" "$discord_zip" "lib/$arch_discord/discord_game_sdk.so"
@@ -1005,12 +1109,18 @@ EOF
 	done < .ci/AppImageBuilder.yml
 
 	# Download appimage-builder if necessary.
-	[ ! -e "appimage-builder.AppImage" ] && wget -qO appimage-builder.AppImage \
-		https://github.com/AppImageCrafters/appimage-builder/releases/download/v0.9.2/appimage-builder-0.9.2-35e3eab-x86_64.AppImage
-	chmod u+x appimage-builder.AppImage
+	appimage_builder_url="https://github.com/AppImageCrafters/appimage-builder/releases/download/v0.9.2/appimage-builder-0.9.2-35e3eab-x86_64.AppImage"
+	appimage_builder_binary="$cache_dir/$(basename "$appimage_builder_url")"
+	if [ ! -e "$appimage_builder_binary" ]
+	then
+		rm -rf "$cache_dir/"*".AppImage" # remove old versions
+		wget -qO "$appimage_builder_binary" "$appimage_builder_url"
+	fi
 
-	# Symlink global cache directory.
-	rm -rf appimage-builder-cache "$project-"*".AppImage" # also remove any dangling AppImages which may interfere with the renaming process
+	# Symlink appimage-builder binary and global cache directory.
+	rm -rf appimage-builder.AppImage appimage-builder-cache "$project-"*".AppImage" # also remove any dangling AppImages which may interfere with the renaming process
+	ln -s "$appimage_builder_binary" appimage-builder.AppImage
+	chmod u+x appimage-builder.AppImage
 	mkdir -p "$cache_dir/appimage-builder-cache"
 	ln -s "$cache_dir/appimage-builder-cache" appimage-builder-cache
 
@@ -1024,6 +1134,9 @@ EOF
 	then
 		mv "$project-"*".AppImage" "$cwd/$package_name.AppImage"
 		status=$?
+	else
+		# Remove appimage-builder binary just in case it's corrupted.
+		rm -f "$appimage_builder_binary"
 	fi
 fi
 

@@ -14,6 +14,9 @@
 #           Copyright 2020-2022 David Hrdlička.
 #           Copyright 2021 dob205.
 #
+if(APPLE)
+    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+endif()
 
 add_executable(86Box 86box.c config.c log.c random.c timer.c io.c acpi.c apm.c
     dma.c ddma.c discord.c nmi.c pic.c pit.c pit_fast.c port_6x.c port_92.c ppi.c pci.c
@@ -57,6 +60,10 @@ if(VNC)
     endif()
 endif()
 
+if(INSTRUMENT)
+    add_compile_definitions(USE_INSTRUMENT)
+endif()
+
 target_link_libraries(86Box cpu chipset mch dev mem fdd game cdrom zip mo hdd
     net print scsi sio snd vid voodoo plat ui)
 
@@ -79,11 +86,16 @@ if(APPLE)
     # Force using the newest library if it's installed by homebrew
     set(CMAKE_FIND_FRAMEWORK LAST)
 
-    # setting our compilation target to macOS 10.15 Catalina if targetting Qt6, macOS 10.13 High Sierra otherwise
+    # setting our compilation target to macOS 10.15 Catalina if targeting Qt6,
+    # macOS 10.14 Mojave for vulkan support, 10.13 High Sierra otherwise
     if (USE_QT6)
         set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15")
     else()
-        set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13")
+        if(MOLTENVK)
+            set(CMAKE_OSX_DEPLOYMENT_TARGET "10.14")
+        else()
+            set(CMAKE_OSX_DEPLOYMENT_TARGET "10.13")
+        endif()
     endif()
 endif()
 

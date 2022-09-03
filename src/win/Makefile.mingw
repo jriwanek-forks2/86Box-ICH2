@@ -241,7 +241,7 @@ VPATH		:= $(EXPATH) . $(CODEGEN) minitrace cpu \
 		   sio sound \
 		    sound/munt sound/munt/c_interface sound/munt/sha1 \
 		    sound/munt/srchelper sound/munt/srchelper/srctools/src \
-		    sound/resid-fp \
+		    sound/resid-fp sound/ymfm \
 		   scsi video network network/slirp win
 ifeq ($(X64), y)
 TOOL_PREFIX     := x86_64-w64-mingw32-
@@ -397,7 +397,7 @@ endif
 ifeq ($(MUNT), y)
 OPTS		+= -DUSE_MUNT
 MUNTOBJ		:= midi_mt32.o \
-		    Analog.o BReverbModel.o File.o FileStream.o LA32Ramp.o \
+		    Analog.o BReverbModel.o Display.o File.o FileStream.o LA32Ramp.o \
 		    LA32FloatWaveGenerator.o LA32WaveGenerator.o \
 		    MidiStreamParser.o Part.o Partial.o PartialManager.o \
 		    Poly.o ROMInfo.o SampleRateConverter.o \
@@ -664,13 +664,15 @@ NETOBJ		:= network.o \
 		    net_dp8390.o \
 		    net_3c503.o net_ne2000.o \
 		    net_pcnet.o net_wd8003.o \
-		    net_plip.o
+		    net_plip.o net_event.o
 
 PRINTOBJ	:= png.o prt_cpmap.o \
 		    prt_escp.o prt_text.o prt_ps.o
 
 SNDOBJ		:= sound.o \
-		    snd_opl.o snd_opl_nuked.o \
+		    snd_opl.o snd_opl_nuked.o snd_opl_ymfm.o \
+		     ymfm_adpcm.o ymfm_misc.o ymfm_opl.o ymfm_opm.o \
+		     ymfm_opn.o ymfm_opq.o ymfm_opz.o ymfm_pcm.o ymfm_ssg.o \
 		    snd_resid.o \
 		     convolve.o convolve-sse.o envelope.o extfilt.o \
 		     filter.o pot.o sid.o voice.o wave6581__ST.o \
@@ -776,12 +778,12 @@ OBJ		+= $(EXOBJ)
 endif
 
 ifeq ($(OPENAL), y)
-LIBS		:= -mwindows -lopenal -lcomctl32 -lSDL2 -limagehlp -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lshell32 -lversion -luuid
+LIBS		:= -mwindows -lopenal -lcomctl32 -lSDL2 -limagehlp -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lshell32 -lversion -luuid -lws2_32
 else
 ifeq ($(FAUDIO), y)
-LIBS		:= -mwindows -lfaudio -lcomctl32 -lSDL2 -limagehlp -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lshell32 -lversion -luuid
+LIBS		:= -mwindows -lfaudio -lcomctl32 -lSDL2 -limagehlp -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lshell32 -lversion -luuid -lws2_32
 else
-LIBS		:= -mwindows -lcomctl32 -lSDL2 -limagehlp -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lshell32 -lversion -luuid
+LIBS		:= -mwindows -lcomctl32 -lSDL2 -limagehlp -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lshell32 -lversion -luuid -lws2_32
 endif
 endif
 

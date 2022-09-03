@@ -45,6 +45,7 @@
 #include <86box/isamem.h>
 #include <86box/isartc.h>
 #include <86box/lpt.h>
+#include <86box/serial.h>
 #include <86box/hdd.h>
 #include <86box/hdc.h>
 #include <86box/hdc_ide.h>
@@ -54,6 +55,7 @@
 #include <86box/gameport.h>
 #include <86box/machine.h>
 #include <86box/mouse.h>
+#include <86box/thread.h>
 #include <86box/network.h>
 #include <86box/scsi.h>
 #include <86box/scsi_device.h>
@@ -68,6 +70,10 @@
 #include <86box/plat.h>
 #include <86box/plat_dir.h>
 #include <86box/ui.h>
+#include <86box/snd_opl.h>
+
+
+static int	cx, cy, cw, ch;
 
 
 typedef struct _list_ {
@@ -285,7 +291,7 @@ config_detect_bom(char *fn)
 #endif
     if (f == NULL)
         return (0);
-    fread(bom, 1, 3, f);
+    (void) !fread(bom, 1, 3, f);
     if (bom[0] == 0xEF && bom[1] == 0xBB && bom[2] == 0xBF) {
         fclose(f);
         return 1;
@@ -351,7 +357,7 @@ config_read(char *fn)
 #ifdef __HAIKU__
         config_fgetws(buff, sizeof_w(buff), f);
 #else
-        fgetws(buff, sizeof_w(buff), f);
+        (void) !fgetws(buff, sizeof_w(buff), f);
 #endif
         if (feof(f))
             break;
@@ -381,7 +387,7 @@ config_read(char *fn)
             c++;
             d = 0;
             while (buff[c] != L']' && buff[c])
-                wctomb(&(sname[d++]), buff[c++]);
+                (void) !wctomb(&(sname[d++]), buff[c++]);
             sname[d] = L'\0';
 
             /* Is the section name properly terminated? */
@@ -402,7 +408,7 @@ config_read(char *fn)
         /* Get the variable name. */
         d = 0;
         while ((buff[c] != L'=') && (buff[c] != L' ') && buff[c])
-            wctomb(&(ename[d++]), buff[c++]);
+            (void) !wctomb(&(ename[d++]), buff[c++]);
         ename[d] = L'\0';
 
         /* Skip incomplete lines. */
@@ -609,9 +615,49 @@ load_general(void)
 
     enable_discord = !!config_get_int(cat, "enable_discord", 0);
 
+    open_dir_usr_path = config_get_int(cat, "open_dir_usr_path", 0);
+
     video_framerate = config_get_int(cat, "video_gl_framerate", -1);
     video_vsync     = config_get_int(cat, "video_gl_vsync", 0);
     strncpy(video_shader, config_get_string(cat, "video_gl_shader", ""), sizeof(video_shader));
+
+    window_remember = config_get_int(cat, "window_remember", 0);
+    if (window_remember) {
+	p = config_get_string(cat, "window_coordinates", NULL);
+	if (p == NULL)
+		p = "0, 0, 0, 0";
+	sscanf(p, "%i, %i, %i, %i", &cw, &ch, &cx, &cy);
+    } else {
+	cw = ch = cx = cy = 0;
+	config_delete_var(cat, "window_remember");
+    }
+
+    config_delete_var(cat, "window_coordinates");
+}
+
+/* Load monitor section. */
+static void
+load_monitor(int monitor_index)
+{
+    char cat[512], temp[512];
+    char *p = NULL;
+
+    sprintf(cat, "Monitor #%i", monitor_index + 1);
+    sprintf(temp, "%i, %i, %i, %i", cx, cy, cw, ch);
+
+    p = config_get_string(cat, "window_coordinates", NULL);
+
+    if (p == NULL)
+	p = temp;
+
+    if (window_remember) {
+        sscanf(p, "%i, %i, %i, %i",
+               &monitor_settings[monitor_index].mon_window_x, &monitor_settings[monitor_index].mon_window_y,
+               &monitor_settings[monitor_index].mon_window_w, &monitor_settings[monitor_index].mon_window_h);
+        monitor_settings[monitor_index].mon_window_maximized = !!config_get_int(cat, "window_maximized", 0);
+    } else {
+        monitor_settings[monitor_index].mon_window_maximized = 0;
+    }
 }
 
 /* Load "Machine" section. */
@@ -928,51 +974,12 @@ load_video(void)
     ibm8514_enabled      = !!config_get_int(cat, "8514a", 0);
     xga_enabled          = !!config_get_int(cat, "xga", 0);
     show_second_monitors = !!config_get_int(cat, "show_second_monitors", 1);
+    video_fullscreen_scale_maximized = !!config_get_int(cat, "video_fullscreen_scale_maximized", 0);
+    
     p                    = config_get_string(cat, "gfxcard_2", NULL);
     if (!p)
         p = "none";
     gfxcard_2 = video_get_video_from_internal_name(p);
-}
-
-static void
-load_monitor(int monitor_index)
-{
-    char  monitor_config_name[sizeof("Monitor #") + 12] = { [0] = 0 };
-    char *ptr                                           = NULL;
-
-    if (monitor_index == 0) {
-        /* Migrate configs */
-        ptr = config_get_string("General", "window_coordinates", NULL);
-
-        config_delete_var("General", "window_coordinates");
-    }
-    snprintf(monitor_config_name, sizeof(monitor_config_name), "Monitor #%i", monitor_index + 1);
-    if (!ptr)
-        ptr = config_get_string(monitor_config_name, "window_coordinates", "0, 0, 0, 0");
-    if (window_remember || (vid_resize & 2))
-        sscanf(ptr, "%i, %i, %i, %i",
-               &monitor_settings[monitor_index].mon_window_x, &monitor_settings[monitor_index].mon_window_y,
-               &monitor_settings[monitor_index].mon_window_w, &monitor_settings[monitor_index].mon_window_h);
-}
-
-static void
-save_monitor(int monitor_index)
-{
-    char monitor_config_name[sizeof("Monitor #") + 12] = { [0] = 0 };
-    char saved_coordinates[12 * 4 + 8 + 1]             = { [0] = 0 };
-
-    snprintf(monitor_config_name, sizeof(monitor_config_name), "Monitor #%i", monitor_index + 1);
-    if (!(monitor_settings[monitor_index].mon_window_x == 0
-          && monitor_settings[monitor_index].mon_window_y == 0
-          && monitor_settings[monitor_index].mon_window_w == 0
-          && monitor_settings[monitor_index].mon_window_h == 0)
-        && (window_remember || (vid_resize & 2))) {
-        snprintf(saved_coordinates, sizeof(saved_coordinates), "%i, %i, %i, %i", monitor_settings[monitor_index].mon_window_x, monitor_settings[monitor_index].mon_window_y,
-                 monitor_settings[monitor_index].mon_window_w, monitor_settings[monitor_index].mon_window_h);
-
-        config_set_string(monitor_config_name, "window_coordinates", saved_coordinates);
-    } else
-        config_delete_var(monitor_config_name, "window_coordinates");
 }
 
 /* Load "Input Devices" section. */
@@ -1110,6 +1117,13 @@ load_sound(void)
         sound_is_float = 1;
     else
         sound_is_float = 0;
+
+    p = config_get_string(cat, "fm_driver", "nuked");
+    if (!strcmp(p, "ymfm")) {
+        fm_driver = FM_DRV_YMFM;
+    } else {
+        fm_driver = FM_DRV_NUKED;
+    }
 }
 
 /* Load "Network" section. */
@@ -1118,45 +1132,94 @@ load_network(void)
 {
     char *cat = "Network";
     char *p;
+    char  temp[512];
+    int   c = 0, min = 0;
 
-    p = config_get_string(cat, "net_type", NULL);
-    if (p != NULL) {
-        if (!strcmp(p, "pcap") || !strcmp(p, "1"))
-            network_type = NET_TYPE_PCAP;
-        else if (!strcmp(p, "slirp") || !strcmp(p, "2"))
-            network_type = NET_TYPE_SLIRP;
-        else
-            network_type = NET_TYPE_NONE;
-    } else
-        network_type = NET_TYPE_NONE;
-
-    memset(network_host, '\0', sizeof(network_host));
-    p = config_get_string(cat, "net_host_device", NULL);
-    if (p == NULL) {
-        p = config_get_string(cat, "net_host_device", NULL);
-        if (p != NULL)
-            config_delete_var(cat, "net_host_device");
-    }
-    if (p != NULL) {
-        if ((network_dev_to_id(p) == -1) || (network_ndev == 1)) {
-            if ((network_ndev == 1) && strcmp(network_host, "none")) {
-                ui_msgbox_header(MBX_ERROR, (wchar_t *) IDS_2094, (wchar_t *) IDS_2129);
-            } else if (network_dev_to_id(p) == -1) {
-                ui_msgbox_header(MBX_ERROR, (wchar_t *) IDS_2095, (wchar_t *) IDS_2129);
-            }
-
-            strcpy(network_host, "none");
-        } else {
-            strncpy(network_host, p, sizeof(network_host) - 1);
-        }
-    } else
-        strcpy(network_host, "none");
-
+    /* Handle legacy configuration which supported only one NIC */
     p = config_get_string(cat, "net_card", NULL);
-    if (p != NULL)
-        network_card = network_card_get_from_internal_name(p);
-    else
-        network_card = 0;
+    if (p != NULL) {
+        net_cards_conf[c].device_num = network_card_get_from_internal_name(p);
+
+        p = config_get_string(cat, "net_type", NULL);
+        if (p != NULL) {
+            if (!strcmp(p, "pcap") || !strcmp(p, "1"))
+                net_cards_conf[c].net_type = NET_TYPE_PCAP;
+            else if (!strcmp(p, "slirp") || !strcmp(p, "2"))
+                net_cards_conf[c].net_type = NET_TYPE_SLIRP;
+            else
+                net_cards_conf[c].net_type = NET_TYPE_NONE;
+        } else {
+            net_cards_conf[c].net_type = NET_TYPE_NONE;
+        }
+
+        p = config_get_string(cat, "net_host_device", NULL);
+        if (p != NULL) {
+            if ((network_dev_to_id(p) == -1) || (network_ndev == 1)) {
+                if (network_ndev == 1) {
+                    ui_msgbox_header(MBX_ERROR, (wchar_t *) IDS_2094, (wchar_t *) IDS_2129);
+                } else if (network_dev_to_id(p) == -1) {
+                    ui_msgbox_header(MBX_ERROR, (wchar_t *) IDS_2095, (wchar_t *) IDS_2129);
+                }
+                strcpy(net_cards_conf[c].host_dev_name, "none");
+            } else {
+                strncpy(net_cards_conf[c].host_dev_name, p, sizeof(net_cards_conf[c].host_dev_name) - 1);
+            }
+        } else {
+            strcpy(net_cards_conf[c].host_dev_name, "none");
+        }
+
+        min++;
+    }
+
+    config_delete_var(cat, "net_card");
+    config_delete_var(cat, "net_type");
+    config_delete_var(cat, "net_host_device");
+
+    for (c = min; c < NET_CARD_MAX; c++) {
+        sprintf(temp, "net_%02i_card", c + 1);
+        p = config_get_string(cat, temp, NULL);
+        if (p != NULL) {
+            net_cards_conf[c].device_num = network_card_get_from_internal_name(p);
+        } else {
+            net_cards_conf[c].device_num = 0;
+        }
+
+        sprintf(temp, "net_%02i_net_type", c + 1);
+        p = config_get_string(cat, temp, NULL);
+        if (p != NULL) {
+            if (!strcmp(p, "pcap") || !strcmp(p, "1")) {
+                net_cards_conf[c].net_type = NET_TYPE_PCAP;
+            } else if (!strcmp(p, "slirp") || !strcmp(p, "2")) {
+                net_cards_conf[c].net_type = NET_TYPE_SLIRP;
+            } else {
+                net_cards_conf[c].net_type = NET_TYPE_NONE;
+            }
+        } else {
+            net_cards_conf[c].net_type = NET_TYPE_NONE;
+        }
+
+        sprintf(temp, "net_%02i_host_device", c + 1);
+        p = config_get_string(cat, temp, NULL);
+        if (p != NULL) {
+            if ((network_dev_to_id(p) == -1) || (network_ndev == 1)) {
+                if (network_ndev == 1) {
+                    ui_msgbox_header(MBX_ERROR, (wchar_t *) IDS_2094, (wchar_t *) IDS_2129);
+                } else if (network_dev_to_id(p) == -1) {
+                    ui_msgbox_header(MBX_ERROR, (wchar_t *) IDS_2095, (wchar_t *) IDS_2129);
+                }
+                strcpy(net_cards_conf[c].host_dev_name, "none");
+            } else {
+                strncpy(net_cards_conf[c].host_dev_name, p, sizeof(net_cards_conf[c].host_dev_name) - 1);
+            }
+        } else {
+            strcpy(net_cards_conf[c].host_dev_name, "none");
+        }
+
+        sprintf(temp, "net_%02i_link", c +1);
+        net_cards_conf[c].link_state = config_get_int(cat, temp,
+            (NET_LINK_10_HD|NET_LINK_10_FD|NET_LINK_100_HD|NET_LINK_100_FD|NET_LINK_1000_HD|NET_LINK_1000_FD));
+
+    }
 }
 
 /* Load "Ports" section. */
@@ -1170,7 +1233,7 @@ load_ports(void)
 
     for (c = 0; c < SERIAL_MAX; c++) {
         sprintf(temp, "serial%d_enabled", c + 1);
-        serial_enabled[c] = !!config_get_int(cat, temp, (c >= 2) ? 0 : 1);
+        com_ports[c].enabled = !!config_get_int(cat, temp, (c >= 2) ? 0 : 1);
 
         /*
                 sprintf(temp, "serial%d_device", c + 1);
@@ -1378,6 +1441,7 @@ load_hard_disks(void)
         sprintf(temp, "hdd_%02i_speed", c + 1);
         switch (hdd[c].bus) {
             case HDD_BUS_IDE:
+            case HDD_BUS_ESDI:
                 sprintf(tmp2, "1997_5400rpm");
                 break;
             default:
@@ -1765,6 +1829,15 @@ load_floppy_and_cdrom_drives(void)
 
         sprintf(temp, "cdrom_%02i_iso_path", c + 1);
         config_delete_var(cat, temp);
+
+        for (int i = 0; i < MAX_PREV_IMAGES; i++) {
+            cdrom[c].image_history[i] = (char *) calloc(MAX_IMAGE_PATH_LEN + 1, sizeof(char));
+            sprintf(temp, "cdrom_%02i_image_history_%02i", c + 1, i + 1);
+            p = config_get_string(cat, temp, NULL);
+            if(p) {
+                sprintf(cdrom[c].image_history[i], "%s", p);
+            }
+        }
     }
 }
 
@@ -2155,10 +2228,10 @@ config_load(void)
         time_sync              = TIME_SYNC_ENABLED;
         hdc_current            = hdc_get_from_internal_name("none");
 
-        serial_enabled[0] = 1;
-        serial_enabled[1] = 1;
+        com_ports[0].enabled = 1;
+        com_ports[1].enabled = 1;
         for (i = 2; i < SERIAL_MAX; i++)
-            serial_enabled[i] = 0;
+            com_ports[i].enabled = 0;
 
         lpt_ports[0].enabled = 1;
 
@@ -2370,6 +2443,11 @@ save_general(void)
     else
         config_delete_var(cat, "enable_discord");
 
+    if (open_dir_usr_path)
+        config_set_int(cat, "open_dir_usr_path", open_dir_usr_path);
+    else
+        config_delete_var(cat, "open_dir_usr_path");
+
     if (video_framerate != -1)
         config_set_int(cat, "video_gl_framerate", video_framerate);
     else
@@ -2384,6 +2462,31 @@ save_general(void)
         config_delete_var(cat, "video_gl_shader");
 
     delete_section_if_empty(cat);
+}
+
+/* Save monitor section. */
+static void
+save_monitor(int monitor_index)
+{
+    char cat[sizeof("Monitor #") + 12] = { [0] = 0 };
+    char temp[512];
+
+    snprintf(cat, sizeof(cat), "Monitor #%i", monitor_index + 1);
+    if (window_remember) {
+        sprintf(temp, "%i, %i, %i, %i",
+		monitor_settings[monitor_index].mon_window_x, monitor_settings[monitor_index].mon_window_y,
+		monitor_settings[monitor_index].mon_window_w, monitor_settings[monitor_index].mon_window_h);
+
+        config_set_string(cat, "window_coordinates", temp);
+        if (monitor_settings[monitor_index].mon_window_maximized != 0) {
+            config_set_int(cat, "window_maximized", monitor_settings[monitor_index].mon_window_maximized);
+        } else {
+            config_delete_var(cat, "window_maximized");
+        }
+    } else {
+        config_delete_var(cat, "window_coordinates");
+        config_delete_var(cat, "window_maximized");
+    }
 }
 
 /* Save "Machine" section. */
@@ -2523,6 +2626,11 @@ save_video(void)
     else
         config_set_int(cat, "show_second_monitors", show_second_monitors);
 
+    if (video_fullscreen_scale_maximized == 0)
+        config_delete_var(cat, "video_fullscreen_scale_maximized");
+    else
+        config_set_int(cat, "video_fullscreen_scale_maximized", video_fullscreen_scale_maximized);
+
     delete_section_if_empty(cat);
 }
 
@@ -2630,6 +2738,8 @@ save_sound(void)
     else
         config_set_string(cat, "sound_type", (sound_is_float == 1) ? "float" : "int16");
 
+    config_set_string(cat, "fm_driver", (fm_driver == FM_DRV_NUKED) ? "nuked" : "ymfm");
+
     delete_section_if_empty(cat);
 }
 
@@ -2637,29 +2747,48 @@ save_sound(void)
 static void
 save_network(void)
 {
+    int c = 0;
+    char  temp[512];
     char *cat = "Network";
 
-    if (network_type == NET_TYPE_NONE)
-        config_delete_var(cat, "net_type");
-    else
-        config_set_string(cat, "net_type",
-                          (network_type == NET_TYPE_SLIRP) ? "slirp" : "pcap");
+    config_delete_var(cat, "net_type");
+    config_delete_var(cat, "net_host_device");
+    config_delete_var(cat, "net_card");
 
-    if (network_host[0] != '\0') {
-        if (!strcmp(network_host, "none"))
-            config_delete_var(cat, "net_host_device");
-        else
-            config_set_string(cat, "net_host_device", network_host);
-    } else {
-        /* config_set_string(cat, "net_host_device", "none"); */
-        config_delete_var(cat, "net_host_device");
+    for (c = 0; c < NET_CARD_MAX; c++) {
+        sprintf(temp, "net_%02i_card", c + 1);
+        if (net_cards_conf[c].device_num == 0) {
+            config_delete_var(cat, temp);
+        } else {
+            config_set_string(cat, temp, network_card_get_internal_name(net_cards_conf[c].device_num));
+        }
+
+        sprintf(temp, "net_%02i_net_type", c + 1);
+        if (net_cards_conf[c].net_type == NET_TYPE_NONE) {
+            config_delete_var(cat, temp);
+        } else {
+            config_set_string(cat, temp, 
+                (net_cards_conf[c].net_type == NET_TYPE_SLIRP) ? "slirp" : "pcap");
+        }
+
+        sprintf(temp, "net_%02i_host_device", c + 1);
+        if (net_cards_conf[c].host_dev_name[0] != '\0') {
+            if (!strcmp(net_cards_conf[c].host_dev_name, "none"))
+                config_delete_var(cat, temp);
+            else
+                config_set_string(cat, temp, net_cards_conf[c].host_dev_name);
+        } else {
+            /* config_set_string(cat, temp, "none"); */
+            config_delete_var(cat, temp);
+        }
+
+        sprintf(temp, "net_%02i_link", c + 1);
+        if (net_cards_conf[c].link_state == (NET_LINK_10_HD|NET_LINK_10_FD|NET_LINK_100_HD|NET_LINK_100_FD|NET_LINK_1000_HD|NET_LINK_1000_FD)) {
+            config_delete_var(cat, temp);
+        } else {
+            config_set_int(cat, temp, net_cards_conf[c].link_state);
+        }
     }
-
-    if (network_card == 0)
-        config_delete_var(cat, "net_card");
-    else
-        config_set_string(cat, "net_card",
-                          network_card_get_internal_name(network_card));
 
     delete_section_if_empty(cat);
 }
@@ -2674,17 +2803,17 @@ save_ports(void)
 
     for (c = 0; c < SERIAL_MAX; c++) {
         sprintf(temp, "serial%d_enabled", c + 1);
-        if (((c < 2) && serial_enabled[c]) || ((c >= 2) && !serial_enabled[c]))
+        if (((c < 2) && com_ports[c].enabled) || ((c >= 2) && !com_ports[c].enabled))
             config_delete_var(cat, temp);
         else
-            config_set_int(cat, temp, serial_enabled[c]);
+            config_set_int(cat, temp, com_ports[c].enabled);
 
-        /*
+/*
                 sprintf(temp, "serial%d_type", c + 1);
-                if (!serial_enabled[c])
+                if (!com_ports[c].enabled))
                     config_delete_var(cat, temp);
-        //      else
-        //          config_set_string(cat, temp, (char *) serial_type[c])
+//              else
+//                  config_set_string(cat, temp, (char *) serial_type[c])
 
                 sprintf(temp, "serial%d_device", c + 1);
                 if (com_ports[c].device == 0)
@@ -2755,7 +2884,7 @@ save_storage_controllers(void)
 
     delete_section_if_empty(cat);
 
-    if (cassette_enable == 1)
+    if (cassette_enable == 0)
         config_delete_var(cat, "cassette_enabled");
     else
         config_set_int(cat, "cassette_enabled", cassette_enable);
@@ -2910,7 +3039,7 @@ save_hard_disks(void)
             config_delete_var(cat, temp);
 
         sprintf(temp, "hdd_%02i_speed", c + 1);
-        if (!hdd_is_valid(c) || (hdd[c].bus != HDD_BUS_IDE))
+        if (!hdd_is_valid(c) || (hdd[c].bus != HDD_BUS_IDE && hdd[c].bus != HDD_BUS_ESDI))
             config_delete_var(cat, temp);
         else
             config_set_string(cat, temp, hdd_preset_get_internal_name(hdd[c].speed_preset));
@@ -3016,6 +3145,15 @@ save_floppy_and_cdrom_drives(void)
             config_delete_var(cat, temp);
         } else {
             config_set_string(cat, temp, cdrom[c].image_path);
+        }
+
+        for (int i = 0; i < MAX_PREV_IMAGES; i++) {
+            sprintf(temp, "cdrom_%02i_image_history_%02i", c + 1, i + 1);
+            if((cdrom[c].image_history[i] == 0) || strlen(cdrom[c].image_history[i]) == 0) {
+                config_delete_var(cat, temp);
+            } else {
+                config_set_string(cat, temp, cdrom[c].image_history[i]);
+            }
         }
     }
 

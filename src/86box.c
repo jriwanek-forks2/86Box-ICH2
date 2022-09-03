@@ -60,7 +60,6 @@
 #include <86box/device.h>
 #include <86box/pit.h>
 #include <86box/random.h>
-#include <86box/timer.h>
 #include <86box/nvr.h>
 #include <86box/machine.h>
 #include <86box/bugger.h>
@@ -85,6 +84,7 @@
 #include <86box/mo.h>
 #include <86box/scsi_disk.h>
 #include <86box/cdrom_image.h>
+#include <86box/thread.h>
 #include <86box/network.h>
 #include <86box/sound.h>
 #include <86box/midi.h>
@@ -93,7 +93,6 @@
 #include <86box/ui.h>
 #include <86box/path.h>
 #include <86box/plat.h>
-#include <86box/thread.h>
 #include <86box/version.h>
 #include <86box/gdbstub.h>
 #include <86box/machine_status.h>
@@ -138,6 +137,10 @@ char	rom_path[1024] = { '\0'};		/* (O) full path to ROMs */
 rom_path_t rom_paths = { "", NULL };    /* (O) full paths to ROMs */
 char	log_path[1024] = { '\0'};		/* (O) full path of logfile */
 char	vm_name[1024]  = { '\0'};		/* (O) display name of the VM */
+#ifdef USE_INSTRUMENT
+uint8_t instru_enabled = 0;
+uint64_t instru_run_ms = 0;
+#endif
 
 /* Configuration values. */
 int window_remember;
@@ -157,7 +160,6 @@ int video_filter_method = 1;			/* (C) video */
 int video_vsync = 0;				/* (C) video */
 int video_framerate = -1;			/* (C) video */
 char video_shader[512] = { '\0' };		/* (C) video */
-int	serial_enabled[SERIAL_MAX] = {0,0};	/* (C) enable serial ports */
 int bugger_enabled = 0;				/* (C) enable ISAbugger */
 int postcard_enabled = 0;			/* (C) enable POST card */
 int isamem_type[ISAMEM_MAX] = { 0,0,0,0 };	/* (C) enable ISA mem cards */
@@ -183,6 +185,9 @@ int confirm_exit = 1;				/* (C) enable exit confirmation */
 int confirm_save = 1;				/* (C) enable save confirmation */
 int	enable_discord = 0;			/* (C) enable Discord integration */
 int pit_mode = -1;				/* (C) force setting PIT mode */
+int fm_driver = 0;				/* (C) select FM sound driver */
+int open_dir_usr_path = 0;                      /* default file open dialog directory of usr_path */
+int video_fullscreen_scale_maximized = 0; /* (C) Whether fullscreen scaling settings also apply when maximized. */
 
 /* Statistics. */
 extern int mmuflush;
@@ -566,6 +571,12 @@ usage:
 
 			/* .. and then exit. */
 			return(0);
+#ifdef USE_INSTRUMENT
+		} else if (!strcasecmp(argv[c], "--instrument")) {
+			if ((c+1) == argc) goto usage;
+			instru_enabled = 1;
+			sscanf(argv[++c], "%llu", &instru_run_ms);
+#endif
 		}
 
 		/* Uhm... out of options here.. */
@@ -939,8 +950,6 @@ pc_reset_hard_close(void)
 	/* Close all the memory mappings. */
 	mem_close();
 
-	network_timer_stop();
-
 	/* Turn off timer processing to avoid potential segmentation faults. */
 	timer_close();
 
@@ -1160,8 +1169,6 @@ pc_close(thread_t *ptr)
 
 	/* Close all the memory mappings. */
 	mem_close();
-
-	network_timer_stop();
 
 	/* Turn off timer processing to avoid potential segmentation faults. */
 	timer_close();

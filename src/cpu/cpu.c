@@ -382,10 +382,10 @@ cpu_set(void)
     is_am486     = (cpu_s->cpu_type == CPU_ENH_Am486DX);
     is_am486dxl  = (cpu_s->cpu_type == CPU_Am486DXL);
 
-    is6117      = !strcmp(cpu_f->manufacturer, "ALi");
+    is6117       = !strcmp(cpu_f->manufacturer, "ALi");
 
-    cpu_isintel = !strcmp(cpu_f->manufacturer, "Intel");
-    cpu_iscyrix = !strcmp(cpu_f->manufacturer, "Cyrix") || !strcmp(cpu_f->manufacturer, "ST");
+    cpu_isintel  = !strcmp(cpu_f->manufacturer, "Intel");
+    cpu_iscyrix  = !strcmp(cpu_f->manufacturer, "Cyrix") || !strcmp(cpu_f->manufacturer, "ST");
 
     /* SL-Enhanced Intel 486s have the same SMM save state table layout as Pentiums,
        and the WinChip datasheet claims those are Pentium-compatible as well. AMD Am486DXL/DXL2 also has compatible SMM, or would if not for it's different SMBase*/
@@ -397,6 +397,8 @@ cpu_set(void)
     is_p6        = (cpu_isintel && (cpu_s->cpu_type >= CPU_PENTIUMPRO)) || !strcmp(cpu_f->manufacturer, "VIA");
     is_cxsmm     = (!strcmp(cpu_f->manufacturer, "Cyrix") || !strcmp(cpu_f->manufacturer, "ST")) &&
 		   (cpu_s->cpu_type >= CPU_Cx486S);
+
+    cpu_isintel  = cpu_isintel || !strcmp(cpu_f->manufacturer, "AMD");
 
     hasfpu       = (fpu_type != FPU_NONE);
     hascache     = (cpu_s->cpu_type >= CPU_486SLC) || (cpu_s->cpu_type == CPU_IBM386SLC) ||
@@ -1376,7 +1378,7 @@ cpu_set(void)
     }
 
     if (is386) {
-#ifdef USE_DYNAREC
+#if defined(USE_DYNAREC) && !defined(USE_GDBSTUB)
 	if (cpu_use_dynarec)
 		cpu_exec = exec386_dynarec;
 	else
@@ -1740,9 +1742,11 @@ cpu_CPUID(void)
 				break;
 			case 0x80000000:
 				EAX = 0x80000005;
+				EBX = ECX = EDX = 0;
 				break;
 			case 0x80000001:
 				EAX = CPUID + 0x100;
+				EBX = ECX = 0;
 				EDX = CPUID_FPU | CPUID_VME | CPUID_PSE | CPUID_TSC | CPUID_MSR | CPUID_MCE | CPUID_CMPXCHG8B | CPUID_AMDSEP | CPUID_MMX | CPUID_3DNOW;
 				break;
 			case 0x80000002:	/* Processor name string */
@@ -1758,6 +1762,7 @@ cpu_CPUID(void)
 				EDX = 0x00000000;
 				break;
 			case 0x80000005:	/*Cache information*/
+				EAX = 0;
 				EBX = 0x02800140;	/*TLBs*/
 				ECX = 0x20020220;	/*L1 data cache*/
 				EDX = 0x20020220;	/*L1 instruction cache*/
@@ -1783,9 +1788,11 @@ cpu_CPUID(void)
 				break;
 			case 0x80000000:
 				EAX = 0x80000006;
+				EBX = ECX = EDX = 0;
 				break;
 			case 0x80000001:
 				EAX = CPUID + 0x100;
+				EBX = ECX = 0;
 				EDX = CPUID_FPU | CPUID_VME | CPUID_PSE | CPUID_TSC | CPUID_MSR | CPUID_MCE | CPUID_CMPXCHG8B | CPUID_AMDSEP | CPUID_MMX | CPUID_3DNOW;
 				break;
 			case 0x80000002:	/* Processor name string */
@@ -1801,11 +1808,13 @@ cpu_CPUID(void)
 				EDX = 0x00000000;
 				break;
 			case 0x80000005:	/* Cache information */
+				EAX = 0;
 				EBX = 0x02800140;	/* TLBs */
 				ECX = 0x20020220; /*L1 data cache*/
 				EDX = 0x20020220; /*L1 instruction cache*/
 				break;
 			case 0x80000006:	/* L2 Cache information */
+				EAX = EBX = EDX = 0;
 				ECX = 0x01004220;
 				break;
 			default:
@@ -1830,9 +1839,11 @@ cpu_CPUID(void)
 				break;
 			case 0x80000000:
 				EAX = 0x80000007;
+				EBX = ECX = EDX = 0;
 				break;
 			case 0x80000001:
 				EAX = CPUID + 0x100;
+				EBX = ECX = 0;
 				EDX = CPUID_FPU | CPUID_VME | CPUID_PSE | CPUID_TSC | CPUID_MSR | CPUID_MCE | CPUID_CMPXCHG8B | CPUID_AMDSEP | CPUID_MMX | CPUID_3DNOW;
 				break;
 			case 0x80000002:	/* Processor name string */
@@ -1848,17 +1859,20 @@ cpu_CPUID(void)
 				EDX = 0x00000000;
 				break;
 			case 0x80000005:	/* Cache information */
+				EAX = 0;
 				EBX = 0x02800140;	/* TLBs */
 				ECX = 0x20020220;	/* L1 data cache */
 				EDX = 0x20020220;	/* L1 instruction cache */
 				break;
 			case 0x80000006:	/* L2 Cache information */
+				EAX = EBX = EDX = 0;
 				if (cpu_s->cpu_type == CPU_K6_3P)
 					ECX = 0x01004220;
 				else
 					ECX = 0x00804220;
 				break;
 			case 0x80000007:	/* PowerNow information */
+				EAX = EBX = ECX = 0;
 				EDX = 7;
 				break;
 			default:

@@ -20,7 +20,7 @@
  */
 
 #ifndef EMU_MACHINE_H
-# define EMU_MACHINE_H
+#define EMU_MACHINE_H
 
 /* Machine feature flags. */
 #define MACHINE_BUS_NONE      0x00000000    /* sys has no bus */
@@ -158,78 +158,81 @@ enum {
 };
 
 typedef struct _machine_filter_ {
-    const char	*name;
+    const char *name;
     const char  id;
 } machine_filter_t;
 
 typedef struct _machine_cpu_ {
-    uint32_t        package;
-    const uint8_t  *block;
-    uint32_t        min_bus;
-    uint32_t        max_bus;
-    uint16_t        min_voltage;
-    uint16_t        max_voltage;
-    float           min_multi;
-    float           max_multi;
+    uint32_t       package;
+    const uint8_t *block;
+    uint32_t       min_bus;
+    uint32_t       max_bus;
+    uint16_t       min_voltage;
+    uint16_t       max_voltage;
+    float          min_multi;
+    float          max_multi;
 } machine_cpu_t;
 
 typedef struct _machine_memory_ {
-    uint32_t        min, max;
-    int             step;
+    uint32_t min, max;
+    int      step;
 } machine_memory_t;
 
 typedef struct _machine_ {
-    const char     *name;
-    const char     *internal_name;
-    uint32_t        type;
-    uint32_t        chipset;
-    int             (*init)(const struct _machine_ *);
-    uintptr_t       pad, pad0, pad1, pad2;
-    const machine_cpu_t cpu;
-    uintptr_t       bus_flags;
-    uintptr_t       flags;
+    const char *name;
+    const char *internal_name;
+    uint32_t    type;
+    uint32_t    chipset;
+    int (*init)(const struct _machine_ *);
+    uintptr_t              pad, pad0, pad1, pad2;
+    const machine_cpu_t    cpu;
+    uintptr_t              bus_flags;
+    uintptr_t              flags;
     const machine_memory_t ram;
-    int             ram_granularity;
-    int             nvrmask;
-    uint16_t        kbc;
+    int                    ram_granularity;
+    int                    nvrmask;
+    uint16_t               kbc;
     /* Bits:
-	7-0	Set bits are forced set on P1 (no forced set = 0x00);
-	15-8	Clear bits are forced clear on P1 (no foced clear = 0xff). */
-    uint16_t        kbc_p1;
-    uint32_t        gpio;
-    uint32_t        gpio_acpi;
+        7-0	Set bits are forced set on P1 (no forced set = 0x00);
+        15-8	Clear bits are forced clear on P1 (no foced clear = 0xff). */
+    uint16_t kbc_p1;
+    uint32_t gpio;
+    uint32_t gpio_acpi;
 #ifdef EMU_DEVICE_H
     const device_t *device;
     const device_t *vid_device;
     const device_t *snd_device;
     const device_t *net_device;
 #else
-    void           *device;
-    void           *vid_device;
-    void           *snd_device;
-    void           *net_device;
+    void *device;
+    void *vid_device;
+    void *snd_device;
+    void *net_device;
 #endif
 } machine_t;
 
 /* Global variables. */
 extern const machine_filter_t machine_types[],
-                              machine_chipsets[];
-extern const machine_t        machines[];
-extern int                    bios_only;
-extern int                    machine;
+    machine_chipsets[];
+extern const machine_t machines[];
+extern int             bios_only;
+extern int             machine;
 
 /* Core functions. */
-extern int	machine_count(void);
-extern int	machine_available(int m);
-extern char	*machine_getname(void);
-extern char	*machine_getname_ex(int m);
-extern char	*machine_get_internal_name(void);
-extern int	machine_get_machine_from_internal_name(char *s);
-extern void	machine_init(void);
+extern int   machine_count(void);
+extern int   machine_available(int m);
+extern char *machine_getname(void);
+extern char *machine_getname_ex(int m);
+extern char *machine_get_internal_name(void);
+extern int   machine_get_machine_from_internal_name(char *s);
+extern void  machine_init(void);
 #ifdef EMU_DEVICE_H
-extern const device_t	*machine_getdevice(int m);
+extern const device_t *machine_getdevice(int m);
+extern const device_t *machine_getviddevice(int m);
+extern const device_t *machine_getsnddevice(int m);
+extern const device_t *machine_getnetdevice(int m);
 #endif
-extern char	*machine_get_internal_name_ex(int m);
+extern char *machine_get_internal_name_ex(int m);
 extern int   machine_get_nvrmask(int m);
 extern int   machine_has_flags(int m, int flags);
 extern int   machine_has_bus(int m, int bus_flags);
@@ -243,11 +246,11 @@ extern void  machine_close(void);
 extern uint8_t  machine_get_p1(void);
 extern void     machine_load_p1(int m);
 extern uint32_t machine_get_gpi(void);
-extern void	    machine_load_gpi(int m);
+extern void     machine_load_gpi(int m);
 extern void     machine_set_gpi(uint32_t gpi);
 
 /* Initialization functions for boards and systems. */
-extern void	machine_common_init(const machine_t *);
+extern void machine_common_init(const machine_t *);
 
 /* m_at.c */
 extern void	machine_at_common_init_ex(const machine_t *);
@@ -275,4 +278,4 @@ extern int  machine_at_m54hi_init(const machine_t *);
 /* boards_ich2.c */
 extern int	machine_at_s2080_init(const machine_t *);
 
-#endif	/*EMU_MACHINE_H*/
+#endif /*EMU_MACHINE_H*/

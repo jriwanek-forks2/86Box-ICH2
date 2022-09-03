@@ -56,6 +56,10 @@ typedef struct pc_timer_t
     struct	pc_timer_t *prev, *next;
 } pc_timer_t;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*Timestamp of nearest enabled timer. CPU emulation must call timer_process()
   when TSC matches or exceeds this.*/
 extern uint32_t	timer_target;
@@ -195,29 +199,11 @@ extern int		timer_inited;
 
 
 static __inline void
-timer_remove_head_inline(void)
-{
-    pc_timer_t *timer;
-
-    if (timer_inited && timer_head) {
-	timer = timer_head;
-	timer_head = timer->next;
-	if (timer_head) {
-		timer_head->prev = NULL;
-		timer->next->prev = NULL;
-	}
-	timer->next = timer->prev = NULL;
-	timer->flags &= ~TIMER_ENABLED;
-    }
-}
-
-
-static __inline void
 timer_process_inline(void)
 {
     pc_timer_t *timer;
 
-    if (!timer_inited || !timer_head)
+    if (!timer_head)
 	return;
 
     while(1) {
@@ -226,7 +212,12 @@ timer_process_inline(void)
 	if (!TIMER_LESS_THAN_VAL(timer, (uint32_t)tsc))
 		break;
 
-	timer_remove_head_inline();
+    timer_head = timer->next;
+    if (timer_head)
+        timer_head->prev = NULL;
+
+    timer->next = timer->prev = NULL;
+    timer->flags &= ~TIMER_ENABLED;
 
 	if (timer->flags & TIMER_SPLIT)
 		timer_advance_ex(timer, 0);	/* We're splitting a > 1 s period into multiple <= 1 s periods. */
@@ -236,5 +227,9 @@ timer_process_inline(void)
 
     timer_target = timer_head->ts.ts32.integer;
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /*_TIMER_H_*/

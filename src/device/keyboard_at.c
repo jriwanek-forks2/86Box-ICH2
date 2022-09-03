@@ -1416,7 +1416,7 @@ write64_ami(void *priv, uint8_t val)
 	case 0xa6:	/* read clock */
 		if ((dev->flags & KBC_TYPE_MASK) < KBC_TYPE_PS2_NOREF) {
 			kbd_log("ATkbc: AMI - read clock\n");
-			add_data(dev, !!(dev->ami_stat & 1));
+			add_to_kbc_queue_front(dev, (dev->ami_stat & 1) ? 0xff : 0x00, 0, 0x00);
 			return 0;
 		}
 		break;
@@ -1440,7 +1440,7 @@ write64_ami(void *priv, uint8_t val)
 	case 0xa9:	/* read cache */
 		if ((dev->flags & KBC_TYPE_MASK) < KBC_TYPE_PS2_NOREF) {
 			kbd_log("ATkbc: AMI - read cache\n");
-			add_data(dev, !!(dev->ami_stat & 2));
+			add_to_kbc_queue_front(dev, (dev->ami_stat & 2) ? 0xff : 0x00, 0, 0x00);
 			return 0;
 		}
 		break;
@@ -1513,7 +1513,7 @@ write64_ami(void *priv, uint8_t val)
 		 * (allow command D1 to change bits 2/3 of the output port)
 		 */
 		kbd_log("ATkbc: AMI - unblock KBC lines P22 and P23\n");
-		dev->output_locked = 1;
+		dev->ami_flags &= 0xfb;
 		return 0;
 
 	case 0xc9:
@@ -1522,7 +1522,7 @@ write64_ami(void *priv, uint8_t val)
 		 * (disallow command D1 from changing bits 2/3 of the port)
 		 */
 		kbd_log("ATkbc: AMI - block KBC lines P22 and P23\n");
-		dev->output_locked = 1;
+		dev->ami_flags |= 0x04;
 		return 0;
 
 	case 0xcc:
@@ -1669,7 +1669,9 @@ kbd_write(uint16_t port, uint8_t val, void *priv)
 
 				case 0xd1: /* write output port */
 					kbd_log("ATkbc: write output port\n");
-					if (dev->output_locked) {
+					/* Bit 2 of AMI flags is P22-P23 blocked (1 = yes, 0 = no),
+					   discovered by reverse-engineering the AOpeN Vi15G BIOS. */
+					if (dev->ami_flags & 0x04) {
 						/*If keyboard controller lines P22-P23 are blocked,
 						  we force them to remain unchanged.*/
 						val &= ~0x0c;
@@ -2132,6 +2134,7 @@ kbd_reset(void *priv)
     set_scancode_map(dev);
 
     dev->ami_flags = ((dev->flags & KBC_TYPE_MASK) >= KBC_TYPE_PS2_NOREF) ? 0x01 : 0x00;
+    dev->ami_stat |= 0x02;
 }
 
 
