@@ -55,7 +55,7 @@ static uint8_t	dma_buffer[65536];
 static uint16_t	dma_sg_base;
 static uint16_t	dma16_buffer[65536];
 static uint32_t dma_mask;
-#define ENABLE_DMA_LOG 1
+
 #ifdef ENABLE_DMA_LOG
 int dma_do_log = ENABLE_DMA_LOG;
 

@@ -178,10 +178,5 @@ machine_common_init(const machine_t *model)
     pic_init();
     dma_init();
 
-    int pit_type = IS_AT(machine) ? PIT_8254 : PIT_8253;
-    /* Select fast PIT if needed */
-    if ((pit_mode == -1 && is486) || pit_mode == 1)
-        pit_type += 2;
-
-    pit_common_init(pit_type, pit_irq0_timer, NULL);
+    pit_common_init(PIT_8254, pit_irq0_timer, NULL); // We use the old PIT till we resolve the ICH2 bug
 }

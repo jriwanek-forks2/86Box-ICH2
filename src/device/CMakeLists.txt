@@ -13,8 +13,9 @@
 #           Copyright 2020,2021 David Hrdlička.
 #
 
-add_library(dev OBJECT bugger.c cassette.c cartridge.c hasp.c hwm.c hwm_nsc366.c
-    ibm_5161.c intel_ich2_gpio.c intel_ich2_trap.c isamem.c isartc.c ../lpt.c pci_bridge.c
+add_library(dev OBJECT bugger.c cassette.c cartridge.c hasp.c hwm.c hwm_nsc366.c ibm_5161.c
+    intel_ich2_acpi.c intel_ich2_gpio.c intel_ich2_trap.c
+    isamem.c isartc.c ../lpt.c pci_bridge.c
     postcard.c serial.c clock_ics9xxx.c isapnp.c i2c.c i2c_gpio.c
     smbus_piix4.c keyboard.c keyboard_at.c
     mouse.c mouse_bus.c mouse_serial.c mouse_ps2.c
