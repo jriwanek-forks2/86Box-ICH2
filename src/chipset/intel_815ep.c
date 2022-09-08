@@ -50,7 +50,7 @@ typedef struct intel_815ep_t
 {
     uint8_t pci_conf[256];
     smram_t *lsmm_segment, *h_segment, *usmm_segment;
-    agpgart_t *agpgart; // Wtf those 86guys where thinking. Make it a device ffs.
+    agpgart_t *agpgart;
 
 } intel_815ep_t;
 

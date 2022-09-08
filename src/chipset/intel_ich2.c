@@ -886,7 +886,6 @@ intel_ich2_init(const device_t *info)
 
     /* ACPI Interface */
     dev->acpi = device_add(&intel_ich2_acpi_device);
-    acpi_set_slot(dev->acpi, slot);
 
     /* DMA */
     dma_alias_set_piix();

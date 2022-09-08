@@ -6,13 +6,13 @@
  *
  *		This file is part of the 86Box distribution.
  *
- *		ACPI emulation.
- *
- *
+ *		Intel ICH2 ACPI emulation.
  *
  * Authors:	Miran Grca, <mgrca8@gmail.com>
+ *          Tiseno100
  *
  *		Copyright 2020 Miran Grca.
+ *      Copyright 2022 Tiseno100.
  */
 #include <stdarg.h>
 #include <stdio.h>
@@ -31,20 +31,21 @@
 #include <86box/pic.h>
 #include <86box/plat.h>
 #include <86box/timer.h>
-#include <86box/keyboard.h>
 #include <86box/nvr.h>
 #include <86box/pit.h>
 #include <86box/apm.h>
+#include <86box/keyboard.h>
 #include <86box/tco.h>
 #include <86box/acpi.h>
+#include <86box/video.h>
 #include <86box/machine.h>
 #include <86box/i2c.h>
-#include <86box/video.h>
 
 int acpi_rtc_status = 0;
 
 static double cpu_to_acpi;
-#define ENABLE_ACPI_LOG 1
+
+
 #ifdef ENABLE_ACPI_LOG
 int acpi_do_log = ENABLE_ACPI_LOG;
 
@@ -93,13 +94,9 @@ static double acpi_get_overflow_period(acpi_t *dev) {
 
 
 static void
-acpi_timer_update(acpi_t *dev, bool enable)
+acpi_timer_update(acpi_t *dev)
 {
-    if (enable) {
-        timer_on_auto(&dev->timer, acpi_get_overflow_period(dev));
-    } else {
-        timer_stop(&dev->timer);
-    }
+    timer_on_auto(&dev->timer, acpi_get_overflow_period(dev));
 }
 
 static void
@@ -110,7 +107,7 @@ acpi_timer_overflow(void *priv)
 
     dev->regs.pmsts |= TMROF_STS;
 
-    acpi_log("Intel ICH2 ACPI: Beating calmly\n");
+    acpi_log("Intel ICH2 ACPI: Beating in harmony\n");
 
     if(dev->regs.pmen & 1) /* Timer Overflow Interrupt Enable */
     {
@@ -122,7 +119,7 @@ acpi_timer_overflow(void *priv)
             acpi_raise_smi(dev, 1);
     }
 
-    acpi_timer_update(dev, 1); // Prepare for the next beat
+    acpi_timer_update(dev); // Prepare for the next beat
 }
 
 
@@ -131,13 +128,10 @@ acpi_update_irq(acpi_t *dev)
 {
     int sci_level = (dev->regs.pmsts & dev->regs.pmen) & (RTC_EN | PWRBTN_EN | GBL_EN | TMROF_EN);
 
-    acpi_log("Intel ICH2 ACPI: An IRQ was risen on line %d\n", dev->irq_line);
-
-    if (sci_level) {
-		pci_set_irq(dev->slot, dev->irq_pin);
-    } else {
-		pci_clear_irq(dev->slot, dev->irq_pin);
-    }
+    if (sci_level)
+        picint(1 << dev->irq_line);
+    else
+        picintc(1 << dev->irq_line);
 }
 
 
@@ -304,7 +298,7 @@ acpi_reg_write_default_regs(int size, uint16_t addr, uint8_t val, void *p)
             dev->regs.smi_sts |= 0x00000010; /* ICH2 Specific. Trigger an SMI if SLP_SMI_EN bit is set instead of transistioning to a Sleep State. */
             acpi_raise_smi(dev, 1);
         }
-		else if ((addr == 0x05) && (val & 0x20)) {
+		else if ((addr == 0x05) && !!(val & 0x20)) {
 			sus_typ = dev->suspend_types[(val >> 2) & 7];
 
 			if (sus_typ & SUS_POWER_OFF) {
@@ -345,7 +339,14 @@ acpi_reg_write_default_regs(int size, uint16_t addr, uint8_t val, void *p)
 				timer_set_delay_u64(&dev->resume_timer, 50 * TIMER_USEC);
 			}
 		}
-		dev->regs.pmcntrl = ((dev->regs.pmcntrl & ~(0xff << shift16)) | (val << shift16)) & 0x3f07 /* 0x3c07 */;
+
+        /* Global Release SMI */
+        if((addr == 0x04) && !!(val & 4) && !!(dev->regs.smi_en & 4)) {
+            dev->regs.smi_sts = 0x00000004;
+            acpi_raise_smi(dev, 1);
+        }
+
+		dev->regs.pmcntrl = ((dev->regs.pmcntrl & ~(0xff << shift16)) | (val << shift16)) & 0x3f07;
 		break;
     }
 }
@@ -432,10 +433,6 @@ acpi_reg_write_intel_ich2(int size, uint16_t addr, uint8_t val, void *p)
         break;
 	default:
 		acpi_reg_write_default_regs(size, addr, val, p);
-        if((addr == 0x04) && !!(val & 4) && !!(dev->regs.smi_en & 4)) {
-            dev->regs.smi_sts = 0x00000004;
-            acpi_raise_smi(dev, 1);
-        }
         break;
     }
 }
@@ -565,37 +562,9 @@ acpi_set_timer32(acpi_t *dev, uint8_t timer32)
 
 
 void
-acpi_set_slot(acpi_t *dev, int slot)
-{
-    dev->slot = slot;
-}
-
-
-void
-acpi_set_irq_mode(acpi_t *dev, int irq_mode)
-{
-    dev->irq_mode = irq_mode;
-}
-
-
-void
-acpi_set_irq_pin(acpi_t *dev, int irq_pin)
-{
-    dev->irq_pin = irq_pin;
-}
-
-
-void
 acpi_set_irq_line(acpi_t *dev, int irq_line)
 {
     dev->irq_line = irq_line;
-}
-
-
-void
-acpi_set_mirq_is_level(acpi_t *dev, int mirq_is_level)
-{
-    dev->mirq_is_level = mirq_is_level;
 }
 
 
@@ -627,58 +596,15 @@ acpi_set_trap_update(acpi_t *dev, void (*update)(void *priv), void *priv)
 }
 
 
-uint8_t
-acpi_ali_soft_smi_status_read(acpi_t *dev)
-{
-    return dev->regs.ali_soft_smi = 1;
-}
-
-
-void
-acpi_ali_soft_smi_status_write(acpi_t *dev, uint8_t soft_smi)
-{
-    dev->regs.ali_soft_smi = soft_smi;
-}
-
-
 static void
-acpi_apm_out(uint16_t port, uint8_t val, void *p)
+intel_ich2_apmc(uint16_t port, uint8_t val, void *p)
 {
     acpi_t *dev = (acpi_t *) p;
-
-    acpi_log("[%04X:%08X] APM write: %04X = %02X (AX = %04X, BX = %04X, CX = %04X)\n", CS, cpu_state.pc, port, val, AX, BX, CX);
-
-    port &= 0x0001;
-
-	if (port == 0x0000) {
-		dev->apm->cmd = val;
     
-        if(dev->regs.smi_en & 0x00000020) { /* ICH2 APMC SMI */
-            dev->regs.smi_sts |= 0x00000020;
-            acpi_raise_smi(dev, 1);
-        }
-
-	} else
-		dev->apm->stat = val;
-}
-
-
-static uint8_t
-acpi_apm_in(uint16_t port, void *p)
-{
-    acpi_t *dev = (acpi_t *) p;
-    uint8_t ret = 0xff;
-
-    port &= 0x0001;
-
-	if (port == 0x0000)
-		ret = dev->apm->cmd;
-	else
-		ret = dev->apm->stat;
-
-    acpi_log("[%04X:%08X] APM read: %04X = %02X\n", CS, cpu_state.pc, port, ret);
-
-    return ret;
+    if(dev->regs.smi_en & 0x00000020) { /* ICH2 APMC SMI */
+        dev->regs.smi_sts |= 0x00000020;
+        acpi_raise_smi(dev, 1);
+    }
 }
 
 
@@ -702,7 +628,7 @@ acpi_reset(void *priv)
 
     acpi_rtc_status = 0;
 
-    acpi_timer_update(dev, 1);
+    acpi_timer_update(dev);
 }
 
 
@@ -751,8 +677,11 @@ acpi_init(const device_t *info)
     dev->irq_line = 9;
 
 	dev->apm = device_add(&apm_pci_acpi_device);
-	io_sethandler(0x00b2, 0x0002, acpi_apm_in, NULL, NULL, acpi_apm_out, NULL, NULL, dev);
 
+    /* Intel ICH2 APMC Handler */
+	io_sethandler(0x00b2, 0x0002, NULL, NULL, NULL, intel_ich2_apmc, NULL, NULL, dev);
+
+    /* Intel ICH2 Suspend Types */
     dev->suspend_types[1] = SUS_SUSPEND | SUS_RESET_CPU;
     dev->suspend_types[5] = SUS_SUSPEND | SUS_NVR | SUS_RESET_CPU | SUS_RESET_PCI;
     dev->suspend_types[6] = SUS_POWER_OFF;
@@ -770,7 +699,7 @@ const device_t intel_ich2_acpi_device = {
     .name = "Intel ICH2 ACPI",
     .internal_name = "acpi_intel_ich2",
     .flags = DEVICE_PCI,
-    .local = VEN_INTEL_ICH2,
+    .local = 0,
     .init = acpi_init,
     .close = acpi_close,
     .reset = acpi_reset,

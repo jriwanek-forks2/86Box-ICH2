@@ -18,10 +18,14 @@
  *		Copyright 2016-2020 Miran Grca.
  *		Copyright 2017-2020 Fred N. van Kempen.
  */
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
+#include <stdbool.h>
+#define HAVE_STDARG_H
 #include <86box/86box.h>
 #include "cpu.h"
 #include "x86.h"
@@ -51,7 +55,7 @@ static uint8_t	dma_buffer[65536];
 static uint16_t	dma_sg_base;
 static uint16_t	dma16_buffer[65536];
 static uint32_t dma_mask;
-
+#define ENABLE_DMA_LOG 1
 #ifdef ENABLE_DMA_LOG
 int dma_do_log = ENABLE_DMA_LOG;
 

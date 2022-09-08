@@ -44,6 +44,7 @@
 #include <86box/timer.h>
 #include <86box/pic.h>
 #include <86box/pit.h>
+#include <86box/pit_fast.h>
 #include <86box/dma.h>
 #include <86box/device.h>
 #include <86box/nvr.h>
