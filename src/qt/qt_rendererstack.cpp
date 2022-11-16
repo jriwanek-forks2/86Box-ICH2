@@ -54,6 +54,7 @@ extern "C" {
 #include <86box/video.h>
 
 double mouse_sensitivity = 1.0;
+double mouse_x_error = 0.0, mouse_y_error = 0.0;
 }
 
 struct mouseinputdata {
@@ -151,15 +152,21 @@ RendererStack::mousePoll()
 #endif
         this->mouse_poll_func();
 
-    mouse_x *= mouse_sensitivity;
-    mouse_y *= mouse_sensitivity;
+    double scaled_x = mouse_x * mouse_sensitivity + mouse_x_error;
+    double scaled_y = mouse_y * mouse_sensitivity + mouse_y_error;
+
+    mouse_x = static_cast<int>(scaled_x);
+    mouse_y = static_cast<int>(scaled_y);
+
+    mouse_x_error = scaled_x - mouse_x;
+    mouse_y_error = scaled_y - mouse_y;
 }
 
 int ignoreNextMouseEvent = 1;
 void
 RendererStack::mouseReleaseEvent(QMouseEvent *event)
 {
-    if (this->geometry().contains(event->pos()) && event->button() == Qt::LeftButton && !mouse_capture && (isMouseDown & 1) && mouse_get_buttons() != 0) {
+    if (this->geometry().contains(event->pos()) && event->button() == Qt::LeftButton && !mouse_capture && (isMouseDown & 1) && (mouse_get_buttons() != 0)) {
         plat_mouse_capture(1);
         this->setCursor(Qt::BlankCursor);
         if (!ignoreNextMouseEvent)
@@ -167,7 +174,7 @@ RendererStack::mouseReleaseEvent(QMouseEvent *event)
         isMouseDown &= ~1;
         return;
     }
-    if (mouse_capture && event->button() == Qt::MiddleButton && mouse_get_buttons() < 3) {
+    if (mouse_capture && (event->button() == Qt::MiddleButton) && (mouse_get_buttons() < 3)) {
         plat_mouse_capture(0);
         this->setCursor(Qt::ArrowCursor);
         isMouseDown &= ~1;
@@ -409,6 +416,7 @@ RendererStack::createRenderer(Renderer renderer)
     current->setFocusPolicy(Qt::NoFocus);
     current->setFocusProxy(this);
     current->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    current->setStyleSheet("background-color: black");
     addWidget(current.get());
 
     this->setStyleSheet("background-color: black");

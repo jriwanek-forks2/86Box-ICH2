@@ -252,7 +252,7 @@ static uint32_t cga_2_table[16];
 static void (*blit_func)(int x, int y, int w, int h, int monitor_index);
 
 #ifdef ENABLE_VIDEO_LOG
-int sdl_do_log = ENABLE_VIDEO_LOG;
+int video_do_log = ENABLE_VIDEO_LOG;
 
 static void
 video_log(const char *fmt, ...)
@@ -536,24 +536,16 @@ video_blend_monitor(int x, int y, int monitor_index)
 }
 
 void
-video_blit_memtoscreen_8_monitor(int x, int y, int w, int h, int monitor_index)
+video_process_8_monitor(int x, int y, int monitor_index)
 {
-    int yy, xx;
+    int xx;
 
-    if ((w > 0) && (h > 0)) {
-        for (yy = 0; yy < h; yy++) {
-            if ((y + yy) >= 0 && (y + yy) < monitors[monitor_index].target_buffer->h) {
-                for (xx = 0; xx < w; xx++) {
-                    if (monitors[monitor_index].target_buffer->line[y + yy][x + xx] <= 0xff)
-                        monitors[monitor_index].target_buffer->line[y + yy][x + xx] = monitors[monitor_index].mon_pal_lookup[monitors[monitor_index].target_buffer->line[y + yy][x + xx]];
-                    else
-                        monitors[monitor_index].target_buffer->line[y + yy][x + xx] = 0x00000000;
-                }
-            }
-        }
+    for (xx = 0; xx < x; xx++) {
+        if (monitors[monitor_index].target_buffer->line[y][xx] <= 0xff)
+            monitors[monitor_index].target_buffer->line[y][xx] = monitors[monitor_index].mon_pal_lookup[monitors[monitor_index].target_buffer->line[y][xx]];
+        else
+             monitors[monitor_index].target_buffer->line[y][xx] = 0x00000000;
     }
-
-    video_blit_memtoscreen_monitor(x, y, w, h, monitor_index);
 }
 
 void
@@ -996,9 +988,9 @@ loadfont_common(FILE *f, int format)
             for (d = 0; d < 4; d++) {
                 /* There are 4 fonts in the ROM */
                 for (c = 0; c < 256; c++) /* 8x14 MDA in 8x16 cell */
-                    fread(&fontdatm[256 * d + c][0], 1, 16, f);
+                    (void) !fread(&fontdatm[256 * d + c][0], 1, 16, f);
                 for (c = 0; c < 256; c++) { /* 8x8 CGA in 8x16 cell */
-                    fread(&fontdat[256 * d + c][0], 1, 8, f);
+                    (void) !fread(&fontdat[256 * d + c][0], 1, 8, f);
                     fseek(f, 8, SEEK_CUR);
                 }
             }
@@ -1023,7 +1015,7 @@ loadfont_common(FILE *f, int format)
                     fontdat8x12[c][d] = fgetc(f) & 0xff;
             break;
 
-        case 5: /* Toshiba 3100e */
+        case 5:                               /* Toshiba 3100e */
             for (d = 0; d < 2048; d += 512) { /* Four languages... */
                 for (c = d; c < d + 256; c++) {
                     (void) !fread(&fontdatm[c][8], 1, 8, f);
@@ -1083,6 +1075,13 @@ loadfont_common(FILE *f, int format)
             for (c = 0; c < 256; c++)
                 (void) !fread(&fontdat12x18[c][0], 1, 36, f);
             break;
+
+        case 10: /* Pravetz */
+            for (c = 0; c < 1024; c++) /* Allow up to 1024 chars */
+                for (d = 0; d < 8; d++)
+                    fontdat[c][d] = fgetc(f) & 0xff;
+            break;
+
     }
 
     (void) fclose(f);

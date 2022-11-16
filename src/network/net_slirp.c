@@ -1,23 +1,23 @@
 /*
- * 86Box	A hypervisor and IBM PC system emulator that specializes in
- *		running old operating systems and software designed for IBM
- *		PC systems and compatibles from 1981 through fairly recent
- *		system designs based on the PCI bus.
+ * 86Box    A hypervisor and IBM PC system emulator that specializes in
+ *          running old operating systems and software designed for IBM
+ *          PC systems and compatibles from 1981 through fairly recent
+ *          system designs based on the PCI bus.
  *
- *		This file is part of the 86Box distribution.
+ *          This file is part of the 86Box distribution.
  *
- *		Handle SLiRP library processing.
+ *          Handle SLiRP library processing.
  *
- *		Some of the code was borrowed from libvdeslirp
- *		<https://github.com/virtualsquare/libvdeslirp>
+ *          Some of the code was borrowed from libvdeslirp
+ *          <https://github.com/virtualsquare/libvdeslirp>
  *
  *
  *
- * Authors:	Fred N. van Kempen, <decwiz@yahoo.com>
- *		RichardG, <richardg867@gmail.com>
+ * Authors: Fred N. van Kempen, <decwiz@yahoo.com>
+ *          RichardG, <richardg867@gmail.com>
  *
- *		Copyright 2017-2019 Fred N. van Kempen.
- *		Copyright 2020 RichardG.
+ *          Copyright 2017-2019 Fred N. van Kempen.
+ *          Copyright 2020 RichardG.
  */
 #include <stdarg.h>
 #include <stdint.h>
@@ -26,7 +26,6 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include <wchar.h>
-#include <slirp/libslirp.h>
 #define HAVE_STDARG_H
 #include <86box/86box.h>
 #include <86box/device.h>
@@ -35,13 +34,18 @@
 #include <86box/timer.h>
 #include <86box/network.h>
 #include <86box/machine.h>
+#include <86box/ini.h>
 #include <86box/config.h>
 #include <86box/video.h>
+
+# define _SSIZE_T_DEFINED
+#include <slirp/libslirp.h>
+
 #ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+#    define WIN32_LEAN_AND_MEAN
+#    include <windows.h>
 #else
-#include <poll.h>
+#    include <poll.h>
 #endif
 #include <86box/net_event.h>
 
@@ -74,22 +78,20 @@ typedef struct {
 #ifdef ENABLE_SLIRP_LOG
 int slirp_do_log = ENABLE_SLIRP_LOG;
 
-
 static void
 slirp_log(const char *fmt, ...)
 {
     va_list ap;
 
     if (slirp_do_log) {
-	va_start(ap, fmt);
-	pclog_ex(fmt, ap);
-	va_end(ap);
+        va_start(ap, fmt);
+        pclog_ex(fmt, ap);
+        va_end(ap);
     }
 }
 #else
-#define slirp_log(fmt, ...)
+#    define slirp_log(fmt, ...)
 #endif
-
 
 static void
 net_slirp_guest_error(const char *msg, void *opaque)
@@ -97,13 +99,11 @@ net_slirp_guest_error(const char *msg, void *opaque)
     slirp_log("SLiRP: guest_error(): %s\n", msg);
 }
 
-
 static int64_t
 net_slirp_clock_get_ns(void *opaque)
 {
-    return (int64_t)((double)tsc / cpuclock * 1000000000.0);
+    return (int64_t) ((double) tsc / cpuclock * 1000000000.0);
 }
-
 
 static void *
 net_slirp_timer_new(SlirpTimerCb cb, void *cb_opaque, void *opaque)
@@ -113,7 +113,6 @@ net_slirp_timer_new(SlirpTimerCb cb, void *cb_opaque, void *opaque)
     return timer;
 }
 
-
 static void
 net_slirp_timer_free(void *timer, void *opaque)
 {
@@ -121,13 +120,11 @@ net_slirp_timer_free(void *timer, void *opaque)
     free(timer);
 }
 
-
 static void
 net_slirp_timer_mod(void *timer, int64_t expire_timer, void *opaque)
 {
     timer_on_auto(timer, expire_timer * 1000);
 }
-
 
 static void
 net_slirp_register_poll_fd(int fd, void *opaque)
@@ -136,7 +133,6 @@ net_slirp_register_poll_fd(int fd, void *opaque)
     (void) opaque;
 }
 
-
 static void
 net_slirp_unregister_poll_fd(int fd, void *opaque)
 {
@@ -144,13 +140,11 @@ net_slirp_unregister_poll_fd(int fd, void *opaque)
     (void) opaque;
 }
 
-
 static void
 net_slirp_notify(void *opaque)
 {
     (void) opaque;
 }
-
 
 ssize_t
 net_slirp_send_packet(const void *qp, size_t pkt_len, void *opaque)
@@ -159,20 +153,19 @@ net_slirp_send_packet(const void *qp, size_t pkt_len, void *opaque)
 
     slirp_log("SLiRP: received %d-byte packet\n", pkt_len);
 
-    memcpy(slirp->pkt.data, (uint8_t*) qp, pkt_len);
+    memcpy(slirp->pkt.data, (uint8_t *) qp, pkt_len);
     slirp->pkt.len = pkt_len;
     network_rx_put_pkt(slirp->card, &slirp->pkt);
 
     return pkt_len;
 }
 
-
 #ifdef _WIN32
 static int
 net_slirp_add_poll(int fd, int events, void *opaque)
 {
-    net_slirp_t *slirp = (net_slirp_t *) opaque;
-    long bitmask = 0;
+    net_slirp_t *slirp   = (net_slirp_t *) opaque;
+    long         bitmask = 0;
     if (events & SLIRP_POLL_IN)
         bitmask |= FD_READ | FD_ACCEPT;
     if (events & SLIRP_POLL_OUT)
@@ -192,17 +185,17 @@ net_slirp_add_poll(int fd, int events, void *opaque)
     net_slirp_t *slirp = (net_slirp_t *) opaque;
 
     if (slirp->pfd_len >= slirp->pfd_size) {
-        int newsize        = slirp->pfd_size + 16;
+        int newsize = slirp->pfd_size + 16;
         struct pollfd *new = realloc(slirp->pfd, newsize * sizeof(struct pollfd));
         if (new) {
-            slirp->pfd      = new;
+            slirp->pfd = new;
             slirp->pfd_size = newsize;
         }
     }
     if ((slirp->pfd_len < slirp->pfd_size)) {
-        int idx            = slirp->pfd_len++;
+        int idx = slirp->pfd_len++;
         slirp->pfd[idx].fd = fd;
-        int pevents        = 0;
+        int pevents = 0;
         if (events & SLIRP_POLL_IN)
             pevents |= POLLIN;
         if (events & SLIRP_POLL_OUT)
@@ -224,8 +217,8 @@ net_slirp_add_poll(int fd, int events, void *opaque)
 static int
 net_slirp_get_revents(int idx, void *opaque)
 {
-    net_slirp_t *slirp  = (net_slirp_t *) opaque;
-    int ret = 0;
+    net_slirp_t     *slirp = (net_slirp_t *) opaque;
+    int              ret   = 0;
     WSANETWORKEVENTS ev;
     if (WSAEnumNetworkEvents(idx, slirp->sock_event, &ev) != 0) {
         return ret;
@@ -241,9 +234,9 @@ net_slirp_get_revents(int idx, void *opaque)
             }                                           \
         } while (0)
 
-    WSA_TO_POLL(FD_READ,    SLIRP_POLL_IN);
-    WSA_TO_POLL(FD_ACCEPT,  SLIRP_POLL_IN);
-    WSA_TO_POLL(FD_WRITE,   SLIRP_POLL_OUT);
+    WSA_TO_POLL(FD_READ, SLIRP_POLL_IN);
+    WSA_TO_POLL(FD_ACCEPT, SLIRP_POLL_IN);
+    WSA_TO_POLL(FD_WRITE, SLIRP_POLL_OUT);
     WSA_TO_POLL(FD_CONNECT, SLIRP_POLL_OUT);
     WSA_TO_POLL(FD_OOB, SLIRP_POLL_PRI);
     WSA_TO_POLL(FD_CLOSE, SLIRP_POLL_HUP);
@@ -254,9 +247,9 @@ net_slirp_get_revents(int idx, void *opaque)
 static int
 net_slirp_get_revents(int idx, void *opaque)
 {
-    net_slirp_t *slirp  = (net_slirp_t *) opaque;
-    int      ret    = 0;
-    int      events = slirp->pfd[idx].revents;
+    net_slirp_t *slirp = (net_slirp_t *) opaque;
+    int ret = 0;
+    int events = slirp->pfd[idx].revents;
     if (events & POLLIN)
         ret |= SLIRP_POLL_IN;
     if (events & POLLOUT)
@@ -272,15 +265,15 @@ net_slirp_get_revents(int idx, void *opaque)
 #endif
 
 static const SlirpCb slirp_cb = {
-    .send_packet = net_slirp_send_packet,
-    .guest_error = net_slirp_guest_error,
-    .clock_get_ns = net_slirp_clock_get_ns,
-    .timer_new = net_slirp_timer_new,
-    .timer_free = net_slirp_timer_free,
-    .timer_mod = net_slirp_timer_mod,
-    .register_poll_fd = net_slirp_register_poll_fd,
+    .send_packet        = net_slirp_send_packet,
+    .guest_error        = net_slirp_guest_error,
+    .clock_get_ns       = net_slirp_clock_get_ns,
+    .timer_new          = net_slirp_timer_new,
+    .timer_free         = net_slirp_timer_free,
+    .timer_mod          = net_slirp_timer_mod,
+    .register_poll_fd   = net_slirp_register_poll_fd,
     .unregister_poll_fd = net_slirp_unregister_poll_fd,
-    .notify = net_slirp_notify
+    .notify             = net_slirp_notify
 };
 
 /* Send a packet to the SLiRP interface. */
@@ -298,7 +291,7 @@ net_slirp_in(net_slirp_t *slirp, uint8_t *pkt, int pkt_len)
 void
 net_slirp_in_available(void *priv)
 {
-    net_slirp_t *slirp = (net_slirp_t *)priv;
+    net_slirp_t *slirp = (net_slirp_t *) priv;
     net_event_set(&slirp->tx_event);
 }
 
@@ -313,16 +306,16 @@ net_slirp_thread(void *priv)
 
     HANDLE events[3];
     events[NET_EVENT_STOP] = net_event_get_handle(&slirp->stop_event);
-    events[NET_EVENT_TX] = net_event_get_handle(&slirp->tx_event);
-    events[NET_EVENT_RX] = slirp->sock_event;
-    bool run = true;
+    events[NET_EVENT_TX]   = net_event_get_handle(&slirp->tx_event);
+    events[NET_EVENT_RX]   = slirp->sock_event;
+    bool run               = true;
     while (run) {
         uint32_t timeout = -1;
         slirp_pollfds_fill(slirp->slirp, &timeout, net_slirp_add_poll, slirp);
         if (timeout < 0)
             timeout = INFINITE;
 
-        int ret = WaitForMultipleObjects(3, events, FALSE, (DWORD)timeout);
+        int ret = WaitForMultipleObjects(3, events, FALSE, (DWORD) timeout);
         switch (ret - WAIT_OBJECT_0) {
             case NET_EVENT_STOP:
                 run = false;
@@ -340,7 +333,6 @@ net_slirp_thread(void *priv)
             default:
                 slirp_pollfds_poll(slirp->slirp, ret == WAIT_FAILED, net_slirp_get_revents, slirp);
                 break;
-
         }
     }
 
@@ -397,11 +389,11 @@ net_slirp_init(const netcard_t *card, const uint8_t *mac_addr, void *priv)
     slirp_log("SLiRP: initializing...\n");
     net_slirp_t *slirp = calloc(1, sizeof(net_slirp_t));
     memcpy(slirp->mac_addr, mac_addr, sizeof(slirp->mac_addr));
-    slirp->card = (netcard_t*)card;
+    slirp->card = (netcard_t *) card;
 
 #ifndef _WIN32
     slirp->pfd_size = 16 * sizeof(struct pollfd);
-    slirp->pfd = malloc(slirp->pfd_size);
+    slirp->pfd      = malloc(slirp->pfd_size);
     memset(slirp->pfd, 0, slirp->pfd_size);
 #endif
 
@@ -411,7 +403,7 @@ net_slirp_init(const netcard_t *card, const uint8_t *mac_addr, void *priv)
     struct in_addr  host       = { .s_addr = htonl(0x0a000002 | (slirp_card_num << 8)) }; /* 10.0.x.2 */
     struct in_addr  dhcp       = { .s_addr = htonl(0x0a00000f | (slirp_card_num << 8)) }; /* 10.0.x.15 */
     struct in_addr  dns        = { .s_addr = htonl(0x0a000003 | (slirp_card_num << 8)) }; /* 10.0.x.3 */
-    struct in_addr  bind       = { .s_addr = htonl(0x00000000) }; /* 0.0.0.0 */
+    struct in_addr  bind       = { .s_addr = htonl(0x00000000) };                         /* 0.0.0.0 */
     struct in6_addr ipv6_dummy = { 0 };                                                   /* contents don't matter; we're not using IPv6 */
 
     /* Initialize SLiRP. */
@@ -423,10 +415,10 @@ net_slirp_init(const netcard_t *card, const uint8_t *mac_addr, void *priv)
     }
 
     /* Set up port forwarding. */
-    int   udp, external, internal, i = 0;
+    int  udp, external, internal, i = 0;
     char category[32];
-    snprintf(category, sizeof(category), "SLiRP Port Forwarding #%i", card->card_num + 1);
-    char  key[20];
+    snprintf(category, sizeof(category), "SLiRP Port Forwarding #%d", card->card_num + 1);
+    char key[20];
     while (1) {
         sprintf(key, "%d_protocol", i);
         udp = strcmp(config_get_string(category, key, "tcp"), "udp") == 0;

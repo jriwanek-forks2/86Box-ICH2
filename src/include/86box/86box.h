@@ -1,21 +1,21 @@
 /*
- * 86Box	A hypervisor and IBM PC system emulator that specializes in
- *		running old operating systems and software designed for IBM
- *		PC systems and compatibles from 1981 through fairly recent
- *		system designs based on the PCI bus.
+ * 86Box    A hypervisor and IBM PC system emulator that specializes in
+ *          running old operating systems and software designed for IBM
+ *          PC systems and compatibles from 1981 through fairly recent
+ *          system designs based on the PCI bus.
  *
- *		This file is part of the 86Box distribution.
+ *          This file is part of the 86Box distribution.
  *
- *		Main include file for the application.
+ *          Main include file for the application.
  *
  *
  *
- * Authors:	Miran Grca, <mgrca8@gmail.com>
- *f		Fred N. van Kempen, <decwiz@yahoo.com>
+ * Authors: Miran Grca, <mgrca8@gmail.com>
+ *          Fred N. van Kempen, <decwiz@yahoo.com>
  *
- *		Copyright 2016-2020 Miran Grca.
- *		Copyright 2017-2020 Fred N. van Kempen.
- *		Copyright 2021 Laci bá'
+ *          Copyright 2016-2020 Miran Grca.
+ *          Copyright 2017-2020 Fred N. van Kempen.
+ *          Copyright 2021 Laci bá'
  */
 #ifndef EMU_86BOX_H
 #define EMU_86BOX_H
@@ -32,7 +32,7 @@
 #define SCREENSHOT_PATH "screenshots"
 
 /* Recently used images */
-#define MAX_PREV_IMAGES 4
+#define MAX_PREV_IMAGES    4
 #define MAX_IMAGE_PATH_LEN 256
 
 /* Default language 0xFFFF = from system, 0x409 = en-US */
@@ -81,7 +81,7 @@ extern char rom_path[1024]; /* (O) full path to ROMs */
 extern char log_path[1024]; /* (O) full path of logfile */
 extern char vm_name[1024];  /* (O) display name of the VM */
 #ifdef USE_INSTRUMENT
-extern uint8_t instru_enabled;
+extern uint8_t  instru_enabled;
 extern uint64_t instru_run_ms;
 #endif
 
@@ -109,7 +109,7 @@ extern int      vid_cga_contrast, /* (C) video */
     video_framerate,              /* (C) video */
     gfxcard;                      /* (C) graphics/video card */
 extern char video_shader[512];    /* (C) video */
-extern int bugger_enabled,        /* (C) enable ISAbugger */
+extern int  bugger_enabled,       /* (C) enable ISAbugger */
     postcard_enabled,             /* (C) enable POST card */
     isamem_type[],                /* (C) enable ISA mem cards */
     isartc_type;                  /* (C) enable ISA RTC card */
@@ -125,9 +125,9 @@ extern uint32_t isa_mem_size;     /* (C) memory size (ISA Memory Cards) */
 extern int      cpu,              /* (C) cpu type */
     cpu_use_dynarec,              /* (C) cpu uses/needs Dyna */
     fpu_type;                     /* (C) fpu type */
-extern int  time_sync;            /* (C) enable time sync */
-extern int  hdd_format_type;      /* (C) hard disk file format */
-extern int  confirm_reset,        /* (C) enable reset confirmation */
+extern int time_sync;             /* (C) enable time sync */
+extern int hdd_format_type;       /* (C) hard disk file format */
+extern int confirm_reset,         /* (C) enable reset confirmation */
     confirm_exit,                 /* (C) enable exit confirmation */
     confirm_save;                 /* (C) enable save confirmation */
 extern int enable_discord;        /* (C) enable Discord integration */
@@ -135,14 +135,15 @@ extern int enable_discord;        /* (C) enable Discord integration */
 extern int is_pentium; /* TODO: Move back to cpu/cpu.h when it's figured out,
                                 how to remove that hack from the ET4000/W32p. */
 extern int    fixed_size_x, fixed_size_y;
-extern double mouse_sensitivity; /* (C) Mouse sensitivity scale */
-extern int    pit_mode;          /* (C) force setting PIT mode */
-extern int    fm_driver;         /* (C) select FM sound driver */
+extern double mouse_sensitivity;            /* (C) Mouse sensitivity scale */
+extern double mouse_x_error, mouse_y_error; /* Mouse error accumulators */
+extern int    pit_mode;                     /* (C) force setting PIT mode */
+extern int    fm_driver;                    /* (C) select FM sound driver */
 
-extern char exe_path[2048]; /* path (dir) of executable */
-extern char usr_path[1024]; /* path (dir) of user data */
-extern char cfg_path[1024]; /* full path of config file */
-extern int  open_dir_usr_path;    /* default file open dialog directory of usr_path */
+extern char exe_path[2048];    /* path (dir) of executable */
+extern char usr_path[1024];    /* path (dir) of user data */
+extern char cfg_path[1024];    /* full path of config file */
+extern int  open_dir_usr_path; /* default file open dialog directory of usr_path */
 #ifndef USE_NEW_DYNAREC
 extern FILE *stdlog; /* file to log output to */
 #endif

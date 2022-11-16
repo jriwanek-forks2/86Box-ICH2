@@ -28,6 +28,7 @@
 
 extern "C" {
 #include <86box/86box.h>
+#include <86box/ini.h>
 #include <86box/config.h>
 #include <86box/device.h>
 #include <86box/midi_rtmidi.h>
@@ -53,7 +54,6 @@ DeviceConfig::~DeviceConfig()
 void DeviceConfig::ConfigureDevice(const _device_* device, int instance, Settings* settings) {
     DeviceConfig dc(settings);
     dc.setWindowTitle(QString("%1 Device Configuration").arg(device->name));
-    int combo_to_struct[256];
     int c, d, p, q;
 
     device_context_t device_context;

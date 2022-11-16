@@ -3,16 +3,32 @@
 
 <p align="center"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Intel_ICH2.jpg/240px-Intel_ICH2.jpg"></p>
 
+<<<<<<< HEAD
 <p align="center">This is a fork of 86Box that tries to emulate the Intel ICH, more specifically the Intel ICH2 but also a few legacy minor boards</p>
 
 <h2>Whats ICH2</h2>
 The ICH2 is a southbridge released by Intel in the early 2000's. It came incorporated with many peripherals like USB, Audio & IDE. The ICH series in general also got rid of the ISA bus replacing it with the not so different LPC bus.
+=======
+Minimum system requirements and recommendations
+-----------------------------------------------
+* Intel Core 2 or AMD Athlon 64 processor
+* Windows version: Windows 7 Service Pack 1, Windows 8.1 or Windows 10
+* Linux version: Ubuntu 16.04, Debian 9.0 or other distributions from 2016 onwards
+* macOS version: macOS High Sierra 10.13
+* 4 GB of RAM
+
+Performance may vary depending on both host and guest configuration. Most emulation logic is executed in a single thread; therefore, systems with better IPC (instructions per clock) generally should be able to emulate higher clock speeds.
+>>>>>>> upstream/master
 
 <h2>Emulation details</h2>
 The fork emulates an Intel ICH2 desktop board with the basic components it needs. There are a few quirks that haven't been implemented or fixed yet. Additionally there's is one 386SX, few 486 and a Intel 430FX chipset for some basic 386SX to Pentium needs although mainstream 86Box covers that.
 
+<<<<<<< HEAD
 <h2>Issues within development</h2>
 Intel i8xx series in general is way beyond 86Box's scope. It's already stated by themselves to never target it. If they're greedy they will. 86Box was never meant to go beyond the i486 environment and it can be proven from the crippling performance someone can meet on mid-late i586 or general i686 setups. There were problems encountered within development.
+=======
+It is also possible to use 86Box on its own with the `--vmpath`/`-P` command line option.
+>>>>>>> upstream/master
 
 * SMBus craze
     - Caused by the dynarec potentially. Setting the CPU beyond 66Mhz on some boards, it can cause the BIOS to send random commands through the SMBus and generally halt. The current board doesn't have that.

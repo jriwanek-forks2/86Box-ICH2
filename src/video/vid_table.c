@@ -1,20 +1,20 @@
 /*
- * 86Box     A hypervisor and IBM PC system emulator that specializes in
- *           running old operating systems and software designed for IBM
- *           PC systems and compatibles from 1981 through fairly recent
- *           system designs based on the PCI bus.
+ * 86Box    A hypervisor and IBM PC system emulator that specializes in
+ *          running old operating systems and software designed for IBM
+ *          PC systems and compatibles from 1981 through fairly recent
+ *          system designs based on the PCI bus.
  *
- *           This file is part of the 86Box distribution.
+ *          This file is part of the 86Box distribution.
  *
- *           Define all known video cards.
+ *          Define all known video cards.
  *
  *
  *
- * Authors:  Miran Grca, <mgrca8@gmail.com>
- *           Fred N. van Kempen, <decwiz@yahoo.com>
+ * Authors: Miran Grca, <mgrca8@gmail.com>
+ *          Fred N. van Kempen, <decwiz@yahoo.com>
  *
- *           Copyright 2016-2020 Miran Grca.
- *           Copyright 2017-2020 Fred N. van Kempen.
+ *          Copyright 2016-2020 Miran Grca.
+ *          Copyright 2017-2020 Fred N. van Kempen.
  */
 #include <stdarg.h>
 #include <stdint.h>
@@ -73,9 +73,9 @@ static const device_t vid_internal_device = {
     .config        = NULL
 };
 
-// clang-format off
 static const VIDEO_CARD
 video_cards[] = {
+// clang-format off
     { &vid_none_device                               },
     { &vid_internal_device                           },
     { &atiega_device                                 },
@@ -127,6 +127,7 @@ video_cards[] = {
     { &paradise_wd90c30_device                       },
     { &colorplus_device                              },
     { &pgc_device                                    },
+    { &cga_pravetz_device                            },
     { &radius_svga_multiview_isa_device              },
     { &realtek_rtg3106_device                        },
     { &s3_diamond_stealth_vram_isa_device            },
@@ -139,8 +140,10 @@ video_cards[] = {
     { &tvga8900b_device                              },
     { &tvga8900d_device                              },
     { &tvga9000b_device                              },
+    { &nec_sv9000_device                             },
     { &et4000k_isa_device                            },
     { &et2000_device                                 },
+    { &et3000_isa_device                             },
     { &et4000_isa_device                             },
     { &et4000w32_device                              },
     { &et4000w32i_isa_device                         },
@@ -205,6 +208,7 @@ video_cards[] = {
     { &tgui9680_pci_device                           },
     { &voodoo_banshee_device                         },
     { &creative_voodoo_banshee_device                },
+    { &voodoo_3_1000_device                          },
     { &voodoo_3_2000_device                          },
     { &voodoo_3_3000_device                          },
     { &mach64gx_vlb_device                           },
@@ -247,11 +251,18 @@ video_cards[] = {
     { &s3_diamond_stealth_4000_agp_device            },
     { &s3_trio3d2x_agp_device                        },
     { &velocity_100_agp_device                       },
+    { &velocity_200_agp_device                       },
+    { &voodoo_3_1000_agp_device                      },
     { &voodoo_3_2000_agp_device                      },
     { &voodoo_3_3000_agp_device                      },
+    { &voodoo_3_3500_agp_ntsc_device                 },
+    { &voodoo_3_3500_agp_pal_device                  },
+    { &compaq_voodoo_3_3500_agp_device               },
+    { &voodoo_3_3500_se_agp_device                   },
+    { &voodoo_3_3500_si_agp_device                   },
     { NULL                                           }
-};
 // clang-format on
+};
 
 #ifdef ENABLE_VID_TABLE_LOG
 int vid_table_do_log = ENABLE_VID_TABLE_LOG;
@@ -328,7 +339,7 @@ video_reset(int card)
 
     /* Do not initialize internal cards here. */
     if (!(card == VID_NONE) && !(card == VID_INTERNAL) && !machine_has_flags(machine, MACHINE_VIDEO_ONLY)) {
-        vid_table_log("VIDEO: initializing '%s'\n", video_cards[card].name);
+        vid_table_log("VIDEO: initializing '%s'\n", video_cards[card].device->name);
 
         video_prepare();
 

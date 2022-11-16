@@ -1,20 +1,20 @@
 /*
- * 86Box	A hypervisor and IBM PC system emulator that specializes in
- *		running old operating systems and software designed for IBM
- *		PC systems and compatibles from 1981 through fairly recent
- *		system designs based on the PCI bus.
+ * 86Box    A hypervisor and IBM PC system emulator that specializes in
+ *          running old operating systems and software designed for IBM
+ *          PC systems and compatibles from 1981 through fairly recent
+ *          system designs based on the PCI bus.
  *
- *		This file is part of the 86Box distribution.
+ *          This file is part of the 86Box distribution.
  *
- *		RawInput joystick interface.
+ *          RawInput joystick interface.
  *
- * Authors:	Sarah Walker, <http://pcem-emulator.co.uk/>
- *		Miran Grca, <mgrca8@gmail.com>
- *              GH Cao, <driver1998.ms@outlook.com>
+ * Authors: Sarah Walker, <http://pcem-emulator.co.uk/>
+ *          Miran Grca, <mgrca8@gmail.com>
+ *          GH Cao, <driver1998.ms@outlook.com>
  *
- *		Copyright 2008-2018 Sarah Walker.
- *		Copyright 2016-2018 Miran Grca.
- *		Copyright 2020 GH Cao.
+ *          Copyright 2008-2018 Sarah Walker.
+ *          Copyright 2016-2018 Miran Grca.
+ *          Copyright 2020 GH Cao.
  */
 #include <windows.h>
 #include <windowsx.h>
@@ -219,9 +219,9 @@ end:
 void
 joystick_get_device_name(raw_joystick_t *rawjoy, plat_joystick_t *joy, PRID_DEVICE_INFO info)
 {
-    UINT  size                  = 0;
+    UINT   size                  = 0;
     WCHAR *device_name           = NULL;
-    WCHAR device_desc_wide[200] = { 0 };
+    WCHAR  device_desc_wide[200] = { 0 };
 
     GetRawInputDeviceInfoW(rawjoy->hdevice, RIDI_DEVICENAME, device_name, &size);
     device_name = calloc(size, sizeof(WCHAR));
@@ -229,7 +229,7 @@ joystick_get_device_name(raw_joystick_t *rawjoy, plat_joystick_t *joy, PRID_DEVI
         fatal("joystick_get_capabilities: Failed to get device name.\n");
 
     HANDLE hDevObj = CreateFileW(device_name, GENERIC_READ | GENERIC_WRITE,
-                                FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+                                 FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
     if (hDevObj) {
         HidD_GetProductString(hDevObj, device_desc_wide, sizeof(WCHAR) * 200);
         CloseHandle(hDevObj);

@@ -1,18 +1,18 @@
 /*
- * 86Box	A hypervisor and IBM PC system emulator that specializes in
- *		running old operating systems and software designed for IBM
- *		PC systems and compatibles from 1981 through fairly recent
- *		system designs based on the PCI bus.
+ * 86Box    A hypervisor and IBM PC system emulator that specializes in
+ *          running old operating systems and software designed for IBM
+ *          PC systems and compatibles from 1981 through fairly recent
+ *          system designs based on the PCI bus.
  *
- *		This file is part of the 86Box distribution.
+ *          This file is part of the 86Box distribution.
  *
- *		IBM XGA emulation.
+ *          IBM XGA emulation.
  *
  *
  *
- * Authors:	TheCollector1995.
+ * Authors: TheCollector1995.
  *
- *		Copyright 2022 TheCollector1995.
+ *          Copyright 2022 TheCollector1995.
  */
 #include <stdio.h>
 #include <stdint.h>
@@ -2614,7 +2614,6 @@ xga_mca_write(int port, uint8_t val, void *priv)
     if (!(xga->pos_regs[4] & 1)) /*MCA 4MB addressing on systems with more than 16MB of memory*/
         xga->pos_regs[4] |= 1;
 
-    // pclog("[%04X:%08X]: POS Write Port = %x, val = %02x, linear base = %08x, instance = %d, rom addr = %05x\n", CS, cpu_state.pc, port & 7, val, xga->linear_base, xga->instance, xga->rom_addr);
     if (xga->pos_regs[2] & 1) {
         xga->instance      = (xga->pos_regs[2] & 0x0e) >> 1;
         xga->base_addr_1mb = (xga->pos_regs[5] & 0x0f) << 20;
@@ -2622,9 +2621,14 @@ xga_mca_write(int port, uint8_t val, void *priv)
         xga->rom_addr      = 0xc0000 + (((xga->pos_regs[2] & 0xf0) >> 4) * 0x2000);
 
         io_sethandler(0x2100 + (xga->instance << 4), 0x0010, xga_ext_inb, NULL, NULL, xga_ext_outb, NULL, NULL, svga);
-        mem_mapping_set_addr(&xga->bios_rom.mapping, xga->rom_addr, 0x2000);
-        mem_mapping_set_addr(&xga->memio_mapping, xga->rom_addr + 0x1c00 + (xga->instance * 0x80), 0x80);
+
+        if (xga->pos_regs[3] & 1) {
+            mem_mapping_set_addr(&xga->bios_rom.mapping, xga->rom_addr, 0x2000);
+        } else {
+            mem_mapping_set_addr(&xga->memio_mapping, xga->rom_addr + 0x1c00 + (xga->instance * 0x80), 0x80);
+        }
     }
+    // pclog("[%04X:%08X]: POS Write Port = %x, val = %02x, linear base = %08x, instance = %d, rom addr = %05x\n", CS, cpu_state.pc, port & 7, val, xga->linear_base, xga->instance, xga->rom_addr);
 }
 
 static uint8_t
@@ -2659,7 +2663,6 @@ static void
     svga_t  *svga = svga_get_pri();
     xga_t   *xga  = &svga->xga;
     FILE    *f;
-    uint32_t temp;
     uint32_t initial_bios_addr = device_get_config_hex20("init_bios_addr");
     uint8_t *rom               = NULL;
 
@@ -2679,13 +2682,11 @@ static void
 
     f = rom_fopen(xga->type ? XGA2_BIOS_PATH : XGA_BIOS_PATH, "rb");
     (void) fseek(f, 0L, SEEK_END);
-    temp = ftell(f);
     (void) fseek(f, 0L, SEEK_SET);
 
     rom = malloc(xga->bios_rom.sz);
     memset(rom, 0xff, xga->bios_rom.sz);
     (void) !fread(rom, xga->bios_rom.sz, 1, f);
-    temp -= xga->bios_rom.sz;
     (void) fclose(f);
 
     xga->bios_rom.rom  = rom;
@@ -2699,11 +2700,7 @@ static void
         xga->linear_base = 0;
         xga->instance    = 0;
         xga->rom_addr    = 0;
-        mem_mapping_add(&xga->bios_rom.mapping,
-                        initial_bios_addr, xga->bios_rom.sz,
-                        rom_read, rom_readw, rom_readl,
-                        NULL, NULL, NULL,
-                        xga->bios_rom.rom, MEM_MAPPING_EXTERNAL, &xga->bios_rom);
+        rom_init(&xga->bios_rom, xga->type ? XGA2_BIOS_PATH : XGA_BIOS_PATH, initial_bios_addr, 0x2000, 0x1fff, 0, MEM_MAPPING_EXTERNAL);
     } else {
         xga->pos_regs[2] = 1 | 0x0c | 0xf0;
         xga->instance    = (xga->pos_regs[2] & 0x0e) >> 1;

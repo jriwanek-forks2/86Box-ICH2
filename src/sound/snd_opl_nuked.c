@@ -37,11 +37,13 @@
  *          Copyright 2016-2020 Miran Grca.
  *          Copyright 2013-2018 Alexey Khokholov (Nuke.YKT)
  */
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#define HAVE_STDARG_H
 #include <86box/86box.h>
 #include <86box/snd_opl_nuked.h>
 #include <86box/sound.h>
@@ -173,7 +175,7 @@ typedef struct chip {
 
 typedef struct {
     nuked_t opl;
-    int8_t flags, pad;
+    int8_t  flags, pad;
 
     uint16_t port;
     uint8_t  status, timer_ctrl;
@@ -208,14 +210,18 @@ enum {
 };
 
 #ifdef ENABLE_OPL_LOG
+int nuked_do_log = ENABLE_OPL_LOG;
+
 static void
 nuked_log(const char *fmt, ...)
 {
     va_list ap;
 
-    va_start(ap, fmt);
-    pclog_ex(fmt, ap);
-    va_end(ap);
+    if (nuked_do_log) {
+        va_start(ap, fmt);
+        pclog_ex(fmt, ap);
+        va_end(ap);
+	}
 }
 #else
 #    define nuked_log(fmt, ...)
@@ -1355,7 +1361,7 @@ nuked_generate_stream(nuked_t *dev, int32_t *sndptr, uint32_t num)
 void
 nuked_init(nuked_t *dev, uint32_t samplerate)
 {
-    uint8_t  i;
+    uint8_t i;
 
     memset(dev, 0x00, sizeof(nuked_t));
 
@@ -1456,7 +1462,7 @@ nuked_timer_2(void *priv)
 static void
 nuked_drv_set_do_cycles(void *priv, int8_t do_cycles)
 {
-    nuked_drv_t *dev = (nuked_drv_t *)priv;
+    nuked_drv_t *dev = (nuked_drv_t *) priv;
 
     if (do_cycles)
         dev->flags |= FLAG_CYCLES;
@@ -1468,7 +1474,7 @@ static void *
 nuked_drv_init(const device_t *info)
 {
     nuked_drv_t *dev = (nuked_drv_t *) calloc(1, sizeof(nuked_drv_t));
-    dev->flags = FLAG_CYCLES;
+    dev->flags       = FLAG_CYCLES;
     if (info->local == FM_YMF262)
         dev->flags |= FLAG_OPL3;
     else
@@ -1486,14 +1492,14 @@ nuked_drv_init(const device_t *info)
 static void
 nuked_drv_close(void *priv)
 {
-    nuked_drv_t *dev = (nuked_drv_t *)priv;
+    nuked_drv_t *dev = (nuked_drv_t *) priv;
     free(dev);
 }
 
 static int32_t *
 nuked_drv_update(void *priv)
 {
-    nuked_drv_t *dev = (nuked_drv_t *)priv;
+    nuked_drv_t *dev = (nuked_drv_t *) priv;
 
     if (dev->pos >= sound_pos_global)
         return dev->buffer;
@@ -1536,7 +1542,7 @@ nuked_drv_read(uint16_t port, void *priv)
 static void
 nuked_drv_write(uint16_t port, uint8_t val, void *priv)
 {
-    nuked_drv_t *dev = (nuked_drv_t *)priv;
+    nuked_drv_t *dev = (nuked_drv_t *) priv;
     nuked_drv_update(dev);
 
     if ((port & 0x0001) == 0x0001) {
@@ -1574,38 +1580,39 @@ nuked_drv_write(uint16_t port, uint8_t val, void *priv)
 }
 
 static void
-nuked_drv_reset_buffer(void *priv) {
-    nuked_drv_t *dev = (nuked_drv_t *)priv;
+nuked_drv_reset_buffer(void *priv)
+{
+    nuked_drv_t *dev = (nuked_drv_t *) priv;
 
     dev->pos = 0;
 }
 
 const device_t ym3812_nuked_device = {
-    .name = "Yamaha YM3812 OPL2 (NUKED)",
+    .name          = "Yamaha YM3812 OPL2 (NUKED)",
     .internal_name = "ym3812_nuked",
-    .flags = 0,
-    .local = FM_YM3812,
-    .init = nuked_drv_init,
-    .close = nuked_drv_close,
-    .reset = NULL,
+    .flags         = 0,
+    .local         = FM_YM3812,
+    .init          = nuked_drv_init,
+    .close         = nuked_drv_close,
+    .reset         = NULL,
     { .available = NULL },
     .speed_changed = NULL,
-    .force_redraw = NULL,
-    .config = NULL
+    .force_redraw  = NULL,
+    .config        = NULL
 };
 
 const device_t ymf262_nuked_device = {
-    .name = "Yamaha YMF262 OPL3 (NUKED)",
+    .name          = "Yamaha YMF262 OPL3 (NUKED)",
     .internal_name = "ymf262_nuked",
-    .flags = 0,
-    .local = FM_YMF262,
-    .init = nuked_drv_init,
-    .close = nuked_drv_close,
-    .reset = NULL,
+    .flags         = 0,
+    .local         = FM_YMF262,
+    .init          = nuked_drv_init,
+    .close         = nuked_drv_close,
+    .reset         = NULL,
     { .available = NULL },
     .speed_changed = NULL,
-    .force_redraw = NULL,
-    .config = NULL
+    .force_redraw  = NULL,
+    .config        = NULL
 };
 
 const fm_drv_t nuked_opl_drv = {

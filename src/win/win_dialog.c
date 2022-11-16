@@ -1,20 +1,20 @@
 /*
- * 86Box	A hypervisor and IBM PC system emulator that specializes in
- *		running old operating systems and software designed for IBM
- *		PC systems and compatibles from 1981 through fairly recent
- *		system designs based on the PCI bus.
+ * 86Box    A hypervisor and IBM PC system emulator that specializes in
+ *          running old operating systems and software designed for IBM
+ *          PC systems and compatibles from 1981 through fairly recent
+ *          system designs based on the PCI bus.
  *
- *		This file is part of the 86Box distribution.
+ *          This file is part of the 86Box distribution.
  *
- *		Several dialogs for the application.
+ *          Several dialogs for the application.
  *
  *
  *
- * Author:	Miran Grca, <mgrca8@gmail.com>
- *		Fred N. van Kempen, <decwiz@yahoo.com>
+ * Authors: Miran Grca, <mgrca8@gmail.com>
+ *          Fred N. van Kempen, <decwiz@yahoo.com>
  *
- *		Copyright 2016-2019 Miran Grca.
- *		Copyright 2017-2019 Fred N. van Kempen.
+ *          Copyright 2016-2019 Miran Grca.
+ *          Copyright 2017-2019 Fred N. van Kempen.
  */
 #define UNICODE
 #include <windows.h>
@@ -60,7 +60,7 @@ ui_msgbox_ex(int flags, void *header, void *message, void *btn1, void *btn2, voi
         tdb_yes    = { IDYES, STRING_OR_RESOURCE(btn1) },
         tdb_no     = { IDNO, STRING_OR_RESOURCE(btn2) },
         tdb_cancel = { IDCANCEL, STRING_OR_RESOURCE(btn3) },
-        tdb_exit   = { IDCLOSE, MAKEINTRESOURCE(IDS_2119) };
+        tdb_exit   = { IDCLOSE, MAKEINTRESOURCE(IDS_2120) };
     int ret = 0, checked = 0;
 
     /* Configure the default OK button. */
@@ -133,7 +133,7 @@ ui_msgbox_ex(int flags, void *header, void *message, void *btn1, void *btn2, voi
         tdconfig.pszMainInstruction = STRING_OR_RESOURCE(header);
     tdconfig.pButtons = tdbuttons;
     if (flags & MBX_DONTASK)
-        tdconfig.pszVerificationText = MAKEINTRESOURCE(IDS_2135);
+        tdconfig.pszVerificationText = MAKEINTRESOURCE(IDS_2136);
 
     /* Run the TaskDialog. */
     TaskDialogIndirect(&tdconfig, &ret, NULL, &checked);
@@ -172,7 +172,8 @@ file_dlg_w(HWND hwnd, WCHAR *f, WCHAR *fn, WCHAR *title, int save)
      * not use the contents of szFile to initialize itself.
      */
     memset(ofn.lpstrFile, 0x00, 512 * sizeof(WCHAR));
-    memcpy(ofn.lpstrFile, fn, (wcslen(fn) << 1) + 2);
+    if (fn)
+        memcpy(ofn.lpstrFile, fn, (wcslen(fn) << 1) + 2);
     ofn.nMaxFile        = sizeof_w(wopenfilestring);
     ofn.lpstrFilter     = f;
     ofn.nFilterIndex    = 1;
@@ -211,11 +212,12 @@ file_dlg(HWND hwnd, WCHAR *f, char *fn, char *title, int save)
 {
     WCHAR ufn[512], title_buf[512];
 
-    mbstoc16s(ufn, fn, strlen(fn) + 1);
+    if (fn)
+        mbstoc16s(ufn, fn, strlen(fn) + 1);
     if (title)
         mbstoc16s(title_buf, title, sizeof title_buf);
 
-    return (file_dlg_w(hwnd, f, ufn, title ? title_buf : NULL, save));
+    return (file_dlg_w(hwnd, f, fn ? ufn : NULL, title ? title_buf : NULL, save));
 }
 
 int

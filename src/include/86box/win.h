@@ -24,7 +24,7 @@
 #define PLAT_WIN_H
 
 #ifndef UNICODE
-#define UNICODE
+#    define UNICODE
 #endif
 #define BITMAP WINDOWS_BITMAP
 #if 0
@@ -104,7 +104,8 @@ extern "C" {
 
 extern HINSTANCE hinstance;
 extern HWND      hwndMain,
-    hwndRender;
+    hwndRender,
+    hwndRender2;
 extern HANDLE ghMutex;
 extern HICON  hIcon[256];
 extern int    dpi;

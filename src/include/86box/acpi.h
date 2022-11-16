@@ -1,21 +1,21 @@
 /*
- * 86Box	A hypervisor and IBM PC system emulator that specializes in
- *		running old operating systems and software designed for IBM
- *		PC systems and compatibles from 1981 through fairly recent
- *		system designs based on the PCI bus.
+ * 86Box    A hypervisor and IBM PC system emulator that specializes in
+ *          running old operating systems and software designed for IBM
+ *          PC systems and compatibles from 1981 through fairly recent
+ *          system designs based on the PCI bus.
  *
- *		This file is part of the 86Box distribution.
+ *          This file is part of the 86Box distribution.
  *
- *		Definitions for the ACPI emulation.
+ *          Definitions for the ACPI emulation.
  *
  *
  *
- * Authors:	Miran Grca, <mgrca8@gmail.com>
+ * Authors: Miran Grca, <mgrca8@gmail.com>
  *
- *		Copyright 2020 Miran Grca.
+ *          Copyright 2020 Miran Grca.
  */
 #ifndef ACPI_H
-# define ACPI_H
+#define ACPI_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,29 +26,29 @@ extern "C" {
 #define ACPI_TIMER_FREQ	3579545
 #define PM_FREQ		ACPI_TIMER_FREQ
 
-#define RSM_STS		(1 << 15)
-#define PWRBTN_STS	(1 << 8)
-#define GBL_STS		(1 << 5)
-#define BM_STS		(1 << 4)
-#define TMROF_STS	(1 << 0)
+#define RSM_STS         (1 << 15)
+#define PWRBTN_STS      (1 << 8)
+#define GBL_STS         (1 << 5)
+#define BM_STS          (1 << 4)
+#define TMROF_STS       (1 << 0)
 
-#define RTC_EN		(1 << 10)
-#define PWRBTN_EN	(1 << 8)
-#define GBL_EN		(1 << 5)
-#define TMROF_EN	(1 << 0)
+#define RTC_EN          (1 << 10)
+#define PWRBTN_EN       (1 << 8)
+#define GBL_EN          (1 << 5)
+#define TMROF_EN        (1 << 0)
 
-#define SCI_EN		(1 << 0)
-#define SUS_EN		(1 << 13)
+#define SCI_EN          (1 << 0)
+#define SUS_EN          (1 << 13)
 
-#define SUS_POWER_OFF	(1 << 0)
-#define SUS_SUSPEND	(1 << 1)
-#define SUS_NVR		(1 << 2)
-#define SUS_RESET_CPU	(1 << 3)
-#define SUS_RESET_CACHE	(1 << 4)
-#define SUS_RESET_PCI	(1 << 5)
+#define SUS_POWER_OFF   (1 << 0)
+#define SUS_SUSPEND     (1 << 1)
+#define SUS_NVR         (1 << 2)
+#define SUS_RESET_CPU   (1 << 3)
+#define SUS_RESET_CACHE (1 << 4)
+#define SUS_RESET_PCI   (1 << 5)
 
-#define ACPI_ENABLE	0xf1
-#define	ACPI_DISABLE	0xf0
+#define ACPI_ENABLE     0xf1
+#define ACPI_DISABLE    0xf0
 
 
 typedef struct
@@ -97,13 +97,17 @@ typedef struct
 			(*trap_update)(void *priv), *trap_priv;
 } acpi_t;
 
-
 /* Global variables. */
 extern int		acpi_rtc_status;
 
 extern const device_t	intel_ich2_acpi_device;
 
 
+extern const device_t acpi_ali_device;
+extern const device_t acpi_intel_device;
+extern const device_t acpi_smc_device;
+extern const device_t acpi_via_device;
+extern const device_t acpi_via_596b_device;
 
 /* Functions */
 extern void		acpi_update_irq(acpi_t *dev);
@@ -121,5 +125,4 @@ extern void		acpi_set_trap_update(acpi_t *dev, void (*update)(void *priv), void 
 }
 #endif
 
-
-#endif	/*ACPI_H*/
+#endif /*ACPI_H*/

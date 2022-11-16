@@ -118,6 +118,22 @@ cga_in(uint16_t addr, void *p)
 }
 
 void
+cga_pravetz_out(uint16_t addr, uint8_t val, void *p)
+{
+    cga_t  *cga = (cga_t *) p;
+
+    cga->fontbase = (((unsigned int) val) << 8);
+}
+
+uint8_t
+cga_pravetz_in(uint16_t addr, void *p)
+{
+    cga_t *cga = (cga_t *) p;
+
+    return (cga->fontbase >> 8);
+}
+
+void
 cga_waitstates(void *p)
 {
     int ws_array[16] = { 3, 4, 5, 6, 7, 8, 4, 5, 6, 7, 8, 4, 5, 6, 7, 8 };
@@ -338,6 +354,9 @@ cga_poll(void *p)
 
             Composite_Process(cga->cgamode, border, x >> 2, buffer32->line[(cga->displine << 1)]);
             Composite_Process(cga->cgamode, border, x >> 2, buffer32->line[(cga->displine << 1) + 1]);
+        } else {
+            video_process_8(x, cga->displine << 1);
+            video_process_8(x, (cga->displine << 1) + 1);
         }
 
         cga->sc = oldsc;
@@ -432,19 +451,11 @@ cga_poll(void *p)
                         }
 
                         if (enable_overscan) {
-                            if (cga->composite)
-                                video_blit_memtoscreen(0, (cga->firstline - 4) << 1,
-                                                       xsize, ((cga->lastline - cga->firstline) + 8) << 1);
-                            else
-                                video_blit_memtoscreen_8(0, (cga->firstline - 4) << 1,
-                                                         xsize, ((cga->lastline - cga->firstline) + 8) << 1);
+                            video_blit_memtoscreen(0, (cga->firstline - 4) << 1,
+                                                   xsize, ((cga->lastline - cga->firstline) + 8) << 1);
                         } else {
-                            if (cga->composite)
-                                video_blit_memtoscreen(8, cga->firstline << 1,
-                                                       xsize, (cga->lastline - cga->firstline) << 1);
-                            else
-                                video_blit_memtoscreen_8(8, cga->firstline << 1,
-                                                         xsize, (cga->lastline - cga->firstline) << 1);
+                            video_blit_memtoscreen(8, cga->firstline << 1,
+                                                   xsize, (cga->lastline - cga->firstline) << 1);
                         }
                     }
 
@@ -520,6 +531,21 @@ cga_standalone_init(const device_t *info)
     cga->rgb_type = device_get_config_int("rgb_type");
     cga_palette   = (cga->rgb_type << 1);
     cgapal_rebuild();
+
+    return cga;
+}
+
+void *
+cga_pravetz_init(const device_t *info)
+{
+    cga_t *cga = cga_standalone_init(info);
+
+    loadfont("roms/video/cga/PRAVETZ-VDC2.BIN", 10);
+
+    io_removehandler(0x03dd, 0x0001, cga_in, NULL, NULL, cga_out, NULL, NULL, cga);
+    io_sethandler(0x03dd, 0x0001, cga_pravetz_in, NULL, NULL, cga_pravetz_out, NULL, NULL, cga);
+
+    cga->fontbase = 0x0300;
 
     return cga;
 }
@@ -630,6 +656,20 @@ const device_t cga_device = {
     .flags         = DEVICE_ISA,
     .local         = 0,
     .init          = cga_standalone_init,
+    .close         = cga_close,
+    .reset         = NULL,
+    { .available = NULL },
+    .speed_changed = cga_speed_changed,
+    .force_redraw  = NULL,
+    .config        = cga_config
+};
+
+const device_t cga_pravetz_device = {
+    .name          = "Pravetz VDC-2",
+    .internal_name = "cga_pravetz",
+    .flags         = DEVICE_ISA,
+    .local         = 0,
+    .init          = cga_pravetz_init,
     .close         = cga_close,
     .reset         = NULL,
     { .available = NULL },

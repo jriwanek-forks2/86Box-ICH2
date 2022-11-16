@@ -1,22 +1,22 @@
 /*
- * VARCem	Virtual ARchaeological Computer EMulator.
- *		An emulator of (mostly) x86-based PC systems and devices,
- *		using the ISA,EISA,VLB,MCA  and PCI system buses, roughly
- *		spanning the era between 1981 and 1995.
+ * 86Box    A hypervisor and IBM PC system emulator that specializes in
+ *          running old operating systems and software designed for IBM
+ *          PC systems and compatibles from 1981 through fairly recent
+ *          system designs based on the PCI bus.
  *
- *		This file is part of the VARCem Project.
+ *          This file is part of the 86Box distribution.
  *
- *		Definitions for the device handler.
+ *          Definitions for the device handler.
  *
  *
  *
- * Authors:	Fred N. van Kempen, <decwiz@yahoo.com>
- *		Miran Grca, <mgrca8@gmail.com>
- *		Sarah Walker, <tommowalker@tommowalker.co.uk>
+ * Authors: Fred N. van Kempen, <decwiz@yahoo.com>
+ *          Miran Grca, <mgrca8@gmail.com>
+ *          Sarah Walker, <tommowalker@tommowalker.co.uk>
  *
- *		Copyright 2017-2019 Fred N. van Kempen.
- *		Copyright 2016-2019 Miran Grca.
- *		Copyright 2008-2019 Sarah Walker.
+ *          Copyright 2017-2019 Fred N. van Kempen.
+ *          Copyright 2016-2019 Miran Grca.
+ *          Copyright 2008-2019 Sarah Walker.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,31 +54,29 @@
 #define CONFIG_BIOS      11
 
 enum {
-    DEVICE_PCJR        = 2,      /* requires an IBM PCjr */
-    DEVICE_AT          = 4,      /* requires an AT-compatible system */
-    DEVICE_PS2         = 8,      /* requires a PS/1 or PS/2 system */
-    DEVICE_ISA         = 0x10,   /* requires the ISA bus */
-    DEVICE_CBUS        = 0x20,   /* requires the C-BUS bus */
-    DEVICE_MCA         = 0x40,   /* requires the MCA bus */
-    DEVICE_EISA        = 0x80,   /* requires the EISA bus */
-    DEVICE_VLB         = 0x100,  /* requires the PCI bus */
-    DEVICE_PCI         = 0x200,  /* requires the VLB bus */
-    DEVICE_AGP         = 0x400,  /* requires the AGP bus */
-    DEVICE_AC97        = 0x800,  /* requires the AC'97 bus */
-    DEVICE_COM         = 0x1000, /* requires a serial port */
-    DEVICE_LPT         = 0x2000  /* requires a parallel port */
+    DEVICE_PCJR = 2,      /* requires an IBM PCjr */
+    DEVICE_AT   = 4,      /* requires an AT-compatible system */
+    DEVICE_PS2  = 8,      /* requires a PS/1 or PS/2 system */
+    DEVICE_ISA  = 0x10,   /* requires the ISA bus */
+    DEVICE_CBUS = 0x20,   /* requires the C-BUS bus */
+    DEVICE_MCA  = 0x40,   /* requires the MCA bus */
+    DEVICE_EISA = 0x80,   /* requires the EISA bus */
+    DEVICE_VLB  = 0x100,  /* requires the PCI bus */
+    DEVICE_PCI  = 0x200,  /* requires the VLB bus */
+    DEVICE_AGP  = 0x400,  /* requires the AGP bus */
+    DEVICE_AC97 = 0x800,  /* requires the AC'97 bus */
+    DEVICE_COM  = 0x1000, /* requires a serial port */
+    DEVICE_LPT  = 0x2000  /* requires a parallel port */
 };
 
-
-#define BIOS_NORMAL                          0
-#define BIOS_INTERLEAVED                     1
-#define BIOS_INTERLEAVED_SINGLEFILE          2
-#define BIOS_INTERLEAVED_QUAD                3
-#define BIOS_INTERLEAVED_QUAD_SINGLEFILE     4
-#define BIOS_INTEL_AMI                       5
-#define BIOS_INTERLEAVED_INVERT              8
-#define BIOS_HIGH_BIT_INVERT                16
-
+#define BIOS_NORMAL                      0
+#define BIOS_INTERLEAVED                 1
+#define BIOS_INTERLEAVED_SINGLEFILE      2
+#define BIOS_INTERLEAVED_QUAD            3
+#define BIOS_INTERLEAVED_QUAD_SINGLEFILE 4
+#define BIOS_INTEL_AMI                   5
+#define BIOS_INTERLEAVED_INVERT          8
+#define BIOS_HIGH_BIT_INVERT             16
 
 typedef struct {
     const char *description;
@@ -91,7 +89,7 @@ typedef struct {
     int          bios_type;
     int          files_no;
     uint32_t     local, size;
-    void         *dev1, *dev2;
+    void        *dev1, *dev2;
     const char **files;
 } device_config_bios_t;
 
