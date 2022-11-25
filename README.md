@@ -3,6 +3,7 @@
 
 <p align="center"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Intel_ICH2.jpg/240px-Intel_ICH2.jpg"></p>
 
+<h1 align="center">Project has been abandoned!</h2>
 <p align="center">This is a fork of 86Box that tries to emulate the Intel ICH, more specifically the Intel ICH2 but also a few legacy minor boards</p>
 
 <h2>Whats ICH2</h2>
