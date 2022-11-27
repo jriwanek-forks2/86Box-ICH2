@@ -1,22 +1,22 @@
 /*
- * VARCem	Virtual ARchaeological Computer EMulator.
- *		An emulator of (mostly) x86-based PC systems and devices,
- *		using the ISA,EISA,VLB,MCA  and PCI system buses, roughly
- *		spanning the era between 1981 and 1995.
+ * VARCem   Virtual ARchaeological Computer EMulator.
+ *          An emulator of (mostly) x86-based PC systems and devices,
+ *          using the ISA,EISA,VLB,MCA  and PCI system buses, roughly
+ *          spanning the era between 1981 and 1995.
  *
- *		This file is part of the VARCem Project.
+ *          This file is part of the VARCem Project.
  *
- *		Standard PC/AT implementation.
+ *          Standard PC/AT implementation.
  *
  *
  *
- * Authors:	Fred N. van Kempen, <decwiz@yahoo.com>
- *		Miran Grca, <mgrca8@gmail.com>
- *		Sarah Walker, <tommowalker@tommowalker.co.uk>
+ * Authors: Fred N. van Kempen, <decwiz@yahoo.com>
+ *          Miran Grca, <mgrca8@gmail.com>
+ *          Sarah Walker, <tommowalker@tommowalker.co.uk>
  *
- *		Copyright 2017-2020 Fred N. van Kempen.
- *		Copyright 2016-2020 Miran Grca.
- *		Copyright 2008-2020 Sarah Walker.
+ *          Copyright 2017-2020 Fred N. van Kempen.
+ *          Copyright 2016-2020 Miran Grca.
+ *          Copyright 2008-2020 Sarah Walker.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@
  *   59 Temple Place - Suite 330
  *   Boston, MA 02111-1307
  *   USA.
-*/
+ */
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -61,7 +61,7 @@ machine_at_common_init_ex(const machine_t *model, int type)
     pic2_init();
     dma16_init();
 
-	device_add(&port_6x_device);
+    device_add(&port_6x_device);
 
     standalone_gameport_type = &gameport_device;
 }

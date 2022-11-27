@@ -1,9 +1,9 @@
 /*
- * National Semiconductor PC87366(NSC366)
+ *          National Semiconductor PC87366(NSC366)
  *
- * Authors:	Tiseno100,
+ * Authors: Tiseno100,
  *
- * Copyright 2022 Tiseno100.
+ *          Copyright 2022 Tiseno100.
  */
 
 #include <stdarg.h>

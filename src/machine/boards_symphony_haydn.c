@@ -1,9 +1,9 @@
 /*
- * Symphony Haydn II based Motherboards
+ *          Symphony Haydn II based Motherboards
  *
- * Authors:	Tiseno100,
+ * Authors: Tiseno100,
  *
- * Copyright 2022 Tiseno100.
+ *          Copyright 2022 Tiseno100.
  */
 
 #include <stdio.h>

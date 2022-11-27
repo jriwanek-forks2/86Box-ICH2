@@ -1,9 +1,9 @@
 /*
- * 815EP SPD Memory Hack
+ *          815EP SPD Memory Hack
  *
- * Authors:	Tiseno100,
+ * Authors: Tiseno100,
  *
- * Copyright 2022 Tiseno100.
+ *          Copyright 2022 Tiseno100.
  */
 
 /* This is a hack because the 86Box SPD calculation algorithm is not made for the 815EP banking.

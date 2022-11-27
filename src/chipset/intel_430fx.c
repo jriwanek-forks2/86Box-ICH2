@@ -1,9 +1,9 @@
 /*
- * Intel 82430FX PCIset
+ *          Intel 82430FX PCIset
  *
- * Authors:	Tiseno100,
+ * Authors: Tiseno100,
  *
- * Copyright 2022 Tiseno100.
+ *          Copyright 2022 Tiseno100.
  */
 
 #include <stdarg.h>
@@ -34,22 +34,20 @@ intel_430fx_log(const char *fmt, ...)
     va_list ap;
 
     if (intel_430fx_do_log) {
-	va_start(ap, fmt);
-	pclog_ex(fmt, ap);
-	va_end(ap);
+        va_start(ap, fmt);
+        pclog_ex(fmt, ap);
+        va_end(ap);
     }
 }
 #else
-#define intel_430fx_log(fmt, ...)
+#    define intel_430fx_log(fmt, ...)
 #endif
 
-typedef struct intel_430fx_t
-{
+typedef struct intel_430fx_t {
     uint8_t pci_conf[256];
 
     smram_t *smram;
 } intel_430fx_t;
-
 
 static void
 intel_430fx_cache(intel_430fx_t *dev)
@@ -60,7 +58,7 @@ intel_430fx_cache(intel_430fx_t *dev)
 
     cache_enable = (dev->pci_conf[0x52] & 3) == 3;
 
-    if(cache_enable) {
+    if (cache_enable) {
         cpu_cache_ext_enabled = 1;
         dev->pci_conf[0x52] |= 0x40;
     }
@@ -77,7 +75,7 @@ intel_430fx_dram_hole(intel_430fx_t *dev)
 
     intel_430fx_log("Intel 430FX DRAM Hole: DRAM Hole was %s\n", dram_hole_enable ? "enabled" : "disabled");
 
-    if(dram_hole_enable)
+    if (dram_hole_enable)
         mem_set_mem_state_both(0x80000, 0x20000, MEM_READ_EXTANY | MEM_WRITE_EXTANY);
     else
         mem_set_mem_state_both(0x80000, 0x20000, MEM_READ_INTERNAL | MEM_WRITE_INTERNAL);
@@ -90,10 +88,9 @@ intel_pam_recalc(int addr, uint8_t val)
 {
     int region = 0xc0000 + ((addr - 0x5a) << 15);
 
-    if(addr == 0x59)
+    if (addr == 0x59)
         mem_set_mem_state_both(0xf0000, 0x10000, ((val & 0x10) ? MEM_READ_INTERNAL : MEM_READ_EXTANY) | ((val & 0x20) ? MEM_WRITE_INTERNAL : MEM_WRITE_EXTANY));
-    else
-    {
+    else {
         mem_set_mem_state_both(region, 0x4000, ((val & 0x01) ? MEM_READ_INTERNAL : MEM_READ_EXTANY) | ((val & 0x02) ? MEM_WRITE_INTERNAL : MEM_WRITE_EXTANY));
         mem_set_mem_state_both(region + 0x4000, 0x4000, ((val & 0x10) ? MEM_READ_INTERNAL : MEM_READ_EXTANY) | ((val & 0x20) ? MEM_WRITE_INTERNAL : MEM_WRITE_EXTANY));
     }
@@ -104,18 +101,18 @@ intel_pam_recalc(int addr, uint8_t val)
 static void
 intel_430fx_smram(intel_430fx_t *dev)
 {
-    if(dev->pci_conf[0x72] & 0x10)
+    if (dev->pci_conf[0x72] & 0x10)
         dev->pci_conf[0x72] &= 0x2f;
 
-    int local_access = !!(dev->pci_conf[0x72] & 0x40);
-    int space_closed = !!(dev->pci_conf[0x72] & 0x20);
+    int local_access  = !!(dev->pci_conf[0x72] & 0x40);
+    int space_closed  = !!(dev->pci_conf[0x72] & 0x20);
     int smram_enabled = !!(dev->pci_conf[0x72] & 8);
     smram_disable(dev->smram);
 
     intel_430fx_log("Intel 430FX SMRAM: SMRAM was %s\n", smram_enabled ? "enabled" : "disabled");
 
-    if(smram_enabled) {
-        if(local_access && !space_closed) /* Mutually XOR'ed */
+    if (smram_enabled) {
+        if (local_access && !space_closed) /* Mutually XOR'ed */
             smram_enable(dev->smram, 0x000a0000, 0x000a0000, 0x10000, 1, 1);
         else
             smram_enable(dev->smram, 0x000a0000, 0x000a0000, 0x10000, 0, 1);
@@ -127,94 +124,91 @@ intel_430fx_smram(intel_430fx_t *dev)
 static void
 intel_430fx_write(int func, int addr, uint8_t val, void *priv)
 {
-    intel_430fx_t *dev = (intel_430fx_t *)priv;
+    intel_430fx_t *dev = (intel_430fx_t *) priv;
 
     intel_430fx_log("Intel 430FX: dev->regs[%02x] = %02x\n", addr, val);
 
-    if(func)
+    if (func)
         return;
 
-    switch(addr)
-    {
+    switch (addr) {
         case 0x04:
-            dev->pci_conf[addr] = (val & 2) | 4; 
-        break;
+            dev->pci_conf[addr] = (val & 2) | 4;
+            break;
 
         case 0x07:
             dev->pci_conf[addr] &= val & 3;
-        break;
+            break;
 
         case 0x0d:
             dev->pci_conf[addr] = val & 0xf8;
-        break;
+            break;
 
         case 0x0f:
             dev->pci_conf[addr] = val & 0x40;
-        break;
+            break;
 
         case 0x50:
             dev->pci_conf[addr] = val & 0xef;
-        break;
+            break;
 
         case 0x52:
             dev->pci_conf[addr] = val & 0xfb;
             intel_430fx_cache(dev);
-        break;
+            break;
 
         case 0x57:
             dev->pci_conf[addr] = val & 0xcf;
             intel_430fx_dram_hole(dev);
-        break;
+            break;
 
         case 0x58:
             dev->pci_conf[addr] = val;
-        break;
+            break;
 
         case 0x59 ... 0x5f:
             dev->pci_conf[addr] = val & 0x77;
             intel_pam_recalc(addr, val);
-        break;
+            break;
 
         case 0x60 ... 0x64:
             spd_write_drbs(dev->pci_conf, 0x60, 0x64, 4);
-        break;
+            break;
 
         case 0x72:
-            if(dev->pci_conf[0x72] & 0x10)
+            if (dev->pci_conf[0x72] & 0x10)
                 dev->pci_conf[addr] = val & 0x2f;
             else
                 dev->pci_conf[addr] = val & 0x7f;
-            
+
             intel_430fx_smram(dev);
-        break;
+            break;
     }
 }
-
 
 static uint8_t
 intel_430fx_read(int func, int addr, void *priv)
 {
-    intel_430fx_t *dev = (intel_430fx_t *)priv;
+    intel_430fx_t *dev = (intel_430fx_t *) priv;
 
     intel_430fx_log("Intel 430FX: dev->regs[%02x] (%02x)\n", addr, dev->pci_conf[addr]);
 
-    if(func)
+    if (func)
         return 0xff;
     else
         return dev->pci_conf[addr];
 }
 
-
 static void
 intel_430fx_reset(void *priv)
 {
-    intel_430fx_t *dev = (intel_430fx_t *)priv;
+    intel_430fx_t *dev = (intel_430fx_t *) priv;
     memset(dev->pci_conf, 0x00, sizeof(dev->pci_conf)); /* Wash out the registers */
 
-    dev->pci_conf[0x00] = 0x86;    /* Intel */
+    dev->pci_conf[0x00] = 0x86; /* Intel */
     dev->pci_conf[0x01] = 0x80;
 
-    dev->pci_conf[0x02] = 0x2D;    /* 82430FX */
+    dev->pci_conf[0x02] = 0x2D; /* 82430FX */
     dev->pci_conf[0x03] = 0x12;
 
     dev->pci_conf[0x04] = 0x06;
@@ -237,26 +231,23 @@ intel_430fx_reset(void *priv)
 
     intel_430fx_cache(dev);
 
-    for(int i = 0x59; i <= 0x5f; i++)  /* Reset PAM to defaults */
+    for (int i = 0x59; i <= 0x5f; i++) /* Reset PAM to defaults */
         intel_pam_recalc(i, 0);
-
 }
-
 
 static void
 intel_430fx_close(void *priv)
 {
-    intel_430fx_t *dev = (intel_430fx_t *)priv;
+    intel_430fx_t *dev = (intel_430fx_t *) priv;
 
     smram_del(dev->smram);
     free(dev);
 }
 
-
 static void *
 intel_430fx_init(const device_t *info)
 {
-    intel_430fx_t *dev = (intel_430fx_t *)malloc(sizeof(intel_430fx_t));
+    intel_430fx_t *dev = (intel_430fx_t *) malloc(sizeof(intel_430fx_t));
     memset(dev, 0, sizeof(intel_430fx_t));
 
     /* Device */
@@ -270,15 +261,15 @@ intel_430fx_init(const device_t *info)
 }
 
 const device_t intel_430fx_device = {
-    .name = "Intel 82430FX PCIset",
+    .name          = "Intel 82430FX PCIset",
     .internal_name = "intel_430fx",
-    .flags = DEVICE_PCI,
-    .local = 0,
-    .init = intel_430fx_init,
-    .close = intel_430fx_close,
-    .reset = intel_430fx_reset,
+    .flags         = DEVICE_PCI,
+    .local         = 0,
+    .init          = intel_430fx_init,
+    .close         = intel_430fx_close,
+    .reset         = intel_430fx_reset,
     { .available = NULL },
     .speed_changed = NULL,
-    .force_redraw = NULL,
-    .config = NULL
+    .force_redraw  = NULL,
+    .config        = NULL
 };

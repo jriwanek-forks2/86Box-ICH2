@@ -1,11 +1,10 @@
 /*
- * SiS 471 ISA/VESA Chipset
+ *          SiS 471 ISA/VESA Chipset
  *
- * Authors:	Tiseno100,
+ * Authors: Tiseno100,
  *
- * Copyright 2022 Tiseno100.
+ *          Copyright 2022 Tiseno100.
  */
-
 
 #include <stdarg.h>
 #include <stdint.h>
@@ -28,12 +27,12 @@
 
 typedef struct
 {
-    int index;
+    int     index;
     uint8_t regs[39];
 
     port_92_t *port_92;
-    smram_t *smram;
-    int clear_smi;
+    smram_t   *smram;
+    int        clear_smi;
 } sis_471_t;
 
 #ifdef ENABLE_SIS_471_LOG
@@ -44,26 +43,25 @@ sis_471_log(const char *fmt, ...)
     va_list ap;
 
     if (sis_471_do_log) {
-	va_start(ap, fmt);
-	pclog_ex(fmt, ap);
-	va_end(ap);
+        va_start(ap, fmt);
+        pclog_ex(fmt, ap);
+        va_end(ap);
     }
 }
 #else
-#define sis_471_log(fmt, ...)
+#    define sis_471_log(fmt, ...)
 #endif
 
 static void
 sis_471_cache(sis_471_t *dev)
 {
-    if(dev->regs[0x01] & 0x80) {
+    if (dev->regs[0x01] & 0x80) {
         sis_471_log("SiS 471 Cache: Cache was Enabled\n");
         cpu_cache_int_enabled = 1;
         cpu_cache_ext_enabled = 1;
         dev->regs[0x01] &= 0x70; /* Setup Hacked Size */
         dev->regs[0x01] |= 0x40;
-    }
-    else {
+    } else {
         sis_471_log("SiS 471 Cache: Cache was Disabled\n");
         cpu_cache_int_enabled = 0;
         cpu_cache_ext_enabled = 0;
@@ -84,9 +82,9 @@ sis_471_shadow(sis_471_t *dev)
 
     mem_set_mem_state_both(0xf0000, 0x10000, shadow_profile);
 
-    for(int i = 0; i < 6; i++)
+    for (int i = 0; i < 6; i++)
         mem_set_mem_state_both(0xc0000 + (i * 0x8000), 0x8000, ((dev->regs[2] >> i) & 1) ? shadow_profile : (MEM_READ_EXTANY | MEM_WRITE_EXTANY));
-    
+
     flushmmucache_nopc();
 }
 
@@ -106,55 +104,54 @@ sis_471_dram_populate(sis_471_t *dev)
     uint32_t size = mem_size >> 10;
     sis_471_log("SiS 471 DRAM: %d Megabytes were detected. Populating appropriately\n", size);
 
-    switch(size)
-    {
+    switch (size) {
         default:
             pclog("SiS 471 DRAM: Illegal size! Change memory size. Not populating\n");
-        break;
+            break;
 
         case 8:
             dev->regs[0x09] |= 0x18;
-        break;
+            break;
 
         case 16:
             dev->regs[0x09] |= 0x1c;
-        break;
+            break;
 
         case 24:
             dev->regs[0x09] |= 0x1a;
-        break;
+            break;
 
         case 32:
             dev->regs[0x09] |= 0x3c;
-        break;
+            break;
 
         case 40:
             dev->regs[0x09] |= 0x3b;
-        break;
+            break;
 
         case 48:
             dev->regs[0x09] |= 0x3e;
-        break;
+            break;
 
         case 64:
             dev->regs[0x09] |= 0x33;
-        break;
+            break;
 
         case 72:
             dev->regs[0x09] |= 0x2d;
-        break;
+            break;
 
         case 80:
             dev->regs[0x09] |= 0x3f;
-        break;
+            break;
 
         case 96:
             dev->regs[0x09] |= 0x34;
-        break;
+            break;
 
         case 128:
             dev->regs[0x09] |= 0x35;
-        break;
+            break;
     }
 }
 
@@ -163,7 +160,7 @@ sis_471_relocation(sis_471_t *dev)
 {
     int mem_size_kb = mem_size >> 10;
 
-    if((mem_size_kb >= 1) && (mem_size_kb <= 8) && !!(dev->regs[0x0b] & 2) && (((dev->regs[0x02] >> 2) & 0x0f) == 0)) { /* It also can relocate D0000-EFFFF(Additional 128KB) but it's not implemented due to 86Box limitations */
+    if ((mem_size_kb >= 1) && (mem_size_kb <= 8) && !!(dev->regs[0x0b] & 2) && (((dev->regs[0x02] >> 2) & 0x0f) == 0)) { /* It also can relocate D0000-EFFFF(Additional 128KB) but it's not implemented due to 86Box limitations */
         sis_471_log("SiS 471 Relocate: 128KB from the A0000-BFFFF section were relocated\n");
         mem_remap_top(128);
     }
@@ -174,32 +171,31 @@ sis_471_bus_speed(sis_471_t *dev)
 {
     int bus_speed;
 
-    switch(dev->regs[0x10] >> 5)
-    {
+    switch (dev->regs[0x10] >> 5) {
         default:
             bus_speed = 7159153;
-        break;
+            break;
         case 1:
             bus_speed = cpu_busspeed / 10;
-        break;
+            break;
         case 2:
             bus_speed = cpu_busspeed / 8;
-        break;
+            break;
         case 3:
             bus_speed = cpu_busspeed / 6;
-        break;
+            break;
         case 4:
             bus_speed = cpu_busspeed / 5;
-        break;
+            break;
         case 5:
             bus_speed = cpu_busspeed / 4;
-        break;
+            break;
         case 6:
             bus_speed = cpu_busspeed / 3;
-        break;
+            break;
         case 7:
             bus_speed = cpu_busspeed / 2;
-        break;
+            break;
     }
 
     sis_471_log("SiS 471 Bus: The Bus speed was updated at clock %d\n", bus_speed);
@@ -211,40 +207,39 @@ sis_471_smram(sis_471_t *dev)
     smram_disable(dev->smram);
 
     uint32_t proper, remapped, size;
-    int local_access = !!(dev->regs[0x13] & 0x10);
+    int      local_access = !!(dev->regs[0x13] & 0x10);
 
-    switch(dev->regs[0x13] >> 5)
-    {
+    switch (dev->regs[0x13] >> 5) {
         case 0:
         default:
-            proper = 0xe0000;
+            proper   = 0xe0000;
             remapped = 0xa0000;
-            size = 0x10000;
-        break;
+            size     = 0x10000;
+            break;
 
         case 1:
-            proper = 0xe0000;
+            proper   = 0xe0000;
             remapped = 0xb0000;
-            size = 0x10000;
-        break;
+            size     = 0x10000;
+            break;
 
         case 2:
-            proper = 0xe0000;
+            proper   = 0xe0000;
             remapped = 0xe0000;
-            size = 0x10000;
-        break;
+            size     = 0x10000;
+            break;
 
         case 4:
-            proper = 0x60000;
+            proper   = 0x60000;
             remapped = 0xa0000;
-            size = 0x10000;
-        break;
+            size     = 0x10000;
+            break;
 
         case 5:
-            proper = 0x60000;
+            proper   = 0x60000;
             remapped = 0xa0000;
-            size = 0x10000;
-        break;
+            size     = 0x10000;
+            break;
     }
 
     sis_471_log("SiS 471 SMRAM: Configured at Proper: 0x%x Remap: 0x%x\n", proper, remapped);
@@ -257,17 +252,16 @@ static void
 sis_471_sw_smi_trigger(uint16_t addr, uint8_t val, void *priv)
 {
     sis_471_t *dev = (sis_471_t *) priv;
-    int pin = (dev->regs[0x0b] & 8) ? 15 : 12;
+    int        pin = (dev->regs[0x0b] & 8) ? 15 : 12;
 
     sis_471_log("SiS 471 SMI Trap: Trap was triggered\n");
 
-    if((dev->regs[0x0b] & 0x80) && !dev->clear_smi) {
-        if(dev->regs[0x18] & 2) { /* Go by SMI */
-            if(dev->regs[0x0b] & 0x10) {
+    if ((dev->regs[0x0b] & 0x80) && !dev->clear_smi) {
+        if (dev->regs[0x18] & 2) { /* Go by SMI */
+            if (dev->regs[0x0b] & 0x10) {
                 smi_line = 1;
                 sis_471_log("SiS 471 SMI Trap: Provoking an SMI\n");
-            }
-            else { /* Go by IRQ */
+            } else { /* Go by IRQ */
                 picint(1 << pin);
                 sis_471_log("SiS 471 SMI Trap: Provoking an IRQ at line %d\n", pin);
             }
@@ -275,15 +269,15 @@ sis_471_sw_smi_trigger(uint16_t addr, uint8_t val, void *priv)
     }
 
     dev->regs[0x19] |= 1; /* Write to the SMI/IRQ Status Register */
-    dev->clear_smi = 1; /* Disallow any new SMI or IRQ triggers unless the SMI Clear register is written */
+    dev->clear_smi = 1;   /* Disallow any new SMI or IRQ triggers unless the SMI Clear register is written */
 }
 
 static void
 sis_471_sw_smi_set_base(sis_471_t *dev)
 {
     uint16_t base = (dev->regs[0x15] << 8) | dev->regs[0x14];
-    
-    if(base != 0)
+
+    if (base != 0)
         sis_471_log("SiS 471 SMI Base: A New Base was given 0x%x\n", base);
 
     io_handler(base != 0, base, 1, NULL, NULL, NULL, sis_471_sw_smi_trigger, NULL, NULL, dev);
@@ -294,7 +288,7 @@ sis_471_port_92_handler(sis_471_t *dev)
 {
     sis_471_log("SiS 471 Port 92: The Port 92h is %s\n", (dev->regs[0x22] & 1) ? "Enabled" : "Disabled");
 
-    if(dev->regs[0x22] & 1)
+    if (dev->regs[0x22] & 1)
         port_92_add(dev->port_92);
     else
         port_92_remove(dev->port_92);
@@ -305,91 +299,87 @@ sis_471_write(uint16_t addr, uint8_t val, void *priv)
 {
     sis_471_t *dev = (sis_471_t *) priv;
 
-    if(addr == 0x22)
+    if (addr == 0x22)
         dev->index = val;
     else {
         dev->index -= 0x50; /* Register minus 0x50 */
 
         /* Note: You can write normally on the reserved registers so we don't really bother masking them. We only do sanity control for RO & RWC Registers. */
-        if(dev->index == 0x19) /* Status Registers */
+        if (dev->index == 0x19) /* Status Registers */
             dev->regs[dev->index] &= val;
-        else if(dev->index == 0x26)
+        else if (dev->index == 0x26)
             dev->regs[dev->index] = val | 1; /* There's a read only register here that defines if the Keyboard Interface is enabled. We always say one there. */
-        else if(dev->index < 39) /* Rest of Writable Registers with sanity check */
+        else if (dev->index < 39)            /* Rest of Writable Registers with sanity check */
             dev->regs[dev->index] = val;
 
-        switch(dev->index)
-        {
-            case 0x01:  /* Cache Handler */
+        switch (dev->index) {
+            case 0x01: /* Cache Handler */
                 sis_471_cache(dev);
-            break;
+                break;
 
             case 0x02: /* Shadow RAM Handler */
                 sis_471_shadow(dev);
-            break;
+                break;
 
             case 0x07: /* GATEA20/FAST Handler */
                 sis_471_port_92_feature(dev);
-            break;
+                break;
 
             case 0x09: /* DRAM Population Handler */
                 dev->regs[dev->index] &= 0x3f;
                 sis_471_dram_populate(dev);
-            break;
+                break;
 
             case 0x0b: /* 256KB Relocation Handler */
                 sis_471_relocation(dev);
-            break;
+                break;
 
             case 0x10: /* Bus Speed Handler */
                 sis_471_bus_speed(dev);
-            break;
+                break;
 
             case 0x13: /* SMRAM Handler */
                 sis_471_smram(dev);
-            break;
+                break;
 
             case 0x14 ... 0x15: /* SMI/IRQ Trap Base Handler */
                 sis_471_sw_smi_set_base(dev);
-            break;
+                break;
 
-            case 0x1b: /* SMI Clear Handler */
+            case 0x1b:              /* SMI Clear Handler */
                 dev->clear_smi = 0; /* Clears the flag so another SMI/IRQ request can be provoked */
-            break;
+                break;
 
             case 0x22: /* Port 92h Enable/Disable Handler */
                 sis_471_port_92_handler(dev);
-            break;
+                break;
         }
 
         dev->index = 0; /* Reset the Index Register */
     }
 }
-
 
 static uint8_t
 sis_471_read(uint16_t addr, void *priv)
 {
     sis_471_t *dev = (sis_471_t *) priv;
 
-    if(addr == 0x22)
+    if (addr == 0x22)
         return dev->index;
     else {
         dev->index -= 0x50;
 
-        if(dev->index < 39) {
-            if(dev->index == 0x1c) /* Reads to this register return the NMI Mask Index port value at 70h */
+        if (dev->index < 39) {
+            if (dev->index == 0x1c) /* Reads to this register return the NMI Mask Index port value at 70h */
                 return inb(0x70);
-            else    
+            else
                 return dev->regs[dev->index];
-        }
-        else
+        } else
             return 0xff;
 
         dev->index = 0; /* Reset the Index Register */
     }
 }
-
 
 static void
 sis_471_reset(void *priv)
@@ -398,7 +388,7 @@ sis_471_reset(void *priv)
     memset(dev->regs, 0, sizeof(dev->regs));
     dev->index = 0;
 
-    dev->clear_smi = 0;
+    dev->clear_smi  = 0;
     dev->regs[0x11] = 0x09;
     dev->regs[0x26] = 0x01;
 
@@ -414,7 +404,6 @@ sis_471_reset(void *priv)
     sis_471_port_92_handler(dev);
 }
 
-
 static void
 sis_471_close(void *priv)
 {
@@ -423,7 +412,6 @@ sis_471_close(void *priv)
     smram_del(dev->smram);
     free(dev);
 }
-
 
 static void *
 sis_471_init(const device_t *info)
@@ -446,15 +434,15 @@ sis_471_init(const device_t *info)
 }
 
 const device_t sis_471_device = {
-    .name = "SiS 471 ISA/VESA Chipset",
+    .name          = "SiS 471 ISA/VESA Chipset",
     .internal_name = "sis_471",
-    .flags = 0,
-    .local = 0,
-    .init = sis_471_init,
-    .close = sis_471_close,
-    .reset = sis_471_reset,
+    .flags         = 0,
+    .local         = 0,
+    .init          = sis_471_init,
+    .close         = sis_471_close,
+    .reset         = sis_471_reset,
     { .available = NULL },
     .speed_changed = NULL,
-    .force_redraw = NULL,
-    .config = NULL
+    .force_redraw  = NULL,
+    .config        = NULL
 };

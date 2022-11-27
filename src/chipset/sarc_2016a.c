@@ -1,9 +1,9 @@
 /*
- * SARC 2016A
+ *          SARC 2016A
  *
- * Authors:	Tiseno100,
+ * Authors: Tiseno100,
  *
- * Copyright 2022 Tiseno100.
+ *          Copyright 2022 Tiseno100.
  */
 
 /*
@@ -88,10 +88,9 @@
 #include <86box/port_92.h>
 #include <86box/chipset.h>
 
-
 typedef struct
 {
-    int index;
+    int     index;
     uint8_t regs[17];
 } sarc_2016a_t;
 
@@ -103,15 +102,14 @@ sarc_2016a_log(const char *fmt, ...)
     va_list ap;
 
     if (sarc_2016a_do_log) {
-	va_start(ap, fmt);
-	pclog_ex(fmt, ap);
-	va_end(ap);
+        va_start(ap, fmt);
+        pclog_ex(fmt, ap);
+        va_end(ap);
     }
 }
 #else
-#define sarc_2016a_log(fmt, ...)
+#    define sarc_2016a_log(fmt, ...)
 #endif
-
 
 static void
 sarc_2016a_memory_handler(int cur_reg, int reset, sarc_2016a_t *dev)
@@ -119,51 +117,47 @@ sarc_2016a_memory_handler(int cur_reg, int reset, sarc_2016a_t *dev)
     uint16_t status;
     uint32_t base;
 
-    if(!reset) {
-        if(dev->index == 0x02) { /* System segment */
+    if (!reset) {
+        if (dev->index == 0x02) { /* System segment */
             base = 0xf0000;
             sarc_2016a_log("SARC 2016A Memory: Shadowing system\n");
 
-            if(dev->regs[0x02] & 0x20) {
-                if(dev->regs[0x02] & 0x10)
+            if (dev->regs[0x02] & 0x20) {
+                if (dev->regs[0x02] & 0x10)
                     status = MEM_READ_INTERNAL;
                 else
                     status = MEM_READ_EXTANY;
 
-                if(dev->regs[0x01] & 1)
+                if (dev->regs[0x01] & 1)
                     status |= MEM_WRITE_INTERNAL;
                 else
                     status |= MEM_WRITE_EXTANY;
-            }
-            else
+            } else
                 status = MEM_READ_EXTANY | MEM_WRITE_EXTANY;
 
             mem_set_mem_state_both(base, 0x10000, status);
-            }
-        else if(dev->index > 0x02) { /* Rest of the segments */
-            for(int i = 0; i < 4; i++) {
+        } else if (dev->index > 0x02) { /* Rest of the segments */
+            for (int i = 0; i < 4; i++) {
                 base = 0xc0000 + ((dev->index - 3) << 16) + (i << 14);
                 sarc_2016a_log("SARC 2016A Memory: Shadowing 0x%x segment\n", base);
 
-            if(dev->regs[dev->index] & (0x80 >> i)) {
-                if(dev->regs[dev->index] & (8 >> i))
-                    status = MEM_READ_INTERNAL;
-                else
-                    status = MEM_READ_EXTANY;
+                if (dev->regs[dev->index] & (0x80 >> i)) {
+                    if (dev->regs[dev->index] & (8 >> i))
+                        status = MEM_READ_INTERNAL;
+                    else
+                        status = MEM_READ_EXTANY;
 
-                if(dev->regs[0x01] & 1)
-                    status |= MEM_WRITE_INTERNAL;
-                else
-                    status |= MEM_WRITE_EXTANY;
-            }
-            else
-                status = MEM_READ_EXTANY | MEM_WRITE_EXTANY;
+                    if (dev->regs[0x01] & 1)
+                        status |= MEM_WRITE_INTERNAL;
+                    else
+                        status |= MEM_WRITE_EXTANY;
+                } else
+                    status = MEM_READ_EXTANY | MEM_WRITE_EXTANY;
 
                 mem_set_mem_state_both(base, 0x4000, status);
             }
         }
-    }
-    else {
+    } else {
         sarc_2016a_log("SARC 2016A Memory: Resetting\n");
         mem_set_mem_state_both(0xc0000, 0x40000, MEM_READ_EXTANY | MEM_WRITE_EXTANY);
     }
@@ -178,7 +172,7 @@ sarc_2016a_fast_a20(sarc_2016a_t *dev)
 
     sarc_2016a_log("SARC 2016A FASTA20: %s\n", enable ? "Enabled" : "Disabled");
 
-    if(enable)
+    if (enable)
         mem_a20_alt = 1;
     else
         mem_a20_alt = 0;
@@ -190,47 +184,45 @@ static void
 sarc_2016a_write(uint16_t addr, uint8_t val, void *priv)
 {
     sarc_2016a_t *dev = (sarc_2016a_t *) priv;
-    
-    if(!(addr & 1))
+
+    if (!(addr & 1))
         dev->index = val;
     else {
         dev->index -= 0x80; /* Subtract the index register (index - 0x80). Register 0x80 doesn't actually exist but we ignore it with sanity checks */
 
-        switch(dev->index)
-        {
+        switch (dev->index) {
             case 0x01 ... 0x05:
                 dev->regs[dev->index] = val;
                 sarc_2016a_memory_handler(dev->index, 0, dev);
-            break;
+                break;
 
             case 0x07:
                 dev->regs[dev->index] = val;
                 sarc_2016a_fast_a20(dev);
-            break;
+                break;
 
             default:
-                if((dev->index > 0) && (dev->index < 16))
+                if ((dev->index > 0) && (dev->index < 16))
                     dev->regs[dev->index] = val;
-            break;                
+                break;
         }
 
         dev->index += 0x80; /* Restore the index register to what value it was */
     }
 }
 
-
 static uint8_t
 sarc_2016a_read(uint16_t addr, void *priv)
 {
     sarc_2016a_t *dev = (sarc_2016a_t *) priv;
-    uint8_t ret = 0xff;
+    uint8_t       ret = 0xff;
 
-    if(!(addr & 1))
+    if (!(addr & 1))
         return dev->index;
     else {
         dev->index -= 0x80;
 
-        if((dev->index > 0) && (dev->index < 16))
+        if ((dev->index > 0) && (dev->index < 16))
             ret = dev->regs[dev->index];
 
         dev->index += 0x80;
@@ -238,7 +230,6 @@ sarc_2016a_read(uint16_t addr, void *priv)
         return ret;
     }
 }
-
 
 static void
 sarc_2016a_reset(void *priv)
@@ -251,7 +242,6 @@ sarc_2016a_reset(void *priv)
     sarc_2016a_fast_a20(dev);
 }
 
-
 static void
 sarc_2016a_close(void *priv)
 {
@@ -259,7 +249,6 @@ sarc_2016a_close(void *priv)
 
     free(dev);
 }
-
 
 static void *
 sarc_2016a_init(const device_t *info)
@@ -279,15 +268,15 @@ sarc_2016a_init(const device_t *info)
 }
 
 const device_t sarc_2016a_device = {
-    .name = "SARC 2016A",
+    .name          = "SARC 2016A",
     .internal_name = "sarc_2016a",
-    .flags = 0,
-    .local = 0,
-    .init = sarc_2016a_init,
-    .close = sarc_2016a_close,
-    .reset = sarc_2016a_reset,
+    .flags         = 0,
+    .local         = 0,
+    .init          = sarc_2016a_init,
+    .close         = sarc_2016a_close,
+    .reset         = sarc_2016a_reset,
     { .available = NULL },
     .speed_changed = NULL,
-    .force_redraw = NULL,
-    .config = NULL
+    .force_redraw  = NULL,
+    .config        = NULL
 };

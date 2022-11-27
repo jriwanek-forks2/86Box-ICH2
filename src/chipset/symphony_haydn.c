@@ -1,9 +1,9 @@
 /*
- * Symphony Haydn II
+ *          Symphony Haydn II
  *
- * Authors:	Tiseno100,
+ * Authors: Tiseno100,
  *
- * Copyright 2022 Tiseno100.
+ *          Copyright 2022 Tiseno100.
  */
 
 /*
@@ -80,10 +80,9 @@
 #include <86box/port_92.h>
 #include <86box/chipset.h>
 
-
 typedef struct
 {
-    int index;
+    int     index;
     uint8_t regs[70];
 } symphony_haydn_t;
 
@@ -95,29 +94,28 @@ symphony_haydn_log(const char *fmt, ...)
     va_list ap;
 
     if (symphony_haydn_do_log) {
-	va_start(ap, fmt);
-	pclog_ex(fmt, ap);
-	va_end(ap);
+        va_start(ap, fmt);
+        pclog_ex(fmt, ap);
+        va_end(ap);
     }
 }
 #else
-#define symphony_haydn_log(fmt, ...)
+#    define symphony_haydn_log(fmt, ...)
 #endif
-
 
 static void
 symphony_haydn_fasta20(symphony_haydn_t *dev)
 {
     int enable = dev->regs[0x01] & 1;
 
-    if(enable)
+    if (enable)
         symphony_haydn_log("Symphony Haydn FASTA20: A FASTA20 cycle was provoked\n");
 
-    if(enable)
+    if (enable)
         mem_a20_alt = 1;
     else
         mem_a20_alt = 0;
-    
+
     mem_a20_recalc();
 }
 
@@ -125,33 +123,32 @@ static void
 symphony_haydn_bus_recalc(symphony_haydn_t *dev)
 {
     int clk_select = (dev->regs[0x02] >> 2) & 7;
-    int clk_speed = 7153159;
+    int clk_speed  = 7153159;
 
-    switch(clk_select)
-    {
+    switch (clk_select) {
         case 0:
             clk_speed = cpu_busspeed / 3;
-        break;
+            break;
 
         case 1:
             clk_speed = cpu_busspeed / 4;
-        break;
+            break;
 
         case 2:
             clk_speed = cpu_busspeed / 5;
-        break;
+            break;
 
         case 4:
             clk_speed = cpu_busspeed / 6;
-        break;
+            break;
 
         case 6:
             clk_speed = cpu_busspeed / 2.5;
-        break;
-        
+            break;
+
         case 7:
             clk_speed = cpu_busspeed / 2;
-        break;
+            break;
     }
 
     symphony_haydn_log("Symphony Haydn: Bus speed set to %d\n", clk_speed);
@@ -164,22 +161,21 @@ symphony_haydn_mem_relocate(symphony_haydn_t *dev)
 {
     int enable_256k = dev->regs[0x2d] & 0x80;
 
-    if(enable_256k) {
+    if (enable_256k) {
         symphony_haydn_log("Symphony Haydn Memory Remap: 256KB of memory were remapped\n");
         mem_remap_top(256);
     }
-
 }
 
 static void
 symphony_haydn_shadow_low(int seg, symphony_haydn_t *dev)
 {
     uint32_t base = seg ? 0xd0000 : 0xc0000;
-    int reg = seg ? 0x2f : 0x2e;
+    int      reg  = seg ? 0x2f : 0x2e;
     uint16_t read, write;
 
-    for(int i = 0; i < 8; i += 2) {
-        read = (dev->regs[reg] & (1 << (i + 1))) ? MEM_READ_INTERNAL : MEM_READ_EXTANY;
+    for (int i = 0; i < 8; i += 2) {
+        read  = (dev->regs[reg] & (1 << (i + 1))) ? MEM_READ_INTERNAL : MEM_READ_EXTANY;
         write = (dev->regs[reg] & (1 << i)) ? MEM_WRITE_INTERNAL : MEM_WRITE_EXTANY;
         symphony_haydn_log("Symphony Haydn Shadow: Segment 0x%x\n", base);
         mem_set_mem_state_both(base, 0x4000, read | write);
@@ -193,10 +189,10 @@ static void
 symphony_haydn_shadow_high(int seg, symphony_haydn_t *dev)
 {
     uint32_t base = seg ? 0xf0000 : 0xe0000;
-    int reg = seg ? 0x31 : 0x30;
+    int      reg  = seg ? 0x31 : 0x30;
     uint16_t read, write;
 
-    read = (dev->regs[reg] & 0x80) ? MEM_READ_INTERNAL : MEM_READ_EXTANY;
+    read  = (dev->regs[reg] & 0x80) ? MEM_READ_INTERNAL : MEM_READ_EXTANY;
     write = (dev->regs[reg] & 0x40) ? MEM_WRITE_INTERNAL : MEM_WRITE_EXTANY;
     symphony_haydn_log("Symphony Haydn Shadow: Segment 0x%x\n", base);
     mem_set_mem_state_both(base, 0x4000, read | write);
@@ -209,60 +205,53 @@ symphony_haydn_write(uint16_t addr, uint8_t val, void *priv)
 {
     symphony_haydn_t *dev = (symphony_haydn_t *) priv;
 
-    if(!(addr & 1))
+    if (!(addr & 1))
         dev->index = val;
     else {
-        if((dev->index == 0x01) ||                             /* System Controller Range 00h-08h */
-           (dev->index == 0x02) ||
-           (dev->index == 0x06) ||
-           (dev->index == 0x07) ||
-           (dev->index == 0x08) ||
-           ((dev->index >= 0x20) && (dev->index <= 0x33)) ||   /* Memory Controller Range 20h-33h */
-           ((dev->index >= 0x40) && (dev->index <= 0x45)))     /* ????????????????? Range 40h-45h */
-        dev->regs[dev->index] = val;
+        if ((dev->index == 0x01) ||                                                                                                                           /* System Controller Range 00h-08h */
+            (dev->index == 0x02) || (dev->index == 0x06) || (dev->index == 0x07) || (dev->index == 0x08) || ((dev->index >= 0x20) && (dev->index <= 0x33)) || /* Memory Controller Range 20h-33h */
+            ((dev->index >= 0x40) && (dev->index <= 0x45)))                                                                                                   /* ????????????????? Range 40h-45h */
+            dev->regs[dev->index] = val;
 
-        switch(dev->index)
-        {
+        switch (dev->index) {
             case 0x01:
                 symphony_haydn_fasta20(dev);
-            break;
+                break;
 
             case 0x02:
                 symphony_haydn_bus_recalc(dev);
-            break;
+                break;
 
             case 0x2d:
                 symphony_haydn_mem_relocate(dev);
-            break;
+                break;
 
             case 0x2e:
             case 0x2f:
                 symphony_haydn_shadow_low(dev->index & 1, dev);
-            break;
+                break;
 
             case 0x30:
             case 0x31:
                 symphony_haydn_shadow_high(dev->index & 1, dev);
-            break;
+                break;
         }
     }
 }
-
 
 static uint8_t
 symphony_haydn_read(uint16_t addr, void *priv)
 {
     symphony_haydn_t *dev = (symphony_haydn_t *) priv;
-    
-    if(!(addr & 1))
-        return dev->index;
-    else if(addr & 1)
-        if((dev->index > 0) && (dev->index <= 0x45))
-            return dev->regs[dev->index];
-    else
-        return 0xff;
-}
 
+    if (!(addr & 1))
+        return dev->index;
+    else if (addr & 1)
+        if ((dev->index > 0) && (dev->index <= 0x45))
+            return dev->regs[dev->index];
+        else
+            return 0xff;
+}
 
 static void
 symphony_haydn_reset(void *priv)
@@ -279,7 +268,6 @@ symphony_haydn_reset(void *priv)
     symphony_haydn_shadow_high(1, dev);
 }
 
-
 static void
 symphony_haydn_close(void *priv)
 {
@@ -287,7 +275,6 @@ symphony_haydn_close(void *priv)
 
     free(dev);
 }
-
 
 static void *
 symphony_haydn_init(const device_t *info)
@@ -304,15 +291,15 @@ symphony_haydn_init(const device_t *info)
 }
 
 const device_t symphony_haydn_device = {
-    .name = "Symphony Haydn II",
+    .name          = "Symphony Haydn II",
     .internal_name = "symphony_haydn",
-    .flags = 0,
-    .local = 0,
-    .init = symphony_haydn_init,
-    .close = symphony_haydn_close,
-    .reset = symphony_haydn_reset,
+    .flags         = 0,
+    .local         = 0,
+    .init          = symphony_haydn_init,
+    .close         = symphony_haydn_close,
+    .reset         = symphony_haydn_reset,
     { .available = NULL },
     .speed_changed = NULL,
-    .force_redraw = NULL,
-    .config = NULL
+    .force_redraw  = NULL,
+    .config        = NULL
 };

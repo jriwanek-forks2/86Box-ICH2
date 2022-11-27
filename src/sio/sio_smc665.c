@@ -1,9 +1,9 @@
 /*
- * SMC FDC37C665(SMC665)
+ *          SMC FDC37C665(SMC665)
  *
- * Authors:	Tiseno100,
+ * Authors: Tiseno100,
  *
- * Copyright 2022 Tiseno100.
+ *          Copyright 2022 Tiseno100.
  */
 
 #include <stdarg.h>
