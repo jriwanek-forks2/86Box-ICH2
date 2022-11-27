@@ -54,6 +54,22 @@ static uint16_t dma_sg_base;
 static uint16_t dma16_buffer[65536];
 static uint32_t dma_mask;
 
+static struct {
+    int xfr_command,
+        xfr_channel;
+    int byte_ptr;
+
+    int is_ps2;
+} dma_ps2;
+
+#define DMA_PS2_IOA            (1 << 0)
+#define DMA_PS2_AUTOINIT       (1 << 1)
+#define DMA_PS2_XFER_MEM_TO_IO (1 << 2)
+#define DMA_PS2_XFER_IO_TO_MEM (3 << 2)
+#define DMA_PS2_XFER_MASK      (3 << 2)
+#define DMA_PS2_DEC2           (1 << 4)
+#define DMA_PS2_SIZE16         (1 << 6)
+
 #ifdef ENABLE_DMA_LOG
 int dma_do_log = ENABLE_DMA_LOG;
 
@@ -71,6 +87,8 @@ dma_log(const char *fmt, ...)
 #else
 #    define dma_log(fmt, ...)
 #endif
+
+static void dma_ps2_run(int channel);
 
 int
 dma_get_drq(int channel)
@@ -518,10 +536,19 @@ dma_write(uint16_t addr, uint8_t val, void *priv)
                 dma_m &= ~(1 << channel);
             return;
 
-	case 0xb: /*Mode*/
-		channel = (val & 3);
-		dma[channel].mode = val;
-		return;
+        case 0xb: /*Mode*/
+            channel           = (val & 3);
+            dma[channel].mode = val;
+            if (dma_ps2.is_ps2) {
+                dma[channel].ps2_mode &= ~0x1c;
+                if (val & 0x20)
+                    dma[channel].ps2_mode |= 0x10;
+                if ((val & 0xc) == 8)
+                    dma[channel].ps2_mode |= 4;
+                else if ((val & 0xc) == 4)
+                    dma[channel].ps2_mode |= 0xc;
+            }
+            return;
 
         case 0xc: /*Clear FF*/
             dma_wp[0] = 0;
@@ -544,6 +571,163 @@ dma_write(uint16_t addr, uint8_t val, void *priv)
 }
 
 static uint8_t
+dma_ps2_read(uint16_t addr, void *priv)
+{
+    dma_t  *dma_c = &dma[dma_ps2.xfr_channel];
+    uint8_t temp  = 0xff;
+
+    switch (addr) {
+        case 0x1a:
+            switch (dma_ps2.xfr_command) {
+                case 2: /*Address*/
+                case 3:
+                    switch (dma_ps2.byte_ptr) {
+                        case 0:
+                            temp             = dma_c->ac & 0xff;
+                            dma_ps2.byte_ptr = 1;
+                            break;
+                        case 1:
+                            temp             = (dma_c->ac >> 8) & 0xff;
+                            dma_ps2.byte_ptr = 2;
+                            break;
+                        case 2:
+                            temp             = (dma_c->ac >> 16) & 0xff;
+                            dma_ps2.byte_ptr = 0;
+                            break;
+                    }
+                    break;
+
+                case 4: /*Count*/
+                case 5:
+                    if (dma_ps2.byte_ptr)
+                        temp = dma_c->cc >> 8;
+                    else
+                        temp = dma_c->cc & 0xff;
+                    dma_ps2.byte_ptr = (dma_ps2.byte_ptr + 1) & 1;
+                    break;
+
+                case 6: /*Read DMA status*/
+                    if (dma_ps2.byte_ptr) {
+                        temp = ((dma_stat_rq & 0xf0) >> 4) | (dma_stat & 0xf0);
+                        dma_stat &= ~0xf0;
+                        dma_stat_rq &= ~0xf0;
+                    } else {
+                        temp = (dma_stat_rq & 0xf) | ((dma_stat & 0xf) << 4);
+                        dma_stat &= ~0xf;
+                        dma_stat_rq &= ~0xf;
+                    }
+                    dma_ps2.byte_ptr = (dma_ps2.byte_ptr + 1) & 1;
+                    break;
+
+                case 7: /*Mode*/
+                    temp = dma_c->ps2_mode;
+                    break;
+
+                case 8: /*Arbitration Level*/
+                    temp = dma_c->arb_level;
+                    break;
+
+                default:
+                    fatal("Bad XFR Read command %i channel %i\n", dma_ps2.xfr_command, dma_ps2.xfr_channel);
+            }
+            break;
+    }
+    return (temp);
+}
+
+static void
+dma_ps2_write(uint16_t addr, uint8_t val, void *priv)
+{
+    dma_t  *dma_c = &dma[dma_ps2.xfr_channel];
+    uint8_t mode;
+
+    switch (addr) {
+        case 0x18:
+            dma_ps2.xfr_channel = val & 0x7;
+            dma_ps2.xfr_command = val >> 4;
+            dma_ps2.byte_ptr    = 0;
+            switch (dma_ps2.xfr_command) {
+                case 9: /*Set DMA mask*/
+                    dma_m |= (1 << dma_ps2.xfr_channel);
+                    break;
+
+                case 0xa: /*Reset DMA mask*/
+                    dma_m &= ~(1 << dma_ps2.xfr_channel);
+                    break;
+
+                case 0xb:
+                    if (!(dma_m & (1 << dma_ps2.xfr_channel)))
+                        dma_ps2_run(dma_ps2.xfr_channel);
+                    break;
+            }
+            break;
+
+        case 0x1a:
+            switch (dma_ps2.xfr_command) {
+                case 0: /*I/O address*/
+                    if (dma_ps2.byte_ptr)
+                        dma_c->io_addr = (dma_c->io_addr & 0x00ff) | (val << 8);
+                    else
+                        dma_c->io_addr = (dma_c->io_addr & 0xff00) | val;
+                    dma_ps2.byte_ptr = (dma_ps2.byte_ptr + 1) & 1;
+                    break;
+
+                case 2: /*Address*/
+                    switch (dma_ps2.byte_ptr) {
+                        case 0:
+                            dma_c->ac        = (dma_c->ac & 0xffff00) | val;
+                            dma_ps2.byte_ptr = 1;
+                            break;
+
+                        case 1:
+                            dma_c->ac        = (dma_c->ac & 0xff00ff) | (val << 8);
+                            dma_ps2.byte_ptr = 2;
+                            break;
+
+                        case 2:
+                            dma_c->ac        = (dma_c->ac & 0x00ffff) | (val << 16);
+                            dma_ps2.byte_ptr = 0;
+                            break;
+                    }
+                    dma_c->ab = dma_c->ac;
+                    break;
+
+                case 4: /*Count*/
+                    if (dma_ps2.byte_ptr)
+                        dma_c->cc = (dma_c->cc & 0xff) | (val << 8);
+                    else
+                        dma_c->cc = (dma_c->cc & 0xff00) | val;
+                    dma_ps2.byte_ptr = (dma_ps2.byte_ptr + 1) & 1;
+                    dma_c->cb        = dma_c->cc;
+                    break;
+
+                case 7: /*Mode register*/
+                    mode = 0;
+                    if (val & DMA_PS2_DEC2)
+                        mode |= 0x20;
+                    if ((val & DMA_PS2_XFER_MASK) == DMA_PS2_XFER_MEM_TO_IO)
+                        mode |= 8;
+                    else if ((val & DMA_PS2_XFER_MASK) == DMA_PS2_XFER_IO_TO_MEM)
+                        mode |= 4;
+                    dma_c->mode = (dma_c->mode & ~0x2c) | mode;
+                    if (val & DMA_PS2_AUTOINIT)
+                        dma_c->mode |= 0x10;
+                    dma_c->ps2_mode = val;
+                    dma_c->size     = val & DMA_PS2_SIZE16;
+                    break;
+
+                case 8: /*Arbitration Level*/
+                    dma_c->arb_level = val;
+                    break;
+
+                default:
+                    fatal("Bad XFR command %i channel %i val %02x\n", dma_ps2.xfr_command, dma_ps2.xfr_channel, val);
+            }
+            break;
+    }
+}
+
+static uint8_t
 dma16_read(uint16_t addr, void *priv)
 {
     int     channel = ((addr >> 2) & 3) + 4;
@@ -551,14 +735,19 @@ dma16_read(uint16_t addr, void *priv)
 
     addr >>= 1;
     switch (addr & 0xf) {
-	case 0:
-	case 2:
-	case 4:
-	case 6: /*Address registers*/
-		dma_wp[1] ^= 1;
-		if (dma_wp[1])
-			return((dma[channel].ac >> 1) & 0xff);
-		return((dma[channel].ac >> 9) & 0xff);
+        case 0:
+        case 2:
+        case 4:
+        case 6: /*Address registers*/
+            dma_wp[1] ^= 1;
+            if (dma_ps2.is_ps2) {
+                if (dma_wp[1])
+                    return (dma[channel].ac);
+                return ((dma[channel].ac >> 8) & 0xff);
+            }
+            if (dma_wp[1])
+                return ((dma[channel].ac >> 1) & 0xff);
+            return ((dma[channel].ac >> 9) & 0xff);
 
         case 1:
         case 3:
@@ -589,19 +778,24 @@ dma16_write(uint16_t addr, uint8_t val, void *priv)
 
     dmaregs[1][addr & 0xf] = val;
     switch (addr & 0xf) {
-	case 0:
-	case 2:
-	case 4:
-	case 6: /*Address registers*/
-		dma_wp[1] ^= 1;
-
-		if (dma_wp[1])
-			dma[channel].ab = (dma[channel].ab & 0xfffffe00 & dma_mask) | (val << 1);
-		else
-			dma[channel].ab = (dma[channel].ab & 0xfffe01ff & dma_mask) | (val << 9);
-
-		dma[channel].ac = dma[channel].ab;
-		return;
+        case 0:
+        case 2:
+        case 4:
+        case 6: /*Address registers*/
+            dma_wp[1] ^= 1;
+            if (dma_ps2.is_ps2) {
+                if (dma_wp[1])
+                    dma[channel].ab = (dma[channel].ab & 0xffffff00 & dma_mask) | val;
+                else
+                    dma[channel].ab = (dma[channel].ab & 0xffff00ff & dma_mask) | (val << 8);
+            } else {
+                if (dma_wp[1])
+                    dma[channel].ab = (dma[channel].ab & 0xfffffe00 & dma_mask) | (val << 1);
+                else
+                    dma[channel].ab = (dma[channel].ab & 0xfffe01ff & dma_mask) | (val << 9);
+            }
+            dma[channel].ac = dma[channel].ab;
+            return;
 
         case 1:
         case 3:
@@ -635,10 +829,19 @@ dma16_write(uint16_t addr, uint8_t val, void *priv)
                 dma_m &= ~(0x10 << channel);
             return;
 
-	case 0xb: /*Mode*/
-		channel = (val & 3) + 4;
-		dma[channel].mode = val;
-		return;
+        case 0xb: /*Mode*/
+            channel           = (val & 3) + 4;
+            dma[channel].mode = val;
+            if (dma_ps2.is_ps2) {
+                dma[channel].ps2_mode &= ~0x1c;
+                if (val & 0x20)
+                    dma[channel].ps2_mode |= 0x10;
+                if ((val & 0xc) == 8)
+                    dma[channel].ps2_mode |= 4;
+                else if ((val & 0xc) == 4)
+                    dma[channel].ps2_mode |= 0xc;
+            }
+            return;
 
         case 0xc: /*Clear FF*/
             dma_wp[1] = 0;
@@ -900,7 +1103,8 @@ dma_init(void)
     io_sethandler(0x0000, 16,
                   dma_read, NULL, NULL, dma_write, NULL, NULL, NULL);
     io_sethandler(0x0080, 8,
-		  dma_page_read,NULL,NULL, dma_page_write,NULL,NULL, NULL);
+                  dma_page_read, NULL, NULL, dma_page_write, NULL, NULL, NULL);
+    dma_ps2.is_ps2 = 0;
 }
 
 void
@@ -940,21 +1144,21 @@ void
 dma_lpc_init(void) /* Addresses LPC DMA uses */
 {
     io_sethandler(0x1000, 16,
-		  dma_read,NULL,NULL, dma_write,NULL,NULL, NULL);
+                  dma_read, NULL, NULL, dma_write, NULL, NULL, NULL);
     io_sethandler(0x1080, 8,
-		  dma_page_read,NULL,NULL, dma_page_write,NULL,NULL, NULL);
+                  dma_page_read, NULL, NULL, dma_page_write, NULL, NULL, NULL);
     io_sethandler(0x10C0, 32,
-		  dma16_read,NULL,NULL, dma16_write,NULL,NULL, NULL);
+                  dma16_read, NULL, NULL, dma16_write, NULL, NULL, NULL);
     io_sethandler(0x1088, 8,
-		  dma_page_read,NULL,NULL, dma_page_write,NULL,NULL, NULL);
+                  dma_page_read, NULL, NULL, dma_page_write, NULL, NULL, NULL);
     io_sethandler(0x1090, 1,
-		  dma_page_read,NULL,NULL, dma_page_write,NULL,NULL, NULL);
+                  dma_page_read, NULL, NULL, dma_page_write, NULL, NULL, NULL);
     io_sethandler(0x1094, 3,
-		  dma_page_read,NULL,NULL, dma_page_write,NULL,NULL, NULL);
+                  dma_page_read, NULL, NULL, dma_page_write, NULL, NULL, NULL);
     io_sethandler(0x1098, 1,
-		  dma_page_read,NULL,NULL, dma_page_write,NULL,NULL, NULL);
+                  dma_page_read, NULL, NULL, dma_page_write, NULL, NULL, NULL);
     io_sethandler(0x109C, 3,
-		  dma_page_read,NULL,NULL, dma_page_write,NULL,NULL, NULL);
+                  dma_page_read, NULL, NULL, dma_page_write, NULL, NULL, NULL);
 }
 
 void
@@ -979,10 +1183,20 @@ dma_alias_remove_piix(void)
                      dma_page_read, NULL, NULL, dma_page_write, NULL, NULL, NULL);
 }
 
+void
+ps2_dma_init(void)
+{
+    dma_reset();
 
-extern void	dma_bm_read(uint32_t PhysAddress, uint8_t *DataRead, uint32_t TotalSize, int TransferSize);
-extern void	dma_bm_write(uint32_t PhysAddress, const uint8_t *DataWrite, uint32_t TotalSize, int TransferSize);
+    io_sethandler(0x0018, 1,
+                  dma_ps2_read, NULL, NULL, dma_ps2_write, NULL, NULL, NULL);
+    io_sethandler(0x001a, 1,
+                  dma_ps2_read, NULL, NULL, dma_ps2_write, NULL, NULL, NULL);
+    dma_ps2.is_ps2 = 1;
+}
 
+extern void dma_bm_read(uint32_t PhysAddress, uint8_t *DataRead, uint32_t TotalSize, int TransferSize);
+extern void dma_bm_write(uint32_t PhysAddress, const uint8_t *DataWrite, uint32_t TotalSize, int TransferSize);
 
 static int
 dma_sg(uint8_t *data, int transfer_length, int out, void *priv)
@@ -1169,31 +1383,39 @@ dma_channel_read(int channel)
     if (!dma_c->size) {
         temp = _dma_read(dma_c->ac, dma_c);
 
-	if (dma_c->mode & 0x20) {
-		if (dma_advanced)
-			dma_retreat(dma_c);
-		else
-			dma_c->ac = (dma_c->ac & 0xffff0000 & dma_mask) | ((dma_c->ac - 1) & 0xffff);
-	} else {
-		if (dma_advanced)
-			dma_advance(dma_c);
-		else
-			dma_c->ac = (dma_c->ac & 0xffff0000 & dma_mask) | ((dma_c->ac + 1) & 0xffff);
-	}
+        if (dma_c->mode & 0x20) {
+            if (dma_ps2.is_ps2)
+                dma_c->ac--;
+            else if (dma_advanced)
+                dma_retreat(dma_c);
+            else
+                dma_c->ac = (dma_c->ac & 0xffff0000 & dma_mask) | ((dma_c->ac - 1) & 0xffff);
+        } else {
+            if (dma_ps2.is_ps2)
+                dma_c->ac++;
+            else if (dma_advanced)
+                dma_advance(dma_c);
+            else
+                dma_c->ac = (dma_c->ac & 0xffff0000 & dma_mask) | ((dma_c->ac + 1) & 0xffff);
+        }
     } else {
         temp = _dma_readw(dma_c->ac, dma_c);
 
-	if (dma_c->mode & 0x20) {
-		if (dma_advanced)
-			dma_retreat(dma_c);
-		else
-			dma_c->ac = (dma_c->ac & 0xfffe0000 & dma_mask) | ((dma_c->ac - 2) & 0x1ffff);
-	} else {
-		if (dma_advanced)
-			dma_advance(dma_c);
-		else
-			dma_c->ac = (dma_c->ac & 0xfffe0000 & dma_mask) | ((dma_c->ac + 2) & 0x1ffff);
-	}
+        if (dma_c->mode & 0x20) {
+            if (dma_ps2.is_ps2)
+                dma_c->ac -= 2;
+            else if (dma_advanced)
+                dma_retreat(dma_c);
+            else
+                dma_c->ac = (dma_c->ac & 0xfffe0000 & dma_mask) | ((dma_c->ac - 2) & 0x1ffff);
+        } else {
+            if (dma_ps2.is_ps2)
+                dma_c->ac += 2;
+            else if (dma_advanced)
+                dma_advance(dma_c);
+            else
+                dma_c->ac = (dma_c->ac & 0xfffe0000 & dma_mask) | ((dma_c->ac + 2) & 0x1ffff);
+        }
     }
 
     dma_stat_rq |= (1 << channel);
@@ -1248,32 +1470,40 @@ dma_channel_write(int channel, uint16_t val)
     if (!dma_c->size) {
         _dma_write(dma_c->ac, val & 0xff, dma_c);
 
-	if (dma_c->mode & 0x20) {
-		if (dma_advanced)
-			dma_retreat(dma_c);
-		else
-			dma_c->ac = (dma_c->ac & 0xffff0000 & dma_mask) | ((dma_c->ac - 1) & 0xffff);
-	} else {
-		if (dma_advanced)
-			dma_advance(dma_c);
-		else
-			dma_c->ac = (dma_c->ac & 0xffff0000 & dma_mask) | ((dma_c->ac + 1) & 0xffff);
-	}
+        if (dma_c->mode & 0x20) {
+            if (dma_ps2.is_ps2)
+                dma_c->ac--;
+            else if (dma_advanced)
+                dma_retreat(dma_c);
+            else
+                dma_c->ac = (dma_c->ac & 0xffff0000 & dma_mask) | ((dma_c->ac - 1) & 0xffff);
+        } else {
+            if (dma_ps2.is_ps2)
+                dma_c->ac++;
+            else if (dma_advanced)
+                dma_advance(dma_c);
+            else
+                dma_c->ac = (dma_c->ac & 0xffff0000 & dma_mask) | ((dma_c->ac + 1) & 0xffff);
+        }
     } else {
         _dma_writew(dma_c->ac, val, dma_c);
 
-	if (dma_c->mode & 0x20) {
-		if (dma_advanced)
-			dma_retreat(dma_c);
-		else
-			dma_c->ac = (dma_c->ac & 0xfffe0000 & dma_mask) | ((dma_c->ac - 2) & 0x1ffff);
-		dma_c->ac = (dma_c->ac & 0xfffe0000 & dma_mask) | ((dma_c->ac - 2) & 0x1ffff);
-	} else {
-		if (dma_advanced)
-			dma_advance(dma_c);
-		else
-			dma_c->ac = (dma_c->ac & 0xfffe0000 & dma_mask) | ((dma_c->ac + 2) & 0x1ffff);
-	}
+        if (dma_c->mode & 0x20) {
+            if (dma_ps2.is_ps2)
+                dma_c->ac -= 2;
+            else if (dma_advanced)
+                dma_retreat(dma_c);
+            else
+                dma_c->ac = (dma_c->ac & 0xfffe0000 & dma_mask) | ((dma_c->ac - 2) & 0x1ffff);
+            dma_c->ac = (dma_c->ac & 0xfffe0000 & dma_mask) | ((dma_c->ac - 2) & 0x1ffff);
+        } else {
+            if (dma_ps2.is_ps2)
+                dma_c->ac += 2;
+            else if (dma_advanced)
+                dma_advance(dma_c);
+            else
+                dma_c->ac = (dma_c->ac & 0xfffe0000 & dma_mask) | ((dma_c->ac + 2) & 0x1ffff);
+        }
     }
 
     dma_stat_rq |= (1 << channel);
@@ -1304,6 +1534,93 @@ dma_channel_write(int channel, uint16_t val)
     return (0);
 }
 
+static void
+dma_ps2_run(int channel)
+{
+    dma_t *dma_c = &dma[channel];
+
+    switch (dma_c->ps2_mode & DMA_PS2_XFER_MASK) {
+        case DMA_PS2_XFER_MEM_TO_IO:
+            do {
+                if (!dma_c->size) {
+                    uint8_t temp = _dma_read(dma_c->ac, dma_c);
+
+                    outb(dma_c->io_addr, temp);
+
+                    if (dma_c->ps2_mode & DMA_PS2_DEC2)
+                        dma_c->ac--;
+                    else
+                        dma_c->ac++;
+                } else {
+                    uint16_t temp = _dma_readw(dma_c->ac, dma_c);
+
+                    outw(dma_c->io_addr, temp);
+
+                    if (dma_c->ps2_mode & DMA_PS2_DEC2)
+                        dma_c->ac -= 2;
+                    else
+                        dma_c->ac += 2;
+                }
+
+                dma_stat_rq |= (1 << channel);
+                dma_c->cc--;
+            } while (dma_c->cc > 0);
+
+            dma_stat |= (1 << channel);
+            break;
+
+        case DMA_PS2_XFER_IO_TO_MEM:
+            do {
+                if (!dma_c->size) {
+                    uint8_t temp = inb(dma_c->io_addr);
+
+                    _dma_write(dma_c->ac, temp, dma_c);
+
+                    if (dma_c->ps2_mode & DMA_PS2_DEC2)
+                        dma_c->ac--;
+                    else
+                        dma_c->ac++;
+                } else {
+                    uint16_t temp = inw(dma_c->io_addr);
+
+                    _dma_writew(dma_c->ac, temp, dma_c);
+
+                    if (dma_c->ps2_mode & DMA_PS2_DEC2)
+                        dma_c->ac -= 2;
+                    else
+                        dma_c->ac += 2;
+                }
+
+                dma_stat_rq |= (1 << channel);
+                dma_c->cc--;
+            } while (dma_c->cc > 0);
+
+            ps2_cache_clean();
+            dma_stat |= (1 << channel);
+            break;
+
+        default: /*Memory verify*/
+            do {
+                if (!dma_c->size) {
+                    if (dma_c->ps2_mode & DMA_PS2_DEC2)
+                        dma_c->ac--;
+                    else
+                        dma_c->ac++;
+                } else {
+                    if (dma_c->ps2_mode & DMA_PS2_DEC2)
+                        dma_c->ac -= 2;
+                    else
+                        dma_c->ac += 2;
+                }
+
+                dma_stat_rq |= (1 << channel);
+                dma->cc--;
+            } while (dma->cc > 0);
+
+            dma_stat |= (1 << channel);
+            break;
+    }
+}
 
 int
 dma_mode(int channel)

@@ -52,7 +52,7 @@
 #include <86box/machine.h>
 
 void
-machine_at_common_init_ex(const machine_t *model) /* The standard machine implementation of 86Box with cutouts as they don't fit the forks focus. */
+machine_at_common_init_ex(const machine_t *model, int type)
 {
     machine_common_init(model);
 

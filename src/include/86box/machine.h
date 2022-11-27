@@ -259,33 +259,38 @@ extern void     machine_set_gpi(uint32_t gpi);
 /* Initialization functions for boards and systems. */
 extern void machine_common_init(const machine_t *);
 
-/* m_at.c */
-<<<<<<< HEAD
-extern void	machine_at_common_init_ex(const machine_t *);
-
 /* boards_sarc_2016a.c */
-extern int  machine_at_m396f_init(const machine_t *);
-extern int  machine_at_sxd_init(const machine_t *);
+extern int machine_at_m396f_init(const machine_t *);
+extern int machine_at_sxd_init(const machine_t *);
 
 /* boards_symphony_haydn.c */
-extern int  machine_at_t486dx_init(const machine_t *);
-extern int  machine_at_386sc_stock_init(const machine_t *);
-extern int  machine_at_386sc_mr_init(const machine_t *);
-extern int  machine_at_pkm0031y_init(const machine_t *);
+extern int machine_at_t486dx_init(const machine_t *);
+extern int machine_at_386sc_stock_init(const machine_t *);
+extern int machine_at_386sc_mr_init(const machine_t *);
+extern int machine_at_pkm0031y_init(const machine_t *);
 
 /* boards_sis_471.c */
-extern int  machine_at_vi15g_init(const machine_t *);
-extern int  machine_at_486sv2g_init(const machine_t *);
+extern int machine_at_vi15g_init(const machine_t *);
+extern int machine_at_486sv2g_init(const machine_t *);
 
 /* boards_piix.c */
-extern int  machine_at_p54tp4_init(const machine_t *);
-extern int  machine_at_ap5c_init(const machine_t *);
-extern int  machine_at_acerv30_init(const machine_t *);
-extern int  machine_at_m54hi_init(const machine_t *);
+extern int machine_at_p54tp4_init(const machine_t *);
+extern int machine_at_ap5c_init(const machine_t *);
+extern int machine_at_acerv30_init(const machine_t *);
+extern int machine_at_m54hi_init(const machine_t *);
 
 /* boards_ich2.c */
-extern int	machine_at_s2080_init(const machine_t *);
-=======
+extern int machine_at_s2080_init(const machine_t *);
+
+/* m_amstrad.c */
+extern int machine_pc1512_init(const machine_t *);
+extern int machine_pc1640_init(const machine_t *);
+extern int machine_pc200_init(const machine_t *);
+extern int machine_ppc512_init(const machine_t *);
+extern int machine_pc2086_init(const machine_t *);
+extern int machine_pc3086_init(const machine_t *);
+
+/* m_at.c */
 extern void machine_at_common_init_ex(const machine_t *, int type);
 extern void machine_at_common_init(const machine_t *);
 extern void machine_at_init(const machine_t *);
@@ -749,6 +754,5 @@ extern int machine_xt_z159_init(const machine_t *);
 
 /* m_xt_xi8088.c */
 extern int machine_xt_xi8088_init(const machine_t *);
->>>>>>> upstream/master
 
 #endif /*EMU_MACHINE_H*/

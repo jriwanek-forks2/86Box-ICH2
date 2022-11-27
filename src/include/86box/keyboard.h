@@ -135,33 +135,49 @@ extern int     keyboard_scan;
 extern void (*keyboard_send)(uint16_t val);
 extern void kbd_adddata_process(uint16_t val, void (*adddata)(uint16_t val));
 
-extern uint8_t	keyboard_set3_flags[512];
-extern uint8_t	keyboard_set3_all_repeat;
-extern uint8_t	keyboard_set3_all_break;
-extern int	mouse_queue_start, mouse_queue_end;
-extern int	mouse_scan;
+extern const scancode scancode_xt[512];
+
+extern uint8_t keyboard_set3_flags[512];
+extern uint8_t keyboard_set3_all_repeat;
+extern uint8_t keyboard_set3_all_break;
+extern int     mouse_queue_start, mouse_queue_end;
+extern int     mouse_scan;
 
 #ifdef EMU_DEVICE_H
-extern const device_t	keyboard_at_device;
-extern const device_t	keyboard_at_ami_device;
-extern const device_t	keyboard_at_samsung_device;
-extern const device_t	keyboard_at_toshiba_device;
-extern const device_t	keyboard_at_olivetti_device;
-extern const device_t	keyboard_at_ncr_device;
-extern const device_t	keyboard_ps2_device;
-extern const device_t	keyboard_ps2_ps1_device;
-extern const device_t	keyboard_ps2_ps1_pci_device;
-extern const device_t	keyboard_ps2_xi8088_device;
-extern const device_t	keyboard_ps2_ami_device;
-extern const device_t	keyboard_ps2_olivetti_device;
-extern const device_t	keyboard_ps2_mca_device;
-extern const device_t	keyboard_ps2_mca_2_device;
-extern const device_t	keyboard_ps2_quadtel_device;
-extern const device_t	keyboard_ps2_pci_device;
-extern const device_t	keyboard_ps2_ami_pci_device;
-extern const device_t	keyboard_ps2_intel_ami_pci_device;
-extern const device_t	keyboard_ps2_acer_pci_device;
-extern const device_t	keyboard_ps2_ali_pci_device;
+extern const device_t keyboard_pc_device;
+extern const device_t keyboard_pc82_device;
+extern const device_t keyboard_pravetz_device;
+extern const device_t keyboard_xt_device;
+extern const device_t keyboard_xt86_device;
+extern const device_t keyboard_xt_compaq_device;
+extern const device_t keyboard_xt_t1x00_device;
+extern const device_t keyboard_tandy_device;
+#    if defined(DEV_BRANCH) && defined(USE_LASERXT)
+extern const device_t keyboard_xt_lxt3_device;
+#    endif
+extern const device_t keyboard_xt_olivetti_device;
+extern const device_t keyboard_xt_zenith_device;
+extern const device_t keyboard_xtclone_device;
+extern const device_t keyboard_at_device;
+extern const device_t keyboard_at_ami_device;
+extern const device_t keyboard_at_samsung_device;
+extern const device_t keyboard_at_toshiba_device;
+extern const device_t keyboard_at_olivetti_device;
+extern const device_t keyboard_at_ncr_device;
+extern const device_t keyboard_ps2_device;
+extern const device_t keyboard_ps2_ps1_device;
+extern const device_t keyboard_ps2_ps1_pci_device;
+extern const device_t keyboard_ps2_xi8088_device;
+extern const device_t keyboard_ps2_ami_device;
+extern const device_t keyboard_ps2_olivetti_device;
+extern const device_t keyboard_ps2_mca_device;
+extern const device_t keyboard_ps2_mca_2_device;
+extern const device_t keyboard_ps2_quadtel_device;
+extern const device_t keyboard_ps2_pci_device;
+extern const device_t keyboard_ps2_ami_pci_device;
+extern const device_t keyboard_ps2_intel_ami_pci_device;
+extern const device_t keyboard_ps2_acer_pci_device;
+extern const device_t keyboard_ps2_ali_pci_device;
 #endif
 
 extern void     keyboard_init(void);

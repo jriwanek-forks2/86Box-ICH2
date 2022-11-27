@@ -22,7 +22,7 @@
 #define MEM_SIZE_MB (mem_size >> 10)
 
 uint8_t
-intel_815ep_get_banking()
+intel_815ep_get_banking(void)
 {
     switch(MEM_SIZE_MB)
     {
@@ -62,7 +62,7 @@ intel_815ep_get_banking()
 }
 
 void
-intel_815ep_spd_init()
+intel_815ep_spd_init(void)
 {
     switch(MEM_SIZE_MB)
     {

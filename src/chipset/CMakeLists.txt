@@ -14,3 +14,7 @@
 #
 
 add_library(chipset OBJECT intel_815ep.c intel_ich2.c intel_430fx.c intel_piix.c sarc_2016a.c sis_471.c symphony_haydn.c ../ioapic.c)
+
+if(OLIVETTI)
+    target_sources(chipset PRIVATE olivetti_eva.c)
+endif()

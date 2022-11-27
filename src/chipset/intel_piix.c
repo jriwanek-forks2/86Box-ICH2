@@ -1,11 +1,10 @@
 /*
  * Intel 82371FB PCI ISA IDE XCELERATOR
  *
- * Authors:	Tiseno100,
+ * Authors: Tiseno100,
  *
- * Copyright 2022 Tiseno100.
+ *          Copyright 2022 Tiseno100.
  */
-
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -38,24 +37,22 @@ intel_piix_log(const char *fmt, ...)
     va_list ap;
 
     if (intel_piix_do_log) {
-	va_start(ap, fmt);
-	pclog_ex(fmt, ap);
-	va_end(ap);
+        va_start(ap, fmt);
+        pclog_ex(fmt, ap);
+        va_end(ap);
     }
 }
 #else
-#define intel_piix_log(fmt, ...)
+#    define intel_piix_log(fmt, ...)
 #endif
 
-typedef struct intel_piix_t
-{
+typedef struct intel_piix_t {
     uint8_t pci_conf[2][256];
-    int apm_smi;
+    int     apm_smi;
 
-    apm_t *apm;
+    apm_t      *apm;
     sff8038i_t *ide_drive[2];
 } intel_piix_t;
-
 
 /* PCI-to-ISA Bridge Configurations*/
 static void
@@ -65,7 +62,7 @@ intel_piix_dma_alias(intel_piix_t *dev)
 
     intel_piix_log("Intel PIIX DMA: DMA Aliases were %s\n", dma_alias_enable ? "enabled" : "disabled");
 
-    if(dma_alias_enable)
+    if (dma_alias_enable)
         dma_alias_set_piix();
     else
         dma_alias_remove_piix();
@@ -76,11 +73,10 @@ intel_piix_irq_table(int val)
 {
     val &= 0x0f;
 
-    switch(val)
-    {
+    switch (val) {
         default: /* Reserved */
             return PCI_IRQ_DISABLED;
-        
+
         case 3 ... 7: /* Valid */
         case 9 ... 12:
         case 14 ... 15:
@@ -91,19 +87,18 @@ intel_piix_irq_table(int val)
 static void
 intel_piix_pirq(int addr, intel_piix_t *dev)
 {
-    int pirq = (addr - 0x60) + 1;
+    int pirq   = (addr - 0x60) + 1;
     int enable = dev->pci_conf[0][addr] & 0x80;
-    int irq = intel_piix_irq_table(dev->pci_conf[0][addr]);
-    
-    if(enable) {
-        if(irq != -1)
+    int irq    = intel_piix_irq_table(dev->pci_conf[0][addr]);
+
+    if (enable) {
+        if (irq != -1)
             intel_piix_log("Intel PIIX PIRQ: PIRQ%c was given IRQ %d\n", '@' + pirq, irq);
         else
             intel_piix_log("Intel PIIX PIRQ: PIRQ%c assigned to a reserved IRQ, Disabling\n", '@' + pirq);
 
         pci_set_irq_routing(pirq, irq);
-    }
-    else
+    } else
         pci_set_irq_routing(pirq, PCI_IRQ_DISABLED);
 }
 
@@ -119,19 +114,18 @@ intel_piix_clock_divisor(intel_piix_t *dev)
 static void
 intel_piix_mirq(int addr, intel_piix_t *dev)
 {
-    int mirq = (addr - 0x70);
+    int mirq   = (addr - 0x70);
     int enable = dev->pci_conf[0][addr] & 0x80;
-    int irq = intel_piix_irq_table(dev->pci_conf[0][addr]);
-    
-    if(enable) {
-        if(irq != -1)
+    int irq    = intel_piix_irq_table(dev->pci_conf[0][addr]);
+
+    if (enable) {
+        if (irq != -1)
             intel_piix_log("Intel PIIX MIRQ: MIRQ%d was given IRQ %d\n", mirq, irq);
         else
             intel_piix_log("Intel PIIX MIRQ: MIRQ%d assigned to a reserved IRQ, Disabling\n", mirq);
 
         pci_set_mirq_routing(mirq, irq);
-    }
-    else
+    } else
         pci_set_mirq_routing(mirq, PCI_IRQ_DISABLED);
 }
 
@@ -142,7 +136,7 @@ intel_piix_apmc_smi_config(intel_piix_t *dev)
 
     intel_piix_log("Intel PIIX SMI: APMC SMI was %s\n", apm_enable ? "enabled" : "disabled");
 
-    if(apm_enable)
+    if (apm_enable)
         dev->apm_smi = 1;
     else
         dev->apm_smi = 0;
@@ -153,7 +147,7 @@ intel_piix_apm_smi(uint16_t addr, uint8_t val, void *priv)
 {
     intel_piix_t *dev = (intel_piix_t *) priv;
 
-    if(dev->apm_smi) {
+    if (dev->apm_smi) {
         intel_piix_log("Intel PIIX SMI: An APMC SMI was provoked!\n");
         smi_raise();
 
@@ -165,10 +159,10 @@ intel_piix_apm_smi(uint16_t addr, uint8_t val, void *priv)
 static void
 intel_piix_ide_bm(intel_piix_t *dev)
 {
-    int enable = dev->pci_conf[1][4] & 1;
+    int      enable  = dev->pci_conf[1][4] & 1;
     uint16_t bm_addr = (dev->pci_conf[1][0x21] << 8) | (dev->pci_conf[1][0x20] & 0xf0);
 
-    if(enable)
+    if (enable)
         intel_piix_log("Intel PIIX IDE BM: BM address updated to 0x%x\n", bm_addr);
     else
         intel_piix_log("Intel PIIX IDE BM: BM Disabled\n");
@@ -180,193 +174,184 @@ intel_piix_ide_bm(intel_piix_t *dev)
 static void
 intel_piix_ide(intel_piix_t *dev)
 {
-    int enable = dev->pci_conf[1][4] & 1;
+    int enable     = dev->pci_conf[1][4] & 1;
     int pri_enable = dev->pci_conf[1][0x41] & 0x80;
     int sec_enable = dev->pci_conf[1][0x43] & 0x80;
 
     ide_sec_disable();
     ide_pri_disable();
 
-    if(enable){
-        if(pri_enable){
+    if (enable) {
+        if (pri_enable) {
             ide_pri_enable();
             intel_piix_log("Intel PIIX IDE: Primary channel was enabled\n");
         }
 
-        if(sec_enable){
+        if (sec_enable) {
             ide_sec_enable();
             intel_piix_log("Intel PIIX IDE: Secondary channel was enabled\n");
         }
-    }
-    else
+    } else
         intel_piix_log("Intel PIIX IDE: IDE was disabled entirely!");
-
 }
 
 static void
 intel_piix_write(int func, int addr, uint8_t val, void *priv)
 {
-    intel_piix_t *dev = (intel_piix_t *)priv;
+    intel_piix_t *dev = (intel_piix_t *) priv;
 
-    if(func == 0) {
+    if (func == 0) {
         intel_piix_log("Intel PIIX PCI-to-ISA: dev->regs[%02x] = %02x\n", addr, val);
 
-        switch(addr)
-        {
+        switch (addr) {
             case 0x04:
                 dev->pci_conf[func][addr] = (val & 8) | 7;
-            break;
+                break;
 
             case 0x07:
                 dev->pci_conf[func][addr] &= val & 0x38;
-            break;
+                break;
 
             case 0x4c:
                 dev->pci_conf[func][addr] = val;
                 intel_piix_dma_alias(dev);
-            break;
+                break;
 
             case 0x4e:
                 dev->pci_conf[func][addr] = val & 0xf7;
-            break;
+                break;
 
             case 0x60 ... 0x63:
                 dev->pci_conf[func][addr] = val & 0x8f;
                 intel_piix_pirq(addr, dev);
-            break;
+                break;
 
             case 0x69:
                 dev->pci_conf[func][addr] = val & 0xfa;
-            break;
+                break;
 
             case 0x6a:
                 dev->pci_conf[func][addr] = val & 3;
                 intel_piix_clock_divisor(dev);
-            break;
+                break;
 
             case 0x70 ... 0x71:
                 dev->pci_conf[func][addr] = val & 0xcf;
                 intel_piix_mirq(addr, dev);
-            break;
+                break;
 
             case 0x76 ... 0x77:
                 dev->pci_conf[func][addr] = val & 0x8f;
-            break;
+                break;
 
             case 0x78 ... 0x79:
                 dev->pci_conf[func][addr] = val;
-            break;
+                break;
 
             case 0xa0:
                 dev->pci_conf[func][addr] = val & 0x1f;
-            break;
+                break;
 
             case 0xa2:
                 dev->pci_conf[func][addr] = val;
                 intel_piix_apmc_smi_config(dev);
-            break;
+                break;
 
             case 0xa4:
                 dev->pci_conf[func][addr] = val & 0xf9;
-            break;
+                break;
 
             case 0xa5:
                 dev->pci_conf[func][addr] = val;
-            break;
+                break;
 
             case 0xa7:
                 dev->pci_conf[func][addr] = val & 0xe0;
-            break;
+                break;
 
             case 0xa8:
                 dev->pci_conf[func][addr] = val;
-            break;
+                break;
 
             case 0xaa:
                 dev->pci_conf[func][addr] |= val;
-            break;
+                break;
 
             case 0xae:
                 dev->pci_conf[func][addr] = val;
-            break;
+                break;
         }
 
-    }
-    else if(func == 1) {
+    } else if (func == 1) {
         intel_piix_log("Intel PIIX IDE: dev->regs[%02x] = %02x\n", addr, val);
-        
-        switch(addr)
-        {
+
+        switch (addr) {
             case 0x04:
                 dev->pci_conf[func][addr] = (val & 5) | 2;
                 intel_piix_ide(dev);
                 intel_piix_ide_bm(dev);
-            break;
+                break;
 
             case 0x07:
                 dev->pci_conf[func][addr] &= val & 0x38;
-            break;
+                break;
 
             case 0x0d:
                 dev->pci_conf[func][addr] = val & 0xf0;
-            break;
+                break;
 
             case 0x20 ... 0x21:
                 dev->pci_conf[func][addr] = val;
                 intel_piix_ide_bm(dev);
-            break;
-            
+                break;
+
             case 0x40:
                 dev->pci_conf[func][addr] = val;
-            break;
+                break;
 
             case 0x41:
                 dev->pci_conf[func][addr] = val & 0xb3;
                 intel_piix_ide(dev);
-            break;
+                break;
 
             case 0x42:
                 dev->pci_conf[func][addr] = val;
-            break;
+                break;
 
             case 0x43:
                 dev->pci_conf[func][addr] = val & 0xb3;
                 intel_piix_ide(dev);
-            break;
+                break;
         }
     }
 }
 
-
 static uint8_t
 intel_piix_read(int func, int addr, void *priv)
 {
-    intel_piix_t *dev = (intel_piix_t *)priv;
+    intel_piix_t *dev = (intel_piix_t *) priv;
 
-    if(func == 0) {
+    if (func == 0) {
         intel_piix_log("Intel PIIX PCI-to-ISA: dev->regs[%02x] (%02x)\n", addr, dev->pci_conf[0][addr]);
         return dev->pci_conf[func][addr];
-    }
-    else if(func == 1) {
+    } else if (func == 1) {
         intel_piix_log("Intel PIIX IDE: dev->regs[%02x] (%02x)\n", addr, dev->pci_conf[1][addr]);
         return dev->pci_conf[func][addr];
-    }
-    else return 0xff;
-
+    } else
+        return 0xff;
 }
-
 
 static void
 intel_piix_reset(void *priv)
 {
-    intel_piix_t *dev = (intel_piix_t *)priv;
+    intel_piix_t *dev = (intel_piix_t *) priv;
     memset(dev->pci_conf, 0x00, sizeof(dev->pci_conf)); /* Wash out the registers */
 
     /* PCI-to-ISA */
-    dev->pci_conf[0][0x00] = 0x86;    /* Intel */
+    dev->pci_conf[0][0x00] = 0x86; /* Intel */
     dev->pci_conf[0][0x01] = 0x80;
 
-    dev->pci_conf[0][0x02] = 0x2e;    /* PIIX */
+    dev->pci_conf[0][0x02] = 0x2e; /* PIIX */
     dev->pci_conf[0][0x03] = 0x12;
 
     dev->pci_conf[0][0x04] = 0x07;
@@ -410,10 +395,10 @@ intel_piix_reset(void *priv)
     intel_piix_apmc_smi_config(dev);
 
     /* IDE */
-    dev->pci_conf[1][0x00] = 0x86;    /* Intel */
+    dev->pci_conf[1][0x00] = 0x86; /* Intel */
     dev->pci_conf[1][0x01] = 0x80;
 
-    dev->pci_conf[1][0x02] = 0x30;    /* PIIX IDE */
+    dev->pci_conf[1][0x02] = 0x30; /* PIIX IDE */
     dev->pci_conf[1][0x03] = 0x12;
 
     dev->pci_conf[1][0x06] = 0x80;
@@ -433,20 +418,18 @@ intel_piix_reset(void *priv)
     intel_piix_ide(dev);
 }
 
-
 static void
 intel_piix_close(void *priv)
 {
-    intel_piix_t *dev = (intel_piix_t *)priv;
+    intel_piix_t *dev = (intel_piix_t *) priv;
 
     free(dev);
 }
 
-
 static void *
 intel_piix_init(const device_t *info)
 {
-    intel_piix_t *dev = (intel_piix_t *)malloc(sizeof(intel_piix_t));
+    intel_piix_t *dev = (intel_piix_t *) malloc(sizeof(intel_piix_t));
     memset(dev, 0, sizeof(intel_piix_t));
     int slot;
 
@@ -478,15 +461,15 @@ intel_piix_init(const device_t *info)
 }
 
 const device_t intel_piix_device = {
-    .name = "Intel 82371FB PCI ISA IDE XCELERATOR",
+    .name          = "Intel 82371FB PCI ISA IDE XCELERATOR",
     .internal_name = "intel_piix",
-    .flags = DEVICE_PCI,
-    .local = 0,
-    .init = intel_piix_init,
-    .close = intel_piix_close,
-    .reset = intel_piix_reset,
+    .flags         = DEVICE_PCI,
+    .local         = 0,
+    .init          = intel_piix_init,
+    .close         = intel_piix_close,
+    .reset         = intel_piix_reset,
     { .available = NULL },
     .speed_changed = NULL,
-    .force_redraw = NULL,
-    .config = NULL
+    .force_redraw  = NULL,
+    .config        = NULL
 };

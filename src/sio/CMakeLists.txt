@@ -13,5 +13,8 @@
 #          Copyright 2020,2021 David Hrdlička.
 #
 
-add_library(sio OBJECT sio_nsc366.c sio_smc665.c)
+add_library(sio OBJECT sio_ali5123.c sio_nsc366.c sio_smc665.c)
 
+if(SIO_DETECT)
+    target_sources(sio PRIVATE sio_detect.c)
+endif()

@@ -8,9 +8,14 @@
  *
  *          Handling of the emulated machines.
  *
- * Authors:  Sarah Walker, <http://pcem-emulator.co.uk/>
- *           Miran Grca, <mgrca8@gmail.com>
- *           Fred N. van Kempen, <decwiz@yahoo.com>
+ * NOTES:   OpenAT wip for 286-class machine with open BIOS.
+ *          PS2_M80-486 wip, pending receipt of TRM's for machine.
+ *
+ *
+ *
+ * Authors: Sarah Walker, <http://pcem-emulator.co.uk/>
+ *          Miran Grca, <mgrca8@gmail.com>
+ *          Fred N. van Kempen, <decwiz@yahoo.com>
  *
  *          Copyright 2008-2020 Sarah Walker.
  *          Copyright 2016-2020 Miran Grca.
@@ -31,24 +36,61 @@
 #include <86box/video.h>
 
 const machine_filter_t machine_types[] = {
-    { "None",                                          MACHINE_TYPE_NONE               },
-    { "SARC 2016A",                                    MACHINE_TYPE_SARC_2016A         },
-    { "Symphony Haydn II",                             MACHINE_TYPE_SYMPHONY_HAYDN     },
-    { "SiS 471",				                       MACHINE_TYPE_SIS_471	           },
-    { "Intel PIIX",				                       MACHINE_TYPE_INTEL_PIIX  	   },
-    { "Intel ICH2",				                       MACHINE_TYPE_ICH2	           }
+    { "None",                      MACHINE_TYPE_NONE           },
+    { "SARC 2016A",                MACHINE_TYPE_SARC_2016A     },
+    { "Symphony Haydn II",         MACHINE_TYPE_SYMPHONY_HAYDN },
+    { "SiS 471",                   MACHINE_TYPE_SIS_471	       },
+    { "Intel PIIX",                MACHINE_TYPE_INTEL_PIIX     },
+    { "Intel ICH2",                MACHINE_TYPE_ICH2           }
 };
 
 const machine_filter_t machine_chipsets[] = {
-    { "None",                                          MACHINE_CHIPSET_NONE            },
-    { "SARC 2016A",                                    MACHINE_CHIPSET_SARC_2016A      },
-    { "Symphony Haydn II",                             MACHINE_CHIPSET_SYMPHONY_HAYDN  },
-    { "SiS 471",                                       MACHINE_CHIPSET_SIS_471         },
-    { "Intel 430FX",                                   MACHINE_CHIPSET_INTEL_430FX     },
-    { "Intel i815EP",                                  MACHINE_CHIPSET_INTEL_I815EP    }
+    { "None",                       MACHINE_CHIPSET_NONE                },
+    { "SARC 2016A",                 MACHINE_CHIPSET_SARC_2016A          },
+    { "Symphony Haydn II",          MACHINE_CHIPSET_SYMPHONY_HAYDN      },
+    { "SiS 471",                    MACHINE_CHIPSET_SIS_471             },
+    { "Intel 430FX",                MACHINE_CHIPSET_INTEL_430FX         },
+    { "Intel i815EP",               MACHINE_CHIPSET_INTEL_I815EP        }
 };
 
+/* Machines to add before machine freeze:
+   - PCChips M773 (440BX + SMSC with AMI BIOS);
+   - TMC Mycomp PCI54ST;
+   - Zeos Quadtel 486.
+
+   NOTE: The AMI MegaKey tests were done on a real Intel Advanced/ATX
+     (thanks, MrKsoft for running my AMIKEY.COM on it), but the
+     technical specifications of the other Intel machines confirm
+     that the other boards also have the MegaKey.
+
+   NOTE: The later (ie. not AMI Color) Intel AMI BIOS'es execute a
+     sequence of commands (B8, BA, BB) during one of the very first
+     phases of POST, in a way that is only valid on the AMIKey-3
+     KBC firmware, that includes the Classic PCI/ED (Ninja) BIOS
+     which otherwise does not execute any AMI KBC commands, which
+     indicates that the sequence is a leftover of whatever AMI
+     BIOS (likely a laptop one since the AMIKey-3 is a laptop KBC
+     firmware!) Intel forked.
+
+   NOTE: The VIA VT82C42N returns 0x46 ('F') in command 0xA1 (so it
+     emulates the AMI KF/AMIKey KBC firmware), and 0x42 ('B') in
+     command 0xAF.
+     The version on the VIA VT82C686B southbridge also returns
+     'F' in command 0xA1, but 0x45 ('E') in command 0xAF.
+     The version on the VIA VT82C586B southbridge also returns
+     'F' in command 0xA1, but 0x44 ('D') in command 0xAF.
+     The version on the VIA VT82C586A southbridge also returns
+     'F' in command 0xA1, but 0x43 ('C') in command 0xAF.
+
+   NOTE: The AMI MegaKey commands blanked in the technical reference
+     are CC and and C4, which are Set P14 High and Set P14 Low,
+     respectively. Also, AMI KBC command C1, mysteriously missing
+     from the technical references of AMI MegaKey and earlier, is
+     Write Input Port, same as on AMIKey-3.
+*/
+
 const machine_t machines[] = {
+  // clang-format off
     /* SARC 2016A Motherboards */
     {
         .name = "CX Technology SXD",
@@ -82,7 +124,9 @@ const machine_t machines[] = {
         .kbc_p1 = 0,
         .gpio = 0,
         .device = NULL,
-        .vid_device = NULL
+        .vid_device = NULL,
+        .snd_device = NULL,
+        .net_device = NULL
     },
 
     {
@@ -117,7 +161,9 @@ const machine_t machines[] = {
         .kbc_p1 = 0,
         .gpio = 0,
         .device = NULL,
-        .vid_device = NULL
+        .vid_device = NULL,
+        .snd_device = NULL,
+        .net_device = NULL
     },
 
     /* Symphony Haydn II Motherboards */
@@ -153,7 +199,9 @@ const machine_t machines[] = {
         .kbc_p1 = 0,
         .gpio = 0,
         .device = NULL,
-        .vid_device = NULL
+        .vid_device = NULL,
+        .snd_device = NULL,
+        .net_device = NULL
     },
 
     {
@@ -188,7 +236,9 @@ const machine_t machines[] = {
         .kbc_p1 = 0,
         .gpio = 0,
         .device = NULL,
-        .vid_device = NULL
+        .vid_device = NULL,
+        .snd_device = NULL,
+        .net_device = NULL
     },
 
     {
@@ -223,7 +273,9 @@ const machine_t machines[] = {
         .kbc_p1 = 0,
         .gpio = 0,
         .device = NULL,
-        .vid_device = NULL
+        .vid_device = NULL,
+        .snd_device = NULL,
+        .net_device = NULL
     },
 
     {
@@ -258,7 +310,9 @@ const machine_t machines[] = {
         .kbc_p1 = 0,
         .gpio = 0,
         .device = NULL,
-        .vid_device = NULL
+        .vid_device = NULL,
+        .snd_device = NULL,
+        .net_device = NULL
     },
 
     /* SiS 471 Motherboards */
@@ -294,7 +348,9 @@ const machine_t machines[] = {
         .kbc_p1 = 0,
         .gpio = 0,
         .device = NULL,
-        .vid_device = NULL
+        .vid_device = NULL,
+        .snd_device = NULL,
+        .net_device = NULL
     },
 
     {
@@ -329,7 +385,9 @@ const machine_t machines[] = {
         .kbc_p1 = 0,
         .gpio = 0,
         .device = NULL,
-        .vid_device = NULL
+        .vid_device = NULL,
+        .snd_device = NULL,
+        .net_device = NULL
     },
 
     /* Intel 430FX Motherboards */
@@ -365,7 +423,9 @@ const machine_t machines[] = {
         .kbc_p1 = 0,
         .gpio = 0,
         .device = NULL,
-        .vid_device = NULL
+        .vid_device = NULL,
+        .snd_device = NULL,
+        .net_device = NULL
     },
 
     {
@@ -400,7 +460,9 @@ const machine_t machines[] = {
         .kbc_p1 = 0,
         .gpio = 0,
         .device = NULL,
-        .vid_device = NULL
+        .vid_device = NULL,
+        .snd_device = NULL,
+        .net_device = NULL
     },
 
     {
@@ -435,7 +497,9 @@ const machine_t machines[] = {
         .kbc_p1 = 0,
         .gpio = 0,
         .device = NULL,
-        .vid_device = NULL
+        .vid_device = NULL,
+        .snd_device = NULL,
+        .net_device = NULL
     },
 
     {
@@ -470,7 +534,9 @@ const machine_t machines[] = {
         .kbc_p1 = 0,
         .gpio = 0,
         .device = NULL,
-        .vid_device = NULL
+        .vid_device = NULL,
+        .snd_device = NULL,
+        .net_device = NULL
     },
 
     /* Intel 815EP Motherboards */
@@ -506,7 +572,9 @@ const machine_t machines[] = {
         .kbc_p1 = 0,
         .gpio = 0,
         .device = NULL,
-        .vid_device = NULL
+        .vid_device = NULL,
+        .snd_device = NULL,
+        .net_device = NULL
     },
 
     /* Reference */
@@ -542,7 +610,9 @@ const machine_t machines[] = {
         .kbc_p1 = 0,
         .gpio = 0,
         .device = NULL,
-        .vid_device = NULL
+        .vid_device = NULL,
+        .snd_device = NULL,
+        .net_device = NULL
     }
   // clang-format on
 };
